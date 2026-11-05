@@ -342,10 +342,15 @@ export function extractItemsAndExports(ast, { language }) {
       }
       return;
     }
-    if ((valueNode.type === "ArrowFunctionExpression" || valueNode.type === "FunctionExpression") && propertyName) {
-      addFunctionItem(propertyName, valueNode, []);
-      items.get(propertyName).exported = true;
-      items.get(propertyName).export_style = "commonjs";
+    if (valueNode.type === "ArrowFunctionExpression" || valueNode.type === "FunctionExpression") {
+      // `module.exports.x = function(){}` names the item x; a bare
+      // `module.exports = function(){}` (anonymous, no property) is the
+      // CommonJS analog of an anonymous ESM default export - name it
+      // "default", same convention as the ESM case elsewhere in this file.
+      const name = propertyName ?? valueNode.id?.name ?? "default";
+      addFunctionItem(name, valueNode, []);
+      items.get(name).exported = true;
+      items.get(name).export_style = "commonjs";
       return;
     }
     if (valueNode.type === "CallExpression" && propertyName) {
@@ -363,6 +368,12 @@ export function extractItemsAndExports(ast, { language }) {
       if (wrapperName) addFlag(valueNode.loc.start.line, "higher_order_wrapper");
     }
   }
+
+  // "documented" means "exported (JS/TS) or public (Python)" per §2's
+  // definitions, not "has a JSDoc comment" - exported status is only known
+  // once every export-determination pass above has run, so this is a
+  // post-process rather than something set at creation time.
+  for (const item of items.values()) item.documented = item.exported;
 
   return { items: [...items.values()], flaggedPatterns };
 }

@@ -45,7 +45,9 @@ test("POST /api/runs without a session is rejected", async () => {
   assert.equal(res.status, 401);
 });
 
-test("bad access code is rejected, correct one sets a session cookie, and the M1 flow runs end to end", async () => {
+let sessionCookie;
+
+test("bad access code is rejected, correct one sets a session cookie", async () => {
   const bad = await postJson("/api/session", { code: "wrong" });
   assert.equal(bad.status, 401);
 
@@ -53,22 +55,48 @@ test("bad access code is rejected, correct one sets a session cookie, and the M1
   assert.equal(good.status, 204);
   const setCookie = good.headers.get("set-cookie");
   assert.ok(setCookie, "expected a Set-Cookie header");
-  const cookie = setCookie.split(";")[0];
+  sessionCookie = setCookie.split(";")[0];
+});
 
-  const rejected = await postJson("/api/runs", { repo_url: "not-a-url" }, cookie);
+test("POST /api/runs rejects a malformed repo_url", async () => {
+  const rejected = await postJson("/api/runs", { repo_url: "not-a-url" }, sessionCookie);
   assert.equal(rejected.status, 400);
+});
 
-  const started = await postJson("/api/runs", { repo_url: "https://github.com/acme/widgets" }, cookie);
+async function pollUntilTerminal(baseUrl, runId, cookie, { timeoutMs = 60_000 } = {}) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const res = await fetch(`${baseUrl}/api/runs/${runId}`, { headers: { cookie } });
+    const body = await res.json();
+    if (!["queued", "running"].includes(body.status)) return body;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error(`run ${runId} did not reach a terminal status within ${timeoutMs}ms`);
+}
+
+// M3: real Repo Reader -> Scanner -> Analyst -> Writer -> Renderer, against
+// a real (tiny, stable) public repo, in AI stub mode (zero cost, zero AI
+// network calls - AI_STUB_MODE defaults to true in routes/runs.js).
+test("M3: a real run against a real repo produces a generated reference page with cost recorded", async () => {
+  const started = await postJson("/api/runs", { repo_url: "https://github.com/jonschlinkert/is-number" }, sessionCookie);
   assert.equal(started.status, 202);
   const { run_id, status } = await started.json();
   assert.equal(status, "queued");
-  assert.ok(run_id);
 
-  const progress = await fetch(`${baseUrl}/api/runs/${run_id}`, { headers: { cookie } });
-  assert.equal(progress.status, 200);
-  const progressBody = await progress.json();
-  assert.equal(progressBody.repo.owner, "acme");
-  assert.equal(progressBody.repo.name, "widgets");
-  assert.equal(progressBody.stages.length, 7);
-  assert.ok(["running", "complete"].includes(progressBody.status));
+  const finalRun = await pollUntilTerminal(baseUrl, run_id, sessionCookie);
+  assert.equal(finalRun.repo.owner, "jonschlinkert");
+  assert.equal(finalRun.resolved_sha.length, 40);
+  assert.equal(finalRun.stages.length, 7);
+  assert.ok(["complete", "complete_with_errors"].includes(finalRun.status), `expected a usable run, got ${finalRun.status}: ${JSON.stringify(finalRun.failure)}`);
+  assert.equal(finalRun.cost_usd, 0, "AI_STUB_MODE should make this free");
+
+  const pagesRes = await fetch(`${baseUrl}/api/runs/${run_id}/pages`, { headers: { cookie: sessionCookie } });
+  const { pages } = await pagesRes.json();
+  assert.ok(pages.length > 0, "expected at least one generated page");
+
+  const pageRes = await fetch(`${baseUrl}/api/runs/${run_id}/pages/${pages[0].slug}`, { headers: { cookie: sessionCookie } });
+  assert.equal(pageRes.status, 200);
+  const page = await pageRes.json();
+  assert.equal(page.status, "generated");
+  assert.ok(page.markdown.includes(`https://github.com/jonschlinkert/is-number/blob/${finalRun.resolved_sha}/`), "markdown should contain a commit-pinned source link");
 });
