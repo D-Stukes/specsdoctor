@@ -4,6 +4,25 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-05 — Restyled the Task 1 UI against the design system
+
+**Done**
+- Applied the "Precision Instrument Developer System" (`stitch_docsync_ui_design_system/precision_instrument_developer_system/DESIGN.md`) to the real app: access-code screen, repo-URL/intake screen, and a new run-progress + page-viewer screen (not a restyle - Design-Notes.md lists "Run in progress" as a screen Stitch hasn't produced yet, so this is a first design pass at it).
+- Applied `docs/Design-Notes.md`'s must-fix items 1, 2, 3 and 5 directly in the real implementation (not by regenerating the Stitch mockup files, which still show the originals): empty, honestly-labeled access-code field instead of a pre-filled "ACTIVE" key; every fabricated fact removed (client-side AST parsing, latency numbers, fake API/worker telemetry); "Write for" shows Developers active with the other two visibly disabled "Coming soon"; Geist + JetBrains Mono actually load via Google Fonts (the original Stitch output silently fell back to serif).
+- Plain CSS with custom properties for the DESIGN.md tokens (`client/src/theme.css`), not Tailwind - decided two simple screens didn't justify a new build dependency.
+
+**Verification**
+- Drove the full flow in a real browser end to end: access code → repo form → a real run against `jonschlinkert/is-number` → the new progress screen → opened a generated page and confirmed its commit-pinned source link is real.
+
+**Not done**
+- Design-Notes.md's items 4 and 6-11 (the "Verified" wording in DESIGN.md itself, Home's full dashboard chrome, the repo map, the guided tour) touch screens Task 1 doesn't build - still open for Tasks 4/5/9-11.
+- The Stitch mockup files themselves (`docsync_access_gate/`, `docsync_home_new_documentation/`) are untouched - they still show the pre-fix originals for reference only.
+
+**Next**
+- Finish T04 (restart recovery, queue limits) or move to Task 4 (Architect stage, full Viewer UI - which would need its own Stitch screens generated first per Design-Notes.md's missing-screens list).
+
+---
+
 ## 2026-11-05 — Task 3: First page (T04 partial, T09-T12)
 
 **Done**

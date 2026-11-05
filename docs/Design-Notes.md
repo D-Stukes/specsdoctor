@@ -26,6 +26,8 @@ Last updated: 2026-11-05
 
 Overall: very close to the agreed design. Home and Guided tour match the canvas mockups well. Fix the items below before building UI in Tasks 1, 4 and 5.
 
+**Status (2026-11-05):** items 1, 2, 3 and 5 below are applied in the real Task 1 UI (`client/src/App.jsx`, `client/src/theme.css`) - not by regenerating these Stitch mockup files, which still show the uncorrected originals for reference. Items 4 and 6-11 touch screens Task 1 doesn't build (Home's full dashboard, the repo map, the guided tour) - still open for whoever builds Tasks 4/5/9-11.
+
 ### Must fix (product honesty or wrong behavior)
 
 1. **"Write for: Everyday users / Both" is active, with "Both" selected (Home).** User guides are add-on Task 12. Until then show "Developers" selected and the other two disabled with "Coming soon".
