@@ -1,4 +1,8 @@
 node_modules/
+# fixture-pern-mini intentionally commits a stub node_modules/ entry to test
+# that the Scanner skips it (Technical Design §2, Files row).
+!fixtures/fixture-pern-mini/server/node_modules/
+!fixtures/fixture-pern-mini/server/node_modules/**
 dist/
 build/
 .env

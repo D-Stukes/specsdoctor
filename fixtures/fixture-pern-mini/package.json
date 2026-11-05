@@ -1,0 +1,5 @@
+{
+  "name": "fixture-pern-mini",
+  "private": true,
+  "workspaces": ["server", "client"]
+}
