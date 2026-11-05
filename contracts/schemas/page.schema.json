@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docsync.dev/schemas/page/1",
+  "title": "Page",
+  "description": "Writer and Architect output; renderer input. Technical Design SS4c #4. AI stages never emit Markdown, signatures or URLs - the renderer builds those from the index. claim_id is assigned later by the Orchestrator, not present here.",
+  "type": "object",
+  "required": ["schema_version", "slug", "title", "sections"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "page/1" },
+    "slug": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["heading", "blocks"],
+        "additionalProperties": false,
+        "properties": {
+          "heading": { "type": "string" },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                { "$ref": "#/$defs/proseBlock" },
+                { "$ref": "#/$defs/claimBlock" },
+                { "$ref": "#/$defs/symbolRefBlock" },
+                { "$ref": "#/$defs/endpointRefBlock" },
+                { "$ref": "#/$defs/envRefBlock" },
+                { "$ref": "#/$defs/tableRefBlock" },
+                { "$ref": "#/$defs/codeBlock" },
+                { "$ref": "#/$defs/mermaidBlock" }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "evidenceRef": {
+      "type": "object",
+      "required": ["path", "start_line", "end_line"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string" },
+        "start_line": { "type": "integer", "minimum": 1 },
+        "end_line": { "type": "integer", "minimum": 1 },
+        "symbol_id": { "type": "string", "pattern": "^sym:" }
+      }
+    },
+    "proseBlock": {
+      "type": "object",
+      "required": ["type", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "prose" },
+        "text": { "type": "string" }
+      }
+    },
+    "claimBlock": {
+      "type": "object",
+      "required": ["type", "claim"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "claim" },
+        "claim": {
+          "type": "object",
+          "required": ["text", "kind", "symbols", "evidence"],
+          "additionalProperties": false,
+          "properties": {
+            "text": { "type": "string", "minLength": 1 },
+            "kind": { "type": "string", "minLength": 1 },
+            "symbols": { "type": "array", "items": { "type": "string", "pattern": "^sym:" } },
+            "evidence": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/evidenceRef" } }
+          }
+        }
+      }
+    },
+    "symbolRefBlock": {
+      "type": "object",
+      "required": ["type", "symbol_id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "symbol_ref" },
+        "symbol_id": { "type": "string", "pattern": "^sym:" }
+      }
+    },
+    "endpointRefBlock": {
+      "type": "object",
+      "required": ["type", "endpoint_id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "endpoint_ref" },
+        "endpoint_id": { "type": "string", "pattern": "^ep:" }
+      }
+    },
+    "envRefBlock": {
+      "type": "object",
+      "required": ["type", "env_id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "env_ref" },
+        "env_id": { "type": "string", "pattern": "^env:" }
+      }
+    },
+    "tableRefBlock": {
+      "type": "object",
+      "required": ["type", "table_id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "table_ref" },
+        "table_id": { "type": "string", "pattern": "^tbl:" }
+      }
+    },
+    "codeBlock": {
+      "type": "object",
+      "description": "kind=known_command should carry source (it is copied from a package.json script, never written by a model); enforced by the Writer/renderer, not by this schema, to keep strict mode happy with a single shared shape.",
+      "required": ["type", "kind", "lang", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "code" },
+        "kind": { "enum": ["known_command", "inferred_command", "illustrative"] },
+        "lang": { "type": "string" },
+        "text": { "type": "string" },
+        "source": {
+          "type": "object",
+          "required": ["path", "script"],
+          "additionalProperties": false,
+          "properties": {
+            "path": { "type": "string" },
+            "script": { "type": "string" }
+          }
+        }
+      }
+    },
+    "mermaidBlock": {
+      "type": "object",
+      "required": ["type", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "mermaid" },
+        "text": { "type": "string" }
+      }
+    }
+  }
+}

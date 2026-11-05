@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docsync.dev/schemas/verify/1",
+  "title": "Verification result",
+  "description": "Verifier output, per page revision. Technical Design SS4c #5.",
+  "type": "object",
+  "required": ["schema_version", "page_slug", "rev", "claims", "unknown_mentions", "coverage"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "verify/1" },
+    "page_slug": { "type": "string", "minLength": 1 },
+    "rev": { "type": "integer", "minimum": 1 },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim_id", "structural", "ai"],
+        "additionalProperties": false,
+        "properties": {
+          "claim_id": { "type": "string", "pattern": "^clm:" },
+          "structural": {
+            "type": "object",
+            "required": ["status", "failures"],
+            "additionalProperties": false,
+            "properties": {
+              "status": { "enum": ["pass", "fail", "n/a"] },
+              "failures": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "unknown_symbol", "signature_mismatch", "evidence_out_of_bounds",
+                    "route_unresolved", "duplicate_route", "pattern_unsupported"
+                  ]
+                }
+              }
+            }
+          },
+          "ai": {
+            "type": "object",
+            "required": ["assessment", "explanation"],
+            "additionalProperties": false,
+            "properties": {
+              "assessment": { "enum": ["supported", "contradicted", "insufficient_evidence", "not_assessed"] },
+              "explanation": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "unknown_mentions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["text", "block"],
+        "additionalProperties": false,
+        "properties": {
+          "text": { "type": "string" },
+          "block": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "required": ["expected_refs", "rendered_refs"],
+      "additionalProperties": false,
+      "properties": {
+        "expected_refs": { "type": "integer", "minimum": 0 },
+        "rendered_refs": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

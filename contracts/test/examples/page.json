@@ -1,0 +1,19 @@
+{
+  "schema_version": "page/1",
+  "slug": "api-endpoints", "title": "API endpoints",
+  "sections": [
+    { "heading": "Users", "blocks": [
+      { "type": "endpoint_ref", "endpoint_id": "ep:POST /api/users@server/routes/users.js:8" },
+      { "type": "claim", "claim": {
+        "text": "Creating a user requires a valid session (requireAuth middleware).",
+        "kind": "behavior",
+        "symbols": ["sym:server/middleware/auth.js#requireAuth"],
+        "evidence": [
+          { "path": "server/routes/users.js", "start_line": 8, "end_line": 8 },
+          { "path": "server/middleware/auth.js", "start_line": 4, "end_line": 19, "symbol_id": "sym:server/middleware/auth.js#requireAuth" }
+        ] } },
+      { "type": "prose", "text": "All user routes return JSON." },
+      { "type": "code", "kind": "known_command", "lang": "bash", "text": "npm run dev", "source": { "path": "server/package.json", "script": "dev" } }
+    ] }
+  ]
+}

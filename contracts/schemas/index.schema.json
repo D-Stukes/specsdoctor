@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docsync.dev/schemas/index/1",
+  "title": "Scanner index",
+  "description": "Scanner -> all later stages. Technical Design SS4c #2.",
+  "type": "object",
+  "required": ["schema_version", "parser_version", "items", "project", "imports", "unresolved_imports", "coverage"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "index/1" },
+    "parser_version": { "type": "string", "minLength": 1 },
+    "items": {
+      "type": "array",
+      "items": { "oneOf": [{ "$ref": "#/$defs/codeItem" }, { "$ref": "#/$defs/endpointItem" }] }
+    },
+    "project": {
+      "type": "object",
+      "required": ["workspaces", "env_vars", "tables"],
+      "additionalProperties": false,
+      "properties": {
+        "workspaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["dir", "scripts", "dependencies", "engines", "frontend"],
+            "additionalProperties": false,
+            "properties": {
+              "dir": { "type": "string" },
+              "scripts": { "type": "object", "additionalProperties": { "type": "string" } },
+              "dependencies": { "type": "object", "additionalProperties": { "type": "string" } },
+              "engines": { "type": ["object", "null"] },
+              "frontend": { "type": "boolean" }
+            }
+          }
+        },
+        "env_vars": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "refs", "in_env_example"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "pattern": "^env:" },
+              "refs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "line"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "path": { "type": "string" },
+                    "line": { "type": "integer", "minimum": 1 }
+                  }
+                }
+              },
+              "in_env_example": { "type": "boolean" }
+            }
+          }
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "format", "source", "columns"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "pattern": "^tbl:" },
+              "format": { "enum": ["sql", "prisma"] },
+              "source": { "$ref": "#/$defs/sourceRange" },
+              "columns": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["name", "type", "nullable"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": { "type": "string" },
+                    "type": { "type": ["string", "null"] },
+                    "nullable": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "imports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "kind"],
+        "additionalProperties": false,
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "kind": { "enum": ["import", "require"] }
+        }
+      }
+    },
+    "unresolved_imports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "spec"],
+        "additionalProperties": false,
+        "properties": {
+          "from": { "type": "string" },
+          "spec": { "type": "string" }
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "required": ["files", "flagged_patterns"],
+      "additionalProperties": false,
+      "properties": {
+        "files": {
+          "type": "object",
+          "required": ["scanned", "skipped", "unsupported", "failed"],
+          "additionalProperties": false,
+          "properties": {
+            "scanned": { "type": "integer", "minimum": 0 },
+            "skipped": { "type": "integer", "minimum": 0 },
+            "unsupported": { "type": "integer", "minimum": 0 },
+            "failed": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "flagged_patterns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "line", "pattern"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string" },
+              "line": { "type": "integer", "minimum": 1 },
+              "pattern": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sourceRange": {
+      "type": "object",
+      "required": ["path", "start_line", "end_line"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string" },
+        "start_line": { "type": "integer", "minimum": 1 },
+        "end_line": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "codeItem": {
+      "type": "object",
+      "required": [
+        "id", "kind", "language", "name", "path", "start_line", "end_line",
+        "exported", "export_style", "documented", "signature", "params",
+        "returns", "doc", "wrapped_by"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^sym:" },
+        "kind": { "enum": ["function", "class", "method", "constant", "type"] },
+        "language": { "type": "string" },
+        "name": { "type": "string" },
+        "path": { "type": "string" },
+        "start_line": { "type": "integer", "minimum": 1 },
+        "end_line": { "type": "integer", "minimum": 1 },
+        "exported": { "type": "boolean" },
+        "export_style": { "enum": ["named", "default", "commonjs", "re-export", "none"] },
+        "documented": { "type": "boolean" },
+        "signature": { "type": ["string", "null"] },
+        "params": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "type", "default"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": ["string", "null"] },
+              "default": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "returns": { "type": ["string", "null"] },
+        "doc": { "type": ["string", "null"] },
+        "wrapped_by": { "type": ["string", "null"] }
+      }
+    },
+    "endpointItem": {
+      "type": "object",
+      "required": ["id", "kind", "method", "path", "resolved", "declaration", "mounts", "middleware", "handler"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^ep:" },
+        "kind": { "const": "endpoint" },
+        "method": { "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "ALL"] },
+        "path": { "type": "string" },
+        "resolved": { "type": "boolean" },
+        "declaration": { "$ref": "#/$defs/sourceRange" },
+        "mounts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "start_line", "end_line", "prefix"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string" },
+              "start_line": { "type": "integer", "minimum": 1 },
+              "end_line": { "type": "integer", "minimum": 1 },
+              "prefix": { "type": "string" }
+            }
+          }
+        },
+        "middleware": { "type": "array", "items": { "type": "string", "pattern": "^sym:" } },
+        "handler": {
+          "type": "object",
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["symbol_id"],
+              "additionalProperties": false,
+              "properties": { "symbol_id": { "type": "string", "pattern": "^sym:" } }
+            },
+            {
+              "type": "object",
+              "required": ["inline"],
+              "additionalProperties": false,
+              "properties": { "inline": { "$ref": "#/$defs/sourceRange" } }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

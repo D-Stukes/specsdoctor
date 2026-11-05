@@ -1,0 +1,11 @@
+{
+  "schema_version": "verify/1",
+  "page_slug": "api-endpoints", "rev": 1,
+  "claims": [
+    { "claim_id": "clm:api-endpoints:2",
+      "structural": { "status": "pass", "failures": [] },
+      "ai": { "assessment": "supported", "explanation": "Route declaration passes requireAuth before the handler." } }
+  ],
+  "unknown_mentions": [{ "text": "deleteAccount()", "block": 3 }],
+  "coverage": { "expected_refs": 12, "rendered_refs": 12 }
+}

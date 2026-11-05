@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docsync.dev/schemas/summary/1",
+  "title": "Module summary",
+  "description": "Code Analyst output. Technical Design SS4c #3. The validator rejects any symbol_id not in the index for this module.",
+  "type": "object",
+  "required": ["schema_version", "module_path", "purpose", "items", "open_questions", "confidence_hint"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "summary/1" },
+    "module_path": { "type": "string", "minLength": 1 },
+    "purpose": { "type": "string", "minLength": 1 },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["symbol_id", "what_it_does"],
+        "additionalProperties": false,
+        "properties": {
+          "symbol_id": { "type": "string", "pattern": "^sym:" },
+          "what_it_does": { "type": "string", "minLength": 1 },
+          "param_notes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "note"],
+              "additionalProperties": false,
+              "properties": {
+                "name": { "type": "string" },
+                "note": { "type": "string" }
+              }
+            }
+          },
+          "example": {
+            "type": "object",
+            "required": ["kind", "text"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "const": "illustrative" },
+              "text": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["symbol_id", "text"],
+        "additionalProperties": false,
+        "properties": {
+          "symbol_id": { "type": "string", "pattern": "^sym:" },
+          "text": { "type": "string" }
+        }
+      }
+    },
+    "confidence_hint": { "enum": ["low", "medium", "high"] }
+  }
+}
