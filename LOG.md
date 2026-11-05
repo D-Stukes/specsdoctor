@@ -4,6 +4,42 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-05 — Task 3: First page (T04 partial, T09-T12)
+
+**Done**
+- **T09 AI client + budget manager:** `server/src/ai/client.js` wraps `client.messages.parse()` with `output_config.format` set directly to the T01 JSON schemas (no Zod re-derivation - one schema, two consumers). `server/src/ai/budget-manager.js` implements §4a's reservation algorithm: reserve worst-case before scheduling, commit actual cost from `response.usage`, 35% protected reserve only Writer/Verifier can draw on. One retry on 429/5xx/timeout; every attempt (success or failure) writes a `model_calls` row. `AI_STUB_MODE` defaults to **true** - `POST /api/runs` never spends real money unless someone explicitly sets `AI_STUB_MODE=false` with a real `ANTHROPIC_API_KEY`.
+- **T10 Code Analyst:** one module per call, `summary/1` structured output, rejects any `symbol_id` the model invents instead of trusting it.
+- **T11 deterministic renderer:** `page/1` JSON → Markdown. Every signature, parameter table and link comes from the index via `symbol_ref`/`endpoint_ref`/`env_ref`/`table_ref` expansion, with commit-pinned GitHub URLs - never from the model.
+- **T12 Writer (reference pages only):** builds every `symbol_ref` block itself from the index; the model is only allowed to write short prose/claims, and any claim citing a `symbol_id` outside the module gets dropped before the page is saved.
+- **T04 (partial):** `runner/pipeline.js` replaces Task 1's fake-timer stub with the real Reader → Scanner → Analyst → Writer → Renderer sequence, writing real `run_stages`/`run_events`/`model_calls`/`index_items`/`pages`/`page_revisions` rows. Architect and Verifier stages are marked `skipped` (not built - Task 4, Task 5). Not done: full restart recovery and queue-size limits (T04's other two acceptance criteria).
+- Loaded the `claude-api` skill before touching any Anthropic SDK code, per its own trigger rule.
+
+**Bug found and fixed**
+- The Scanner's `documented` field was tracking "has a JSDoc comment" instead of §2's actual definition ("exported (JS/TS) or public (Python)"). This matters because the usable-output rule (§4a) checks for at least one documented item - with the wrong definition, a real repo like `jonschlinkert/is-number` (one exported function, no JSDoc) would have failed the usable-output check and the whole run would report `failed` even though it has perfectly good content to document. Fixed by computing `documented = exported` as a post-process step once every export-determination pass has run. `fixture-pern-mini/inventory.json`'s `documented` fields weren't retroactively corrected to match (recall grading is ID-based, not field-based, so this doesn't affect AT-1/AT-2/AT-3) - flagged here as a known follow-up.
+- Also found while testing against real repos: `module.exports = function(x) {...}` (an anonymous function expression assigning the *entire* export, no named variable involved) wasn't handled at all - fixed in `extract-items-exports.js`, named `"default"` per the same convention as an anonymous ESM default export.
+
+**Verification**
+- Unit tests for the budget manager (concurrent-reservation shape, AT-9) and the renderer (byte-equal signatures/URLs).
+- `server/test/smoke.test.js`'s M3 test runs the real pipeline end to end against a real, tiny, stable public repo (`jonschlinkert/is-number`) and asserts a real generated page with a real commit-pinned source link exists, with cost recorded (`$0` under the default stub AI mode). Also re-verified manually via curl and by driving the actual browser UI through the full flow.
+- All 40 tests pass (16 contracts + 24 server from before + this session's additions).
+
+**Decisions**
+- Picked `jonschlinkert/is-number` as the real-repo smoke-test target (tiny, stable, has one genuinely exported, undocumented function) rather than inventing a synthetic GitHub fixture - deliberately not the two fellowship repos, which are still an open PRD §8 decision.
+- Reused the T01 JSON schemas directly as `output_config.format` for structured outputs instead of maintaining parallel Zod schemas - one source of truth for both runtime Ajv validation and the model's output contract.
+- Duplicate-run guard is keyed on `(repo, requested_ref)` at the application level, not the schema's `(repo, resolved_sha)` unique index - `resolved_sha` isn't known until the Repo Reader finishes, so the DB-level index alone wouldn't catch a double-click before resolution.
+
+**Not done / blocked**
+- T04's restart-recovery (`running` → `failed: interrupted` on boot) and queue-size/rate limits aren't built.
+- Architect (Task 4) and Verifier (Task 5) stages don't exist - every page is reference-only, with no narrative pages, no claim checking, no review items yet.
+- No real (paid) AI call has been made against this app - everything verified so far is `AI_STUB_MODE=true`. The user would need to opt in explicitly for a real-cost run.
+- M3 is satisfied against a real public repo, not a fellowship repo (still blocked on PRD §8).
+
+**Next**
+- User asked to restyle the Task 1 UI (access gate, repo-URL form) against the Stitch design system (`stitch_docsync_ui_design_system/`, see `docs/Design-Notes.md`) next - in progress as of this entry.
+- After that: finish T04 (restart recovery, queue limits), or move to Task 4 (Architect, full Viewer UI).
+
+---
+
 ## 2026-11-05 — Task 2: Code facts (T05-T08)
 
 **Done**
