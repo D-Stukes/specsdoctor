@@ -106,7 +106,9 @@
         "additionalProperties": false,
         "properties": {
           "from": { "type": "string" },
-          "spec": { "type": "string" }
+          "spec": { "type": "string" },
+          "line": { "type": "integer", "minimum": 1 },
+          "reason": { "type": "string" }
         }
       }
     },

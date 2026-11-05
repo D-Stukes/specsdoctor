@@ -4,6 +4,12 @@
 // bytes; this module only looks at the path.
 
 export const MAX_FILE_BYTES = 1024 * 1024; // 1 MB, §4a limits
+const MINIFIED_LINE_LENGTH = 2000;
+
+/** Content-dependent half of the Files row's skip rules: minified-by-length. Shared by extract-tarball.js and anything else reading files directly (e.g. test harnesses). */
+export function isMinified(content) {
+  return content.split("\n").some((line) => line.length > MINIFIED_LINE_LENGTH);
+}
 
 const DOCUMENTABLE_JS_EXTENSIONS = [".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx"];
 const PYTHON_EXTENSIONS = [".py"];

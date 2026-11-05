@@ -1,15 +1,10 @@
 import zlib from "node:zlib";
 import * as tarStream from "tar-stream";
-import { classifyFile } from "./classify-file.js";
+import { classifyFile, isMinified } from "./classify-file.js";
 
 // §4a limits.
 export const MAX_EXPANDED_BYTES = 100 * 1024 * 1024; // 100 MB
 export const MAX_ENTRIES = 5000;
-const MINIFIED_LINE_LENGTH = 2000;
-
-function isMinified(content) {
-  return content.split("\n").some((line) => line.length > MINIFIED_LINE_LENGTH);
-}
 
 /**
  * Streams a gzip'd tarball (as returned by GitHub's codeload) and extracts

@@ -113,6 +113,8 @@ export interface Import {
 export interface UnresolvedImport {
   from: string;
   spec: string;
+  line?: number;
+  reason?: string;
 }
 
 export interface FlaggedPattern {

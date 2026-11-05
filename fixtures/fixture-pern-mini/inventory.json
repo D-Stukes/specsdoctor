@@ -217,20 +217,20 @@
 
   "unresolved_imports": [
     { "from": "client/src/App.jsx", "spec": "@/components/Nav", "line": 5, "reason": "aliased_path" },
-    { "from": "server/routes/habits.js", "spec": "<dynamic: pluginName variable>", "line": 17, "reason": "dynamic_require" },
-    { "from": "server/index.js", "spec": "./admin-panel.js", "line": 25, "reason": "dynamic_import_conditional", "note": "syntactically a literal specifier, but only resolved at runtime behind a conditional; file does not exist in the fixture on purpose" }
+    { "from": "server/routes/habits.js", "spec": "<dynamic>", "line": 17, "reason": "dynamic_require" },
+    { "from": "server/index.js", "spec": "<dynamic>", "line": 25, "reason": "dynamic_import", "note": "import() is always unresolved per §2, literal argument or not; file does not exist in the fixture on purpose" }
   ],
 
+  "_flagged_patterns_note": "Aliases, dynamic require()/import() live only in unresolved_imports above, not duplicated here - keeping one place per fact.",
   "flagged_patterns": [
     { "path": "server/index.js", "line": 20, "pattern": "dynamic_mount_prefix" },
-    { "path": "server/routes/habits.js", "line": 17, "pattern": "dynamic_require" },
     { "path": "server/routes/habits.js", "line": 12, "pattern": "higher_order_wrapper", "note": "asyncHandler(createHabit)" },
     { "path": "server/legacy/dynamic-exports.js", "line": 12, "pattern": "dynamic_env_var" },
     { "path": "server/legacy/dynamic-exports.js", "line": 17, "pattern": "dynamic_export" },
-    { "path": "server/legacy/dynamic-exports.js", "line": 21, "pattern": "conditional_export" },
+    { "path": "server/legacy/dynamic-exports.js", "line": 22, "pattern": "conditional_export", "note": "one entry per affected branch - see line 24 too" },
+    { "path": "server/legacy/dynamic-exports.js", "line": 24, "pattern": "conditional_export" },
     { "path": "server/migrations/001_add_column.js", "line": 1, "pattern": "knex_migration" },
-    { "path": "client/src/App.jsx", "line": 5, "pattern": "unresolved_alias_import" },
-    { "path": "server/index.js", "line": 25, "pattern": "dynamic_import" }
+    { "path": "server/lib/index.mjs", "line": 2, "pattern": "re_export_all", "note": "export * from './format.mjs' - not an error, just a visibility flag since re-exported names aren't individually listed as items here" }
   ],
 
   "gated": {
