@@ -4,6 +4,34 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-05 — Task 2: Code facts (T05-T08)
+
+**Done**
+- **T05 Repo Reader:** resolves a GitHub owner/repo/ref to a SHA via `api.github.com`, streams the codeload tarball through gunzip + `tar-stream` (never to disk), and classifies every entry per §2's Files row (node_modules/build-output/`.d.ts`/minified/oversized/sensitive-file skips; Python/notebooks marked `unsupported`, gated behind Task 8; path traversal and symlink/hardlink/device entries rejected per SEC-3). Verified against synthetic malicious-archive fixtures and against a real repo (`octocat/Hello-World`) end to end.
+- **T06 Scanner core:** JS/TS/JSX/TSX item + export extraction via `@babel/parser` (functions, arrow/function-expr consts, classes + methods, TS interfaces/type aliases; all the named/default/CommonJS export shapes; dynamic and conditional exports flagged rather than guessed), import resolution (static + `require`, directory/index resolution, aliases and dynamic `require()`/`import()` to `unresolved_imports`), and `process.env` extraction (literal + destructured, dynamic access flagged).
+- **T07 route resolution:** cross-file mount-graph climber (`route-graph.js`) that composes nested/multiple Express mount prefixes into each endpoint's full path, flagging non-literal prefixes instead of guessing. Handles `.route().method()` chains and higher-order wrappers applied at the registration site (`asyncHandler(fn)`).
+- **T08 schema extraction:** SQL `CREATE TABLE` via `pgsql-ast-parser`; a minimal hand-rolled Prisma model parser (no established library was an obvious fit for this small a need).
+- Fixed two bugs in the T01 contracts found while wiring the Scanner up: the `index/1` endpoint handler's `oneOf` had `additionalProperties` scoped at the wrong level (rejected both valid shapes), and `unresolved_imports` had no room for `line`/`reason`.
+
+**Verification**
+- `server/test/scanner-fixture.test.js` runs the real Scanner against `fixture-pern-mini` and checks AT-1 (recall), AT-2 (route resolution), AT-3 (flagged-pattern reporting): **100% recall** on code items, endpoints, env vars and tables; exact file-status counts; exact flagged-pattern set; schema-valid output. (`server/scripts/run-scanner-on-fixture.mjs` is the same thing as a standalone script, for faster iteration.)
+- Ran the full Reader → Scanner pipeline against a real 216-file repo (`expressjs/express`): schema-valid output, 0 parse failures, 323 items / 237 endpoints found.
+
+**Decisions**
+- Item/export extraction is scoped to module top level only (no recursing into function bodies) — matches what a documentation scanner actually needs; nested helpers aren't documented.
+- A plain top-level `const`/`let` (not a function) only becomes a `constant` code item when something actually exports it (directly or via a later CommonJS assignment) — otherwise every `const express = require("express")` would be spurious noise. Functions, classes and types are always captured regardless of export status, since the matrix treats item extraction and export-status determination as separate concerns.
+- Flagged-pattern convention settled through the fixture test run: `unresolved_imports` is the single place for alias/dynamic-require/dynamic-import facts (not duplicated into `coverage.flagged_patterns`); `conditional_export` gets one entry per affected branch, not one per `if` statement.
+
+**Not done / blocked**
+- M2 ("Scanner recall ≥ 95% on the fixture and ≥ 90% on both fellowship repos") only has the fixture half — the fellowship repos are still blocked on PRD §8's open decision.
+- Frontend route/props structuring (Task 9) and Python support (Task 8) are deliberately out of scope here — both gated add-ons; `fixture-pern-mini/inventory.json`'s `gated` section describes what they should find once built.
+- M1 is still not deployed to Render (see the 2026-11-05 Task 1 entry below).
+
+**Next**
+- Resolve PRD §8's open decisions, or move on to Task 3 (First page: runner, budget manager, Code Analyst, renderer, Writer for reference pages).
+
+---
+
 ## 2026-11-05 — Task 1: Foundations (T01-T03)
 
 **Done**
