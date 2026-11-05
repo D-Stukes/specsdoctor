@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docsync.dev/schemas/snapshot/1",
+  "title": "Repository snapshot",
+  "description": "Repo Reader -> Scanner hand-off. Technical Design SS4c #1.",
+  "type": "object",
+  "required": ["schema_version", "repo", "requested_ref", "resolved_sha", "files", "limits_hit"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "snapshot/1" },
+    "repo": {
+      "type": "object",
+      "required": ["owner", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "owner": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 }
+      }
+    },
+    "requested_ref": { "type": ["string", "null"] },
+    "resolved_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "size", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "size": { "type": "integer", "minimum": 0 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "status": { "enum": ["scanned", "skipped", "unsupported", "failed"] },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "limits_hit": {
+      "type": "array",
+      "items": {
+        "enum": ["tarball_size", "archive_size", "archive_entries", "file_size", "module_count"]
+      }
+    }
+  }
+}

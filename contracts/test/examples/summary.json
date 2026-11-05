@@ -1,0 +1,15 @@
+{
+  "schema_version": "summary/1",
+  "module_path": "server/controllers/users.js",
+  "purpose": "Handles creating, reading and updating users.",
+  "items": [
+    {
+      "symbol_id": "sym:server/controllers/users.js#createUser",
+      "what_it_does": "Validates name and email from the body and inserts a user row.",
+      "param_notes": [{ "name": "req", "note": "Express request; body has name and email" }],
+      "example": { "kind": "illustrative", "text": "POST /api/users {\"name\": \"Ada\"}" }
+    }
+  ],
+  "open_questions": [{ "symbol_id": "sym:server/controllers/users.js#createUser", "text": "Duplicate emails: 409 or 400?" }],
+  "confidence_hint": "high"
+}

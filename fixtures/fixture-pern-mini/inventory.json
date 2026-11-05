@@ -1,0 +1,276 @@
+{
+  "_meta": {
+    "purpose": "Hand-checked ground truth for fixture-pern-mini, used by AT-1/AT-2/AT-3 to measure Scanner recall once T06/T07/T08 are built. Not a schema_version document — richer than index/1 on purpose, so a reviewer can check reasoning, not just final numbers.",
+    "independence_caveat": "Technical Design T02 calls for this inventory to be written by whoever did NOT write the Scanner. It was drafted solo by Claude Code in this session (Dikshyant's pairing session), so the independence requirement is not yet met. Diane should read it against the fixture source before Task 2 starts and flag anything she'd have called differently.",
+    "scope": "Covers the JS/TS Must matrix fully (core Scanner, T06-T08). Python and the React-specific route/props extraction are separate 'gated' sections below, since both are Should add-ons (Task 8, Task 9) not built in the core."
+  },
+
+  "files": {
+    "scanned": [
+      { "path": "package.json", "note": "root manifest" },
+      { "path": "server/package.json", "note": "manifest" },
+      { "path": "server/env.example.txt", "note": "stands in for .env.example - see README" },
+      { "path": "server/index.js" },
+      { "path": "server/db/schema.sql", "note": "table extraction" },
+      { "path": "server/db/index.js" },
+      { "path": "server/middleware/auth.js" },
+      { "path": "server/routes/users.js" },
+      { "path": "server/routes/habits.js" },
+      { "path": "server/controllers/users.js" },
+      { "path": "server/controllers/habits.js" },
+      { "path": "server/legacy/utils.cjs" },
+      { "path": "server/legacy/dynamic-exports.js" },
+      { "path": "server/lib/format.mjs" },
+      { "path": "server/lib/index.mjs" },
+      { "path": "server/types/habit.ts" },
+      { "path": "server/prisma/schema.prisma", "note": "table extraction" },
+      { "path": "server/migrations/001_add_column.js", "note": "listed but not parsed for tables - see flagged_patterns knex_migration" },
+      { "path": "client/package.json", "note": "manifest, frontend:true" },
+      { "path": "client/src/App.jsx" },
+      { "path": "client/src/components/Nav.jsx" },
+      { "path": "client/src/components/HabitBadge.tsx" },
+      { "path": "client/src/pages/HabitsPage.jsx" },
+      { "path": "client/src/pages/SettingsPage.jsx" },
+      { "path": "client/src/api/fetchHabits.js" }
+    ],
+    "skipped": [
+      { "path": "server/types/api.d.ts", "reason": "d_ts" },
+      { "path": "server/build/bundle.js", "reason": "build_output" },
+      { "path": "server/vendor/minified.js", "reason": "minified" },
+      { "path": "server/vendor/huge-data.js", "reason": "file_size_exceeded", "size_bytes": 1050587 },
+      { "path": "server/node_modules/fake-pkg/index.js", "reason": "node_modules" }
+    ],
+    "unsupported": [
+      { "path": "python/pkg/habits.py", "reason": "python_not_shipped", "note": "Core Scanner is JS/TS only until Task 8 ships; see gated.python below for what the Python helper should find." },
+      { "path": "python/pkg/plugins.py", "reason": "python_not_shipped" },
+      { "path": "python/pkg/exploration.ipynb", "reason": "extension_not_supported" }
+    ],
+    "failed": [
+      { "path": "server/broken/parse-error.js", "reason": "parse_error" }
+    ],
+    "counts": { "scanned": 25, "skipped": 5, "unsupported": 3, "failed": 1 }
+  },
+
+  "workspaces": [
+    {
+      "dir": "server",
+      "scripts": { "dev": "nodemon index.js", "start": "node index.js" },
+      "dependencies": { "express": "^4.19.2", "pg": "^8.11.0" },
+      "engines": { "node": ">=18" },
+      "frontend": false
+    },
+    {
+      "dir": "client",
+      "scripts": { "dev": "vite", "build": "vite build" },
+      "dependencies": { "react": "^18.3.1", "react-dom": "^18.3.1", "react-router-dom": "^6.26.0" },
+      "engines": null,
+      "frontend": true
+    }
+  ],
+
+  "env_vars": [
+    { "id": "env:DATABASE_URL", "refs": [{ "path": "server/db/index.js", "line": 3 }], "in_env_example": true },
+    { "id": "env:SESSION_SECRET", "refs": [{ "path": "server/controllers/users.js", "line": 3 }], "in_env_example": true },
+    { "id": "env:PORT", "refs": [{ "path": "server/index.js", "line": 31 }], "in_env_example": true },
+    { "id": "env:HABITS_PLUGIN", "refs": [{ "path": "server/routes/habits.js", "line": 16 }], "in_env_example": false },
+    { "id": "env:API_VERSION", "refs": [{ "path": "server/index.js", "line": 19 }], "in_env_example": false },
+    { "id": "env:NODE_ENV", "refs": [{ "path": "server/legacy/dynamic-exports.js", "line": 21 }], "in_env_example": false }
+  ],
+
+  "tables": [
+    { "id": "tbl:users", "format": "sql", "source": { "path": "server/db/schema.sql", "start_line": 1, "end_line": 6 }, "columns": [
+      { "name": "id", "type": "serial", "nullable": false },
+      { "name": "email", "type": "text", "nullable": false },
+      { "name": "name", "type": "text", "nullable": true },
+      { "name": "created_at", "type": "timestamptz", "nullable": false }
+    ]},
+    { "id": "tbl:habits", "format": "sql", "source": { "path": "server/db/schema.sql", "start_line": 8, "end_line": 13 }, "columns": [
+      { "name": "id", "type": "serial", "nullable": false },
+      { "name": "user_id", "type": "integer", "nullable": false },
+      { "name": "title", "type": "text", "nullable": false },
+      { "name": "frequency", "type": "text", "nullable": false }
+    ]},
+    { "id": "tbl:Session", "format": "prisma", "source": { "path": "server/prisma/schema.prisma", "start_line": 10, "end_line": 14 }, "columns": [
+      { "name": "id", "type": "String", "nullable": false },
+      { "name": "userId", "type": "Int", "nullable": false },
+      { "name": "createdAt", "type": "DateTime", "nullable": false }
+    ]}
+  ],
+
+  "code_items": [
+    { "id": "sym:server/db/index.js#pool", "kind": "constant", "exported": true, "export_style": "commonjs", "documented": true, "start_line": 5, "end_line": 5 },
+    { "id": "sym:server/middleware/auth.js#requireAuth", "kind": "function", "exported": true, "export_style": "commonjs", "documented": true, "start_line": 8, "end_line": 13,
+      "signature": "requireAuth(req, res, next)", "returns": "void", "doc": "Requires a signed-in session before letting a request through." },
+    { "id": "sym:server/controllers/users.js#createUser", "kind": "function", "exported": true, "export_style": "commonjs", "documented": true, "start_line": 10, "end_line": 17,
+      "signature": "createUser(req, res)", "doc": "Creates a user from the request body." },
+    { "id": "sym:server/controllers/users.js#getUser", "kind": "function", "exported": true, "export_style": "commonjs", "documented": true, "start_line": 24, "end_line": 26,
+      "signature": "getUser(req, res)", "doc": "Looks up a user by ID." },
+    { "id": "sym:server/controllers/habits.js#HabitService", "kind": "class", "exported": true, "export_style": "commonjs", "documented": false, "start_line": 5, "end_line": 18 },
+    { "id": "sym:server/controllers/habits.js#HabitService.list", "kind": "method", "exported": true, "documented": false, "start_line": 6, "end_line": 9, "signature": "list(userId)" },
+    { "id": "sym:server/controllers/habits.js#HabitService.create", "kind": "method", "exported": true, "documented": false, "start_line": 11, "end_line": 17, "signature": "create(userId, title)" },
+    { "id": "sym:server/controllers/habits.js#listHabits", "kind": "function", "exported": true, "export_style": "commonjs", "documented": false, "start_line": 22, "end_line": 25, "signature": "listHabits(req, res)" },
+    { "id": "sym:server/controllers/habits.js#createHabit", "kind": "function", "exported": true, "export_style": "commonjs", "documented": false, "start_line": 27, "end_line": 30, "signature": "createHabit(req, res)",
+      "note": "Registered at routes/habits.js:12 wrapped in asyncHandler(fn) - the matrix's higher-order-wrapper case. wrapped_by belongs on the code item only when the wrapper is applied at the definition site; here the wrap happens at the call site, which index/1's handler shape (symbol_id | inline) has no field for. Flagged for Task 2 to decide: either add an optional wrapped_by to endpointItem.handler, or record it purely as a flagged_pattern (higher_order_wrapper) as done below." },
+    { "id": "sym:server/routes/habits.js#asyncHandler", "kind": "function", "exported": false, "documented": false, "start_line": 6, "end_line": 8, "signature": "asyncHandler(fn)" },
+    { "id": "sym:server/legacy/utils.cjs#slugify", "kind": "function", "exported": true, "export_style": "commonjs", "documented": false, "start_line": 1, "end_line": 3, "signature": "slugify(text)", "note": "exports.slugify =" },
+    { "id": "sym:server/legacy/utils.cjs#truncate", "kind": "function", "exported": true, "export_style": "commonjs", "documented": false, "start_line": 5, "end_line": 7, "signature": "truncate(text, length)", "note": "module.exports.truncate =" },
+    { "id": "sym:server/legacy/dynamic-exports.js#featureA", "kind": "function", "exported": false, "documented": false, "start_line": 1, "end_line": 3, "signature": "featureA()",
+      "note": "Export status cannot be determined statically (dynamic + conditional export below); recorded with exported:false and flagged rather than guessed." },
+    { "id": "sym:server/legacy/dynamic-exports.js#featureB", "kind": "function", "exported": false, "documented": false, "start_line": 5, "end_line": 7, "signature": "featureB()" },
+    { "id": "sym:server/lib/format.mjs#formatFrequency", "kind": "function", "exported": true, "export_style": "named", "documented": true, "start_line": 6, "end_line": 8,
+      "signature": "formatFrequency(frequency)", "params": [{ "name": "frequency", "type": "string" }], "returns": "string", "doc": "Formats a habit frequency for display." },
+    { "id": "sym:server/lib/format.mjs#DEFAULT_FREQUENCY", "kind": "constant", "exported": true, "export_style": "named", "documented": false, "start_line": 10, "end_line": 10 },
+    { "id": "sym:server/lib/format.mjs#formatHabitTitle", "kind": "function", "exported": true, "export_style": "default", "documented": false, "start_line": 12, "end_line": 14, "signature": "formatHabitTitle(title)" },
+    { "id": "sym:server/lib/index.mjs#fallbackFrequency", "kind": "constant", "exported": true, "export_style": "re-export", "documented": false, "start_line": 3, "end_line": 3,
+      "note": "export { DEFAULT_FREQUENCY as fallbackFrequency } from './format.mjs' - the export-rename matrix case. Also re-exports everything from format.mjs via 'export * from' at line 2 (one-hop re-export), which is an imports-graph fact, not a new item." },
+    { "id": "sym:server/lib/index.mjs#default", "kind": "function", "exported": true, "export_style": "default", "documented": false, "start_line": 6, "end_line": 8,
+      "note": "Anonymous default export; name is literally 'default' per the matrix's naming rule." },
+    { "id": "sym:server/types/habit.ts#Habit", "kind": "type", "exported": true, "export_style": "named", "documented": false, "start_line": 1, "end_line": 6, "note": "interface, name only" },
+    { "id": "sym:server/types/habit.ts#HabitFrequency", "kind": "type", "exported": true, "export_style": "named", "documented": false, "start_line": 8, "end_line": 8, "note": "type alias, name only" },
+    { "id": "sym:server/types/habit.ts#describeHabit", "kind": "function", "exported": true, "export_style": "named", "documented": false, "start_line": 10, "end_line": 12,
+      "signature": "describeHabit(habit: Habit): string", "params": [{ "name": "habit", "type": "Habit" }], "returns": "string" },
+    { "id": "sym:client/src/components/Nav.jsx#Nav", "kind": "function", "exported": true, "export_style": "default", "documented": true, "start_line": 7, "end_line": 14,
+      "signature": "Nav({ userName, onSignOut })", "doc": "Top navigation bar.", "note": "frontend workspace - counts for AT-1 recall, excluded from documentation-coverage denominator per §2" },
+    { "id": "sym:client/src/components/HabitBadge.tsx#HabitBadge", "kind": "function", "exported": true, "export_style": "default", "documented": false, "start_line": 8, "end_line": 10,
+      "signature": "HabitBadge({ title, streak }: HabitBadgeProps)", "note": "frontend workspace" },
+    { "id": "sym:client/src/components/HabitBadge.tsx#HabitBadgeProps", "kind": "type", "exported": false, "documented": false, "start_line": 3, "end_line": 6, "note": "local interface, not exported; frontend workspace" },
+    { "id": "sym:client/src/pages/HabitsPage.jsx#HabitsPage", "kind": "function", "exported": true, "export_style": "default", "documented": false, "start_line": 4, "end_line": 18, "note": "frontend workspace" },
+    { "id": "sym:client/src/pages/SettingsPage.jsx#SettingsPage", "kind": "function", "exported": true, "export_style": "default", "documented": false, "start_line": 3, "end_line": 5, "note": "frontend workspace" },
+    { "id": "sym:client/src/api/fetchHabits.js#fetchHabits", "kind": "function", "exported": true, "export_style": "named", "documented": false, "start_line": 3, "end_line": 6, "note": "frontend workspace" },
+    { "id": "sym:client/src/App.jsx#App", "kind": "function", "exported": true, "export_style": "default", "documented": false, "start_line": 16, "end_line": 26, "note": "frontend workspace" },
+    { "id": "sym:client/src/App.jsx#router", "kind": "constant", "exported": true, "export_style": "named", "documented": false, "start_line": 11, "end_line": 14, "note": "frontend workspace; createBrowserRouter(...) call result - see gated.frontend_route_props for the structured route table the Should feature should build from this" }
+  ],
+
+  "endpoints": [
+    { "id": "ep:POST /api/users@server/routes/users.js:7", "method": "POST", "resolved_path": "/api/users",
+      "declaration": { "path": "server/routes/users.js", "start_line": 7, "end_line": 7 },
+      "mount_chain": [
+        { "path": "server/index.js", "line": 9, "prefix_contributed": "/users", "via": "apiRouter.use(\"/users\", usersRouter)" },
+        { "path": "server/index.js", "line": 15, "prefix_contributed": "/api", "via": "app.use(\"/api\", apiRouter)" }
+      ],
+      "middleware": ["sym:server/middleware/auth.js#requireAuth"],
+      "handler": { "symbol_id": "sym:server/controllers/users.js#createUser" },
+      "also_reachable_via": { "path": "server/index.js", "line": 20, "note": "app.use(`/${apiVersion}/legacy`, usersRouter) - dynamic prefix, unresolved; see flagged_patterns dynamic_mount_prefix" }
+    },
+    { "id": "ep:GET /api/users/:id@server/routes/users.js:8", "method": "GET", "resolved_path": "/api/users/:id",
+      "declaration": { "path": "server/routes/users.js", "start_line": 8, "end_line": 8 },
+      "mount_chain": [
+        { "path": "server/index.js", "line": 9, "prefix_contributed": "/users" },
+        { "path": "server/index.js", "line": 15, "prefix_contributed": "/api" }
+      ],
+      "middleware": [],
+      "handler": { "symbol_id": "sym:server/controllers/users.js#getUser" }
+    },
+    { "id": "ep:GET /api/users/:id/ping@server/routes/users.js:11", "method": "GET", "resolved_path": "/api/users/:id/ping",
+      "declaration": { "path": "server/routes/users.js", "start_line": 11, "end_line": 13 },
+      "mount_chain": [
+        { "path": "server/index.js", "line": 9, "prefix_contributed": "/users" },
+        { "path": "server/index.js", "line": 15, "prefix_contributed": "/api" }
+      ],
+      "middleware": [],
+      "handler": { "inline": { "path": "server/routes/users.js", "start_line": 11, "end_line": 13 } }
+    },
+    { "id": "ep:GET /api/habits@server/routes/habits.js:11", "method": "GET", "resolved_path": "/api/habits",
+      "declaration": { "path": "server/routes/habits.js", "start_line": 10, "end_line": 11 },
+      "mount_chain": [
+        { "path": "server/index.js", "line": 10, "prefix_contributed": "/habits" },
+        { "path": "server/index.js", "line": 15, "prefix_contributed": "/api" }
+      ],
+      "middleware": [],
+      "handler": { "symbol_id": "sym:server/controllers/habits.js#listHabits" }
+    },
+    { "id": "ep:POST /api/habits@server/routes/habits.js:12", "method": "POST", "resolved_path": "/api/habits",
+      "declaration": { "path": "server/routes/habits.js", "start_line": 10, "end_line": 12 },
+      "mount_chain": [
+        { "path": "server/index.js", "line": 10, "prefix_contributed": "/habits" },
+        { "path": "server/index.js", "line": 15, "prefix_contributed": "/api" }
+      ],
+      "middleware": [],
+      "handler": { "symbol_id": "sym:server/controllers/habits.js#createHabit" },
+      "note": "handler wrapped in asyncHandler(fn) at the call site - see the note on createHabit in code_items"
+    },
+    { "note": "router.use('/plugin', plugin.router) at routes/habits.js:19 mounts a router loaded via a dynamic require (line 17); its routes cannot be enumerated because the import itself is unresolved. Not listed as an endpoint - listed under unresolved_imports and flagged_patterns instead." },
+    { "note": "app.get('/health', ...) at server/index.js:22-29 is itself unmounted (declared directly on app), so resolved_path is just '/health'.",
+      "id": "ep:GET /health@server/index.js:22", "method": "GET", "resolved_path": "/health",
+      "declaration": { "path": "server/index.js", "start_line": 22, "end_line": 29 },
+      "mount_chain": [],
+      "middleware": [],
+      "handler": { "inline": { "path": "server/index.js", "start_line": 22, "end_line": 29 } }
+    }
+  ],
+
+  "imports": [
+    { "from": "server/index.js", "to": "server/routes/users.js", "kind": "require" },
+    { "from": "server/index.js", "to": "server/routes/habits.js", "kind": "require" },
+    { "from": "server/routes/users.js", "to": "server/controllers/users.js", "kind": "require" },
+    { "from": "server/routes/users.js", "to": "server/middleware/auth.js", "kind": "require" },
+    { "from": "server/routes/habits.js", "to": "server/controllers/habits.js", "kind": "require" },
+    { "from": "server/controllers/users.js", "to": "server/db/index.js", "kind": "require" },
+    { "from": "server/controllers/habits.js", "to": "server/db/index.js", "kind": "require" },
+    { "from": "server/controllers/habits.js", "to": "server/lib/index.mjs", "kind": "require", "note": "bare directory import '../lib' resolves to index.mjs" },
+    { "from": "server/db/index.js", "to": "pg", "kind": "require", "note": "external dependency, not a local file" },
+    { "from": "server/lib/index.mjs", "to": "server/lib/format.mjs", "kind": "import", "note": "export * from (one hop) plus the renamed re-export" },
+    { "from": "client/src/App.jsx", "to": "client/src/pages/HabitsPage.jsx", "kind": "import" },
+    { "from": "client/src/App.jsx", "to": "client/src/pages/SettingsPage.jsx", "kind": "import", "note": "dynamic import() at App.jsx:9" },
+    { "from": "client/src/pages/HabitsPage.jsx", "to": "client/src/api/fetchHabits.js", "kind": "import" }
+  ],
+
+  "unresolved_imports": [
+    { "from": "client/src/App.jsx", "spec": "@/components/Nav", "line": 5, "reason": "aliased_path" },
+    { "from": "server/routes/habits.js", "spec": "<dynamic>", "line": 17, "reason": "dynamic_require" },
+    { "from": "server/index.js", "spec": "<dynamic>", "line": 25, "reason": "dynamic_import", "note": "import() is always unresolved per §2, literal argument or not; file does not exist in the fixture on purpose" }
+  ],
+
+  "_flagged_patterns_note": "Aliases, dynamic require()/import() live only in unresolved_imports above, not duplicated here - keeping one place per fact.",
+  "flagged_patterns": [
+    { "path": "server/index.js", "line": 20, "pattern": "dynamic_mount_prefix" },
+    { "path": "server/routes/habits.js", "line": 12, "pattern": "higher_order_wrapper", "note": "asyncHandler(createHabit)" },
+    { "path": "server/legacy/dynamic-exports.js", "line": 12, "pattern": "dynamic_env_var" },
+    { "path": "server/legacy/dynamic-exports.js", "line": 17, "pattern": "dynamic_export" },
+    { "path": "server/legacy/dynamic-exports.js", "line": 22, "pattern": "conditional_export", "note": "one entry per affected branch - see line 24 too" },
+    { "path": "server/legacy/dynamic-exports.js", "line": 24, "pattern": "conditional_export" },
+    { "path": "server/migrations/001_add_column.js", "line": 1, "pattern": "knex_migration" },
+    { "path": "server/lib/index.mjs", "line": 2, "pattern": "re_export_all", "note": "export * from './format.mjs' - not an error, just a visibility flag since re-exported names aren't individually listed as items here" }
+  ],
+
+  "gated": {
+    "frontend_route_props": {
+      "needs": "Task 9 (T21) - react-router routes and top-level component props",
+      "note": "Core T06-T08 already finds the underlying functions/constants above (Nav, HabitBadge, HabitsPage, SettingsPage, App, router). T21 additionally structures these into a route table and a props list, per the react-router/createBrowserRouter and destructured-props rows of the matrix.",
+      "expected_routes": [
+        { "path": "/", "element_component": "HabitsPage", "source": { "path": "client/src/App.jsx", "line": 12 }, "via": "createBrowserRouter" },
+        { "path": "/settings", "element_component": "SettingsPage", "source": { "path": "client/src/App.jsx", "line": 13 }, "via": "createBrowserRouter" },
+        { "path": "/habits", "element_component": "HabitsPage", "source": { "path": "client/src/App.jsx", "line": 21 }, "via": "<Route path element>" }
+      ],
+      "expected_props": [
+        { "component": "sym:client/src/components/Nav.jsx#Nav", "props": [{ "name": "userName", "type": null }, { "name": "onSignOut", "type": null }], "source": "destructured params" },
+        { "component": "sym:client/src/components/HabitBadge.tsx#HabitBadge", "props": [{ "name": "title", "type": "string" }, { "name": "streak", "type": "number" }], "source": "TS type HabitBadgeProps" }
+      ],
+      "computed_route_note": "None in this fixture; add one (e.g. a route built from a map/array) if T21's tests want a flagged 'computed_routes' case."
+    },
+    "python": {
+      "needs": "Task 8 (T20) - Python helper via ast.parse, gated behind FR-4b",
+      "note": "Until T20 ships, python/pkg/*.py get page status unsupported (file status unsupported here, not scanned/failed). The items below are what AT-1's Python recall check (EV-6) should find once T20 exists.",
+      "expected_items": [
+        { "id": "py:python/pkg/habits.py#Habit", "kind": "class", "exported": true, "documented": true, "start_line": 11, "end_line": 20, "doc": "A single tracked habit." },
+        { "id": "py:python/pkg/habits.py#Habit.__init__", "kind": "method", "start_line": 14, "end_line": 16 },
+        { "id": "py:python/pkg/habits.py#Habit.describe", "kind": "method", "start_line": 18, "end_line": 20, "documented": true, "doc": "Return a one-line description of this habit.", "returns": "str" },
+        { "id": "py:python/pkg/habits.py#format_frequency", "kind": "function", "exported": true, "documented": true, "start_line": 23, "end_line": 25, "doc": "Capitalize a frequency string for display.", "params": [{ "name": "frequency", "type": "str" }], "returns": "str" },
+        { "id": "py:python/pkg/plugins.py#core_helper", "kind": "function", "exported": true, "documented": true, "start_line": 9, "end_line": 11 },
+        { "id": "py:python/pkg/plugins.py#extra_helper", "kind": "function", "exported": false, "documented": true, "start_line": 14, "end_line": 16,
+          "note": "Listed in __all__ only when ENABLE_EXTRAS is set (dynamic __all__) - exported status cannot be determined statically; see flagged below." }
+      ],
+      "expected_env_vars": [
+        { "id": "env:DEFAULT_FREQUENCY", "refs": [{ "path": "python/pkg/habits.py", "line": 7 }], "note": "os.environ['DEFAULT_FREQUENCY'] literal" },
+        { "id": "env:DEBUG", "refs": [{ "path": "python/pkg/habits.py", "line": 8 }], "note": "os.getenv('DEBUG', 'false') literal" },
+        { "id": "env:ENABLE_EXTRAS", "refs": [{ "path": "python/pkg/plugins.py", "line": 5 }], "note": "os.getenv('ENABLE_EXTRAS') literal" }
+      ],
+      "expected_flagged_patterns": [
+        { "path": "python/pkg/plugins.py", "line": 6, "pattern": "dynamic_all" }
+      ],
+      "expected_skipped": [
+        { "path": "python/pkg/exploration.ipynb", "reason": "notebook" }
+      ]
+    }
+  }
+}

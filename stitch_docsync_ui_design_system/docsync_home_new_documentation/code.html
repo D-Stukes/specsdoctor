@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"secondary-fixed-dim":"#b9c3ff","on-background":"#e1e2e7","on-secondary-fixed":"#021356","on-surface-variant":"#bdc9c3","surface-variant":"#323538","on-surface":"#e1e2e7","inverse-surface":"#e1e2e7","secondary-container":"#374485","on-primary-fixed":"#002018","error":"#ffb4ab","surface-tint":"#76d8bc","on-tertiary-fixed-variant":"#614001","on-primary-fixed-variant":"#005141","on-primary":"#00382c","background":"#111417","secondary-fixed":"#dee1ff","on-error":"#690005","inverse-on-surface":"#2e3134","tertiary-container":"#f8c67d","surface-container-highest":"#323538","tertiary-fixed-dim":"#f0be77","primary-fixed":"#93f5d7","outline":"#87938e","on-secondary-fixed-variant":"#354282","on-tertiary-fixed":"#291800","inverse-primary":"#006b56","surface-bright":"#37393d","error-container":"#93000a","on-primary-container":"#006450","surface-container-lowest":"#0b0e11","primary-fixed-dim":"#76d8bc","surface-container":"#1d2023","primary-container":"#7ee0c3","surface-container-low":"#191c1f","tertiary":"#ffe7c9","on-error-container":"#ffdad6","on-tertiary-container":"#755113","on-secondary-container":"#a7b4fd","primary":"#9afddf","tertiary-fixed":"#ffddb1","secondary":"#b9c3ff","on-tertiary":"#442b00","surface-dim":"#111417","surface":"#111417","outline-variant":"#3e4945","on-secondary":"#1c2a6a","surface-container-high":"#272a2e"},borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},spacing:{"space-md":"1rem","space-xl":"2.5rem","margin":"2rem","gutter":"1.25rem","space-xs":"0.25rem","space-lg":"1.5rem","space-sm":"0.5rem"},fontFamily:{"headline-md":["Geist"],"code-base":["JetBrains Mono"],"display-hero":["Geist"],"code-inline":["JetBrains Mono"],"display-hero-mobile":["Geist"],"body-lg":["Geist"],"body-sm":["Geist"],"eyebrow-mono":["JetBrains Mono"],"body-md":["Geist"],"label-badge":["JetBrains Mono"],"headline-lg":["Geist"],"headline-sm":["Geist"]},fontSize:{"headline-md":["24px",{"lineHeight":"32px","letterSpacing":"-0.015em","fontWeight":"500"}],"code-base":["13px",{"lineHeight":"20px","letterSpacing":"0em","fontWeight":"400"}],"display-hero":["56px",{"lineHeight":"64px","letterSpacing":"-0.035em","fontWeight":"300"}],"code-inline":["12px",{"lineHeight":"16px","letterSpacing":"0em","fontWeight":"500"}],"display-hero-mobile":["36px",{"lineHeight":"42px","letterSpacing":"-0.025em","fontWeight":"300"}],"body-lg":["16px",{"lineHeight":"26px","letterSpacing":"-0.005em","fontWeight":"400"}],"body-sm":["13px",{"lineHeight":"18px","letterSpacing":"0em","fontWeight":"400"}],"eyebrow-mono":["11px",{"lineHeight":"16px","letterSpacing":"0.12em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","letterSpacing":"0em","fontWeight":"400"}],"label-badge":["11px",{"lineHeight":"14px","letterSpacing":"0.02em","fontWeight":"500"}],"headline-lg":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"400"}],"headline-sm":["18px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-lowest border-r border-outline-variant/30 z-50 flex flex-col justify-between select-none"><div class="flex flex-col"><div class="h-14 px-5 flex items-center border-b border-outline-variant/20 gap-2"><span class="font-code-base text-code-base text-primary font-semibold tracking-tight">[<span class="inline-block w-2"></span>]</span><span class="font-headline-sm text-headline-sm text-on-surface font-medium tracking-tight">DocSync</span><span class="ml-auto font-eyebrow-mono text-eyebrow-mono px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant">v1.4</span></div><div class="p-3"><a class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-surface-container-high border border-primary/30 text-primary hover:bg-primary hover:text-on-primary font-code-inline text-code-inline transition-all" data-path="new-documentation" href="#"><span class="material-symbols-outlined text-[16px]">add</span><span>New documentation</span></a></div><nav class="px-2 py-1 flex flex-col gap-0.5" data-active-classes="bg-surface-container-high text-primary border-l-2 border-primary font-medium"><a aria-current="page" class="flex items-center gap-3 px-3 py-2 rounded transition-colors bg-surface-container-high text-primary border-l-2 border-primary font-medium" data-path="new-documentation" href="#"><span class="material-symbols-outlined text-[18px]">note_add</span><span>New documentation</span></a><a class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="library" href="#"><span class="material-symbols-outlined text-[18px]">folder_open</span><span>Library</span></a><a class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="repo-maps" href="#"><span class="material-symbols-outlined text-[18px]">account_tree</span><span>Repo maps</span></a><a class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="guided-tours" href="#"><span class="material-symbols-outlined text-[18px]">explore</span><span>Guided tours</span></a><a class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="explore-sample" href="#"><span class="material-symbols-outlined text-[18px]">science</span><span>Explore a sample</span></a></nav><div class="mt-4 px-4 pt-3 border-t border-outline-variant/20"><div class="flex items-center justify-between mb-2"><span class="font-eyebrow-mono text-eyebrow-mono text-outline tracking-wider uppercase">Recent</span><span class="material-symbols-outlined text-[14px] text-outline cursor-pointer hover:text-on-surface">tune</span></div><div class="flex flex-col gap-1"><a class="flex items-center justify-between px-2 py-1.5 rounded hover:bg-surface-container group transition-colors" data-path="repo-maps" href="#"><div class="flex items-center gap-2 overflow-hidden"><span class="w-1.5 h-1.5 rounded-full bg-tertiary-container shrink-0"></span><span class="font-code-inline text-code-inline text-on-surface-variant group-hover:text-on-surface truncate">habit-space</span></div><span class="font-eyebrow-mono text-[10px] text-outline">main</span></a><a class="flex items-center justify-between px-2 py-1.5 rounded hover:bg-surface-container group transition-colors" data-path="library" href="#"><div class="flex items-center gap-2 overflow-hidden"><span class="w-1.5 h-1.5 rounded-full bg-surface-tint shrink-0"></span><span class="font-code-inline text-code-inline text-on-surface-variant group-hover:text-on-surface truncate">field-notes</span></div><span class="font-eyebrow-mono text-[10px] text-outline">v2.1</span></a><a class="flex items-center justify-between px-2 py-1.5 rounded hover:bg-surface-container group transition-colors" data-path="guided-tours" href="#"><div class="flex items-center gap-2 overflow-hidden"><span class="material-symbols-outlined text-[14px] text-secondary shrink-0">incomplete_circle</span><span class="font-code-inline text-code-inline text-on-surface-variant group-hover:text-on-surface truncate">pantry-sync</span></div><span class="font-label-badge text-label-badge px-1.5 py-0.2 rounded bg-surface-container-high text-on-surface-variant">4/7</span></a></div></div></div><div class="p-3 border-t border-outline-variant/20 bg-surface-container-lowest"><div class="flex items-center gap-3 p-2 rounded-lg bg-surface-container-low border border-outline-variant/20"><div class="w-7 h-7 rounded bg-surface-container-highest border border-outline-variant/40 flex items-center justify-center font-code-inline text-code-inline font-medium text-primary shrink-0">DG</div><div class="flex flex-col min-w-0 flex-1"><span class="font-body-sm text-[12px] font-medium text-on-surface truncate leading-tight">Personal workspace</span><span class="font-eyebrow-mono text-[10px] text-outline truncate leading-tight">Access code session</span></div><span class="material-symbols-outlined text-[16px] text-outline hover:text-on-surface cursor-pointer">unfold_more</span></div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-14 bg-surface/90 backdrop-blur-md border-b border-outline-variant/30 z-40 flex items-center justify-between px-6"><div class="flex items-center gap-2 font-code-base text-code-base text-outline"><span class="text-on-surface-variant hover:text-on-surface cursor-pointer">Workspace</span><span class="text-outline-variant">/</span><span class="text-on-surface font-medium">New documentation</span><span class="ml-3 px-2 py-0.5 rounded text-[11px] font-code-inline bg-surface-container-high text-on-surface-variant border border-outline-variant/30 hidden sm:inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-surface-tint"></span>main @ 9f2c1e4</span></div><div class="flex items-center gap-4"><div class="hidden xl:flex items-center bg-surface-container-low p-0.5 rounded-lg border border-outline-variant/30"><button class="px-2.5 py-1 rounded text-primary bg-surface-container font-code-inline text-code-inline">Docs</button><button class="px-2.5 py-1 rounded text-on-surface-variant hover:text-on-surface font-code-inline text-code-inline">Repo map</button><button class="px-2.5 py-1 rounded text-on-surface-variant hover:text-on-surface font-code-inline text-code-inline">Guided tour</button></div><div class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary-container/10 border border-tertiary-container/30 text-tertiary-container font-code-inline text-code-inline"><span class="w-1.5 h-1.5 rounded-full bg-tertiary-container"></span><span>3 open findings</span></div><button class="text-on-surface-variant hover:text-on-surface font-body-sm text-body-sm transition-colors">How it works</button><button class="p-1.5 text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center"><span class="material-symbols-outlined text-[18px]">dark_mode</span></button><button class="px-3 py-1.5 rounded bg-surface-container-high hover:bg-surface-bright border border-outline-variant/40 text-on-surface font-code-inline text-code-inline transition-colors flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px]">ios_share</span><span>Export</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="relative pt-14 bg-surface min-h-screen"><div class="flex flex-col w-full">
+<div class="px-8 lg:px-12 py-10 max-w-[1400px] mx-auto w-full">
+<!-- Top Hero Section: Asymmetric Left Headline/Input & Right Visual Stage -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start mb-20">
+<!-- Left Column: Copy & Command Input -->
+<div class="lg:col-span-7 flex flex-col pt-2">
+<span class="font-eyebrow-mono text-eyebrow-mono text-primary tracking-[0.2em] uppercase mb-4">
+          Source-linked docs · Repo maps · Guided tours
+        </span>
+<h1 class="font-display-hero text-display-hero text-on-surface tracking-tight leading-[1.1] mb-6">
+          Make sense of any codebase.
+        </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl mb-10 leading-relaxed">
+          Paste a public GitHub repository. DocSync reads the code, writes documentation that cites the exact lines it relies on, maps how the parts connect, and walks you through it.
+        </p>
+<!-- Command Bar Input Container -->
+<div class="flex flex-col gap-2 mb-6">
+<label class="font-eyebrow-mono text-eyebrow-mono text-outline tracking-wider uppercase">
+            GitHub repository
+          </label>
+<div class="flex items-center bg-surface-container-low rounded-xl p-1.5 shadow-xl transition-all focus-within:shadow-[0_0_0_1px_#7EE0C3,0_0_24px_rgba(126,224,195,0.15)]">
+<div class="flex items-center gap-3 pl-3 flex-1 min-w-0">
+<span class="material-symbols-outlined text-[18px] text-outline shrink-0">fork_right</span>
+<input class="bg-transparent border-none outline-none font-code-base text-code-base text-on-surface placeholder:text-outline w-full selection:bg-primary-container selection:text-on-primary-container" placeholder="github.com/owner/repository" type="text" value="github.com/dorgan/habit-space"/>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface font-code-inline text-code-inline transition-colors">
+<span>main</span>
+<span class="material-symbols-outlined text-[14px]">expand_more</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-[13px] tracking-normal transition-all hover:scale-[1.02] shadow-sm">
+<span>Create docs</span>
+<span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Audience Config Row -->
+<div class="flex flex-wrap items-center gap-4 text-body-sm text-body-sm mb-8">
+<span class="text-on-surface-variant font-body-sm text-body-sm">Write for</span>
+<div class="inline-flex p-1 rounded-lg bg-surface-container-low">
+<button class="px-3 py-1 rounded text-on-surface-variant hover:text-on-surface transition-colors font-body-sm text-body-sm">Developers</button>
+<button class="px-3 py-1 rounded text-on-surface-variant hover:text-on-surface transition-colors font-body-sm text-body-sm">Everyday users</button>
+<button class="px-3 py-1 rounded bg-surface-container-high text-primary font-body-sm text-body-sm shadow-sm">Both</button>
+</div>
+<button class="flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors font-body-sm text-body-sm ml-1">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span>Add context <span class="text-outline text-[12px]">(optional)</span></span>
+</button>
+</div>
+<!-- Trust Badges Line -->
+<div class="flex flex-wrap items-center gap-x-6 gap-y-2 pt-2">
+<div class="flex items-center gap-1.5 text-on-surface-variant font-code-inline text-code-inline">
+<span class="material-symbols-outlined text-surface-tint text-[15px]">check</span>
+<span>Pinned to one commit</span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-code-inline text-code-inline">
+<span class="material-symbols-outlined text-surface-tint text-[15px]">check</span>
+<span>Every claim cites its source</span>
+</div>
+<div class="flex items-center gap-1.5 text-tertiary-container font-code-inline text-code-inline">
+<span class="material-symbols-outlined text-[15px]">warning</span>
+<span>Uncertainty flagged for review</span>
+</div>
+</div>
+</div>
+<!-- Right Column: Interactive Evidence Mock & Diagram Hero Showcase -->
+<div class="lg:col-span-5 relative flex flex-col gap-4">
+<!-- Ambient Background Glow -->
+<div class="absolute -top-10 -right-10 w-72 h-72 rounded-full bg-primary/5 filter blur-3xl pointer-events-none"></div>
+<div class="absolute bottom-10 left-10 w-60 h-60 rounded-full bg-secondary/5 filter blur-3xl pointer-events-none"></div>
+<!-- Top Node Graph Stage -->
+<div class="relative bg-surface-container-lowest/80 rounded-2xl p-5 shadow-2xl overflow-hidden backdrop-blur-md">
+<div class="flex items-center justify-between mb-4">
+<span class="font-eyebrow-mono text-[10px] text-outline uppercase tracking-widest">Repo Map</span>
+<div class="flex items-center gap-1.5 font-label-badge text-label-badge text-outline">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+<span>LIVE PARSE</span>
+</div>
+</div>
+<!-- Mini SVG Network -->
+<div class="relative w-full h-36 flex items-center justify-center">
+<svg class="w-full h-full" fill="none" viewbox="0 0 400 140">
+<!-- Grid background pattern -->
+<defs>
+<pattern height="16" id="grid" patternunits="userSpaceOnUse" width="16">
+<circle cx="2" cy="2" fill="#323538" opacity="0.6" r="1"></circle>
+</pattern>
+</defs>
+<rect fill="url(#grid)" height="100%" width="100%"></rect>
+<!-- Connection Lines -->
+<path d="M 90 45 L 160 45" stroke="#323538" stroke-width="1.5"></path>
+<path d="M 240 45 L 310 45" stroke="#323538" stroke-width="1.5"></path>
+<path d="M 200 65 L 200 95" stroke="#7ee0c3" stroke-dasharray="3 3" stroke-width="1.5"></path>
+<!-- Inactive Nodes -->
+<rect fill="#191c1f" height="30" rx="6" width="60" x="30" y="30"></rect>
+<text fill="#87938e" font-family="JetBrains Mono" font-size="10" text-anchor="middle" x="60" y="49">Auth</text>
+<rect fill="#191c1f" height="30" rx="6" width="60" x="310" y="30"></rect>
+<text fill="#87938e" font-family="JetBrains Mono" font-size="10" text-anchor="middle" x="340" y="49">Stats</text>
+<rect fill="#191c1f" height="26" rx="6" width="60" x="170" y="95"></rect>
+<text fill="#bdc9c3" font-family="JetBrains Mono" font-size="10" text-anchor="middle" x="200" y="112">db:habits</text>
+<!-- Active Highlighted Node -->
+<rect fill="#1d2023" height="40" rx="8" width="80" x="160" y="25"></rect>
+<rect fill="none" height="40" rx="8" stroke="#7ee0c3" stroke-width="1.5" width="80" x="160" y="25"></rect>
+<text fill="#9afddf" font-family="JetBrains Mono" font-size="11" font-weight="600" text-anchor="middle" x="200" y="49">/habits</text>
+<!-- Mascot / Guide Indicator Node -->
+<circle cx="200" cy="80" fill="#f8c67d" r="9"></circle>
+<circle cx="198" cy="79" fill="#111417" r="1.5"></circle>
+<circle cx="202" cy="79" fill="#111417" r="1.5"></circle>
+</svg>
+</div>
+</div>
+<!-- Floating Document Statement Card (Overlapping) -->
+<div class="relative -mt-6 bg-surface-container-low rounded-2xl p-6 shadow-2xl">
+<div class="flex items-center justify-between mb-3 pb-2">
+<span class="font-eyebrow-mono text-[10px] text-outline uppercase tracking-wider font-semibold">API-ENDPOINTS.MD</span>
+<span class="font-code-inline text-code-inline text-on-surface-variant">habit-space</span>
+</div>
+<div class="mb-4">
+<p class="font-body-md text-body-md text-on-surface leading-snug">
+<span class="font-code-inline text-primary bg-primary/10 px-1 py-0.5 rounded mr-1">POST /api/habits</span>
+              creates a habit for the signed-in user and returns it with status 201.
+            </p>
+</div>
+<div class="flex flex-wrap items-center gap-2 mb-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-tint/15 text-surface-tint font-label-badge text-label-badge">
+<span class="w-1.5 h-1.5 rounded-full bg-surface-tint"></span>
+              Source-checked
+            </span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-secondary-container/40 text-secondary-fixed font-label-badge text-label-badge">
+              AI-assessed: supported
+            </span>
+</div>
+<div class="font-code-inline text-[11px] text-outline mb-4">
+            routes/habits.js L8 @ 9f2c1e4
+          </div>
+<!-- Finding Notification Alert -->
+<div class="p-3 rounded-lg bg-surface-container-high/90 flex items-start gap-2.5 shadow-sm">
+<span class="w-2 h-2 rounded-full bg-tertiary-container shrink-0 mt-1.5"></span>
+<p class="font-body-sm text-[12px] text-on-surface leading-relaxed">
+<strong class="text-tertiary-container font-medium">Needs review:</strong> duplicate habit names return 400 or 409? Not stated in the code.
+            </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Section Divider & Title -->
+<div class="mb-6">
+<span class="font-body-md text-body-md text-on-surface font-medium">
+        One repository, three ways to understand it
+      </span>
+</div>
+<!-- Three Bold Color-Block Feature Tiles -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-24">
+<!-- Tile 01: Documentation (Mint Accent) -->
+<div class="relative bg-primary-container text-on-primary-container p-8 rounded-2xl flex flex-col justify-between h-72 overflow-hidden shadow-lg transition-transform hover:-translate-y-1 duration-200">
+<div class="flex items-start justify-between">
+<span class="font-eyebrow-mono text-eyebrow-mono font-bold tracking-widest opacity-80">01</span>
+<!-- Documentation Graphic Icon -->
+<div class="flex flex-col items-end gap-1.5">
+<div class="w-12 h-1.5 bg-on-primary-container rounded-full"></div>
+<div class="w-16 h-1.5 bg-on-primary-container rounded-full"></div>
+<div class="w-8 h-1.5 bg-on-primary-container rounded-full"></div>
+<span class="font-code-inline text-[10px] px-1 rounded bg-on-primary-container text-primary-container font-bold mt-1">L8</span>
+</div>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md font-semibold text-on-primary-container mb-2">
+            Documentation
+          </h2>
+<p class="font-body-sm text-body-sm text-on-primary-container/85 leading-snug">
+            Overview, setup, API and reference pages. Every technical statement links to the lines it came from.
+          </p>
+</div>
+</div>
+<!-- Tile 02: Repo Map (Periwinkle Accent) -->
+<div class="relative bg-secondary-fixed-dim text-on-secondary-fixed p-8 rounded-2xl flex flex-col justify-between h-72 overflow-hidden shadow-lg transition-transform hover:-translate-y-1 duration-200">
+<div class="flex items-start justify-between">
+<span class="font-eyebrow-mono text-eyebrow-mono font-bold tracking-widest opacity-80">02</span>
+<!-- Network Visual Graphic -->
+<div class="relative w-14 h-12">
+<div class="w-4 h-4 rounded bg-on-secondary-fixed absolute top-0 left-0"></div>
+<div class="w-4 h-4 rounded bg-on-secondary-fixed absolute top-0 right-0"></div>
+<div class="w-4 h-4 rounded bg-on-secondary-fixed absolute bottom-0 right-0"></div>
+<div class="w-8 h-0.5 bg-on-secondary-fixed absolute top-2 left-3"></div>
+<div class="h-6 w-0.5 bg-on-secondary-fixed absolute top-3 right-2"></div>
+</div>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md font-semibold text-on-secondary-fixed mb-2">
+            Repo map
+          </h2>
+<p class="font-body-sm text-body-sm text-on-secondary-fixed/85 leading-snug">
+            An interactive map of pages, routes, handlers and tables, drawn from parsed code rather than guesses.
+          </p>
+</div>
+</div>
+<!-- Tile 03: Guided Tour (Amber Accent) -->
+<div class="relative bg-tertiary-fixed-dim text-on-tertiary-fixed p-8 rounded-2xl flex flex-col justify-between h-72 overflow-hidden shadow-lg transition-transform hover:-translate-y-1 duration-200">
+<div class="flex items-start justify-between">
+<span class="font-eyebrow-mono text-eyebrow-mono font-bold tracking-widest opacity-80">03</span>
+<!-- Mascot Character Avatar Icon & Trail -->
+<div class="flex items-center gap-1.5">
+<div class="w-6 border-b-2 border-dashed border-on-tertiary-fixed/60"></div>
+<div class="w-7 h-7 rounded-full bg-on-tertiary-fixed flex items-center justify-center gap-1">
+<span class="w-1 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+<span class="w-1 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+</div>
+</div>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md font-semibold text-on-tertiary-fixed mb-2">
+            Guided tour
+          </h2>
+<p class="font-body-sm text-body-sm text-on-tertiary-fixed/85 leading-snug">
+            A narrated walkthrough on the map with captions. Pause anywhere, open the code, keep going.
+          </p>
+</div>
+</div>
+</div>
+<!-- Bottom Section: "Your recent work" Dashboard Table -->
+<div class="flex flex-col mb-16">
+<!-- Table Header & Link -->
+<div class="flex items-center justify-between mb-6 pb-2">
+<h2 class="font-headline-md text-headline-md text-on-surface font-semibold tracking-tight">
+          Your recent work
+        </h2>
+<a class="flex items-center gap-1 text-primary hover:text-primary-fixed transition-colors font-body-sm text-body-sm" href="#">
+<span>View library</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+<!-- High-Precision Data Table Container -->
+<div class="w-full bg-surface-container-low rounded-2xl overflow-hidden shadow-xl">
+<!-- Table Column Titles -->
+<div class="grid grid-cols-12 px-6 py-3.5 bg-surface-container text-outline font-eyebrow-mono text-eyebrow-mono tracking-wider uppercase">
+<div class="col-span-3">Repository</div>
+<div class="col-span-2">Commit</div>
+<div class="col-span-2">Outputs</div>
+<div class="col-span-3">Review</div>
+<div class="col-span-2 text-right pr-2">Updated</div>
+</div>
+<!-- Row 1: habit-space -->
+<div class="grid grid-cols-12 px-6 py-4 items-center hover:bg-surface-container transition-colors group cursor-pointer">
+<div class="col-span-3 flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors">habit-space</span>
+</div>
+<div class="col-span-2 font-code-inline text-code-inline text-on-surface-variant">
+            main @ 9f2c1e4
+          </div>
+<div class="col-span-2 flex items-center gap-1.5">
+<span class="font-label-badge text-[10px] px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-medium">Docs</span>
+<span class="font-label-badge text-[10px] px-2 py-0.5 rounded-full bg-surface-container-high text-secondary-fixed font-medium">Map</span>
+<span class="font-label-badge text-[10px] px-2 py-0.5 rounded-full bg-surface-container-high text-tertiary-container font-medium">Tour</span>
+</div>
+<div class="col-span-3 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary-container shrink-0"></span>
+<span class="font-body-sm text-body-sm text-tertiary-container font-medium">3 open findings</span>
+</div>
+<div class="col-span-2 flex items-center justify-end gap-3 text-right">
+<span class="font-body-sm text-body-sm text-on-surface-variant">2 hours ago</span>
+<span class="material-symbols-outlined text-[16px] text-outline group-hover:text-on-surface group-hover:translate-x-0.5 transition-all">arrow_forward</span>
+</div>
+</div>
+<!-- Row 2: field-notes -->
+<div class="grid grid-cols-12 px-6 py-4 items-center hover:bg-surface-container transition-colors group cursor-pointer bg-surface-container-low/50">
+<div class="col-span-3 flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors">field-notes</span>
+</div>
+<div class="col-span-2 font-code-inline text-code-inline text-on-surface-variant">
+            main @ 41ab09d
+          </div>
+<div class="col-span-2 flex items-center gap-1.5">
+<span class="font-label-badge text-[10px] px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-medium">Docs</span>
+<span class="font-label-badge text-[10px] px-2 py-0.5 rounded-full bg-surface-container-high text-secondary-fixed font-medium">Map</span>
+</div>
+<div class="col-span-3 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-surface-tint shrink-0"></span>
+<span class="font-body-sm text-body-sm text-surface-tint font-medium">All findings resolved</span>
+</div>
+<div class="col-span-2 flex items-center justify-end gap-3 text-right">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Yesterday</span>
+<span class="material-symbols-outlined text-[16px] text-outline group-hover:text-on-surface group-hover:translate-x-0.5 transition-all">arrow_forward</span>
+</div>
+</div>
+<!-- Row 3: pantry-sync (Active Processing) -->
+<div class="grid grid-cols-12 px-6 py-4 items-center hover:bg-surface-container transition-colors group cursor-pointer">
+<div class="col-span-3 flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors">pantry-sync</span>
+</div>
+<div class="col-span-2 font-code-inline text-code-inline text-on-surface-variant">
+            dev @ 7c0d2aa
+          </div>
+<div class="col-span-2 flex items-center gap-2">
+<!-- Processing Progress Bar -->
+<div class="w-24 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+<div class="w-4/7 h-full bg-secondary rounded-full animate-pulse" style="width: 57%;"></div>
+</div>
+<span class="font-code-inline text-[11px] text-secondary font-medium">Writing pages</span>
+</div>
+<div class="col-span-3 flex items-center gap-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Generating, stage 4 of 7</span>
+</div>
+<div class="col-span-2 flex items-center justify-end gap-3 text-right">
+<span class="font-body-sm text-body-sm text-primary font-medium">Just now</span>
+<span class="material-symbols-outlined text-[16px] text-outline group-hover:text-on-surface group-hover:translate-x-0.5 transition-all">arrow_forward</span>
+</div>
+</div>
+</div>
+<!-- Footnote Disclaimer -->
+<div class="mt-4 px-2">
+<p class="font-body-sm text-[12px] text-outline">
+          Drafts are for human review. Repositories shown are illustrative samples.
+        </p>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Micro-interaction for audience selector
+  document.querySelectorAll('.inline-flex button').forEach(button => {
+    button.addEventListener('click', function() {
+      const parent = this.parentElement;
+      parent.querySelectorAll('button').forEach(btn => {
+        btn.classList.remove('bg-surface-container-high', 'text-primary', 'shadow-sm');
+        btn.classList.add('text-on-surface-variant');
+      });
+      this.classList.add('bg-surface-container-high', 'text-primary', 'shadow-sm');
+      this.classList.remove('text-on-surface-variant');
+    });
+  });
+</script></main></div></body></html>

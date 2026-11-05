@@ -1,0 +1,11 @@
+{
+  "schema_version": "snapshot/1",
+  "repo": { "owner": "acme", "name": "habit-tracker" },
+  "requested_ref": "demo-stale-readme",
+  "resolved_sha": "9f2c1e0000000000000000000000000000000000",
+  "files": [
+    { "path": "server/routes/users.js", "size": 1830, "sha256": "f41fe31b04449be20188b550a50aad0471e31060960b9e36e3d5294b21f609de", "status": "scanned" },
+    { "path": "client/public/logo.png", "size": 40211, "status": "skipped", "reason": "binary" }
+  ],
+  "limits_hit": []
+}

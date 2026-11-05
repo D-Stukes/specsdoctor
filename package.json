@@ -1,0 +1,16 @@
+{
+  "name": "docsync",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "contracts",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "test:contracts": "npm run test -w contracts",
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client"
+  }
+}
