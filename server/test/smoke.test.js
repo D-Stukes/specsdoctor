@@ -92,9 +92,14 @@ test("M3: a real run against a real repo produces a generated reference page wit
 
   const pagesRes = await fetch(`${baseUrl}/api/runs/${run_id}/pages`, { headers: { cookie: sessionCookie } });
   const { pages } = await pagesRes.json();
-  assert.ok(pages.length > 0, "expected at least one generated page");
+  // Task 4 added Architect pages (tech-stack, data-model, architecture,
+  // api-endpoints) alongside the module reference pages from Task 3 - for
+  // this tiny repo several of those are manifest/graph-derived prose with
+  // no source link, so check the module page specifically, not pages[0].
+  assert.ok(pages.some((p) => p.slug === "index"), "expected the index.js module reference page");
+  assert.ok(pages.some((p) => p.slug === "tech-stack"), "expected the Architect's tech-stack page");
 
-  const pageRes = await fetch(`${baseUrl}/api/runs/${run_id}/pages/${pages[0].slug}`, { headers: { cookie: sessionCookie } });
+  const pageRes = await fetch(`${baseUrl}/api/runs/${run_id}/pages/index`, { headers: { cookie: sessionCookie } });
   assert.equal(pageRes.status, 200);
   const page = await pageRes.json();
   assert.equal(page.status, "generated");
