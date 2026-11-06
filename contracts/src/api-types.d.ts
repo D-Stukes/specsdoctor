@@ -35,6 +35,7 @@ export interface RunListItem {
   created_at: string;
   cost_usd: number;
   open_findings: number;
+  duration_ms: number | null;
 }
 export interface GetRunsResponse {
   runs: RunListItem[];
@@ -59,6 +60,9 @@ export interface GetRunResponse {
   budget_cap_usd: number;
   coverage: Record<string, unknown> | null;
   failure: { code: string; detail: string } | null;
+  started_at: string | null;
+  finished_at: string | null;
+  duration_ms: number | null;
 }
 
 // GET /api/runs/:id/pages

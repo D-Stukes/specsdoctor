@@ -78,7 +78,7 @@ runsRouter.get("/runs/:id", async (req, res) => {
   const pool = getPool();
   const { rows } = await pool.query(
     `SELECT r.id, r.status, r.resolved_sha, r.cost_usd, r.budget_cap_usd, r.failure_code, r.failure_detail,
-            rp.owner, rp.name
+            r.started_at, r.finished_at, rp.owner, rp.name
      FROM runs r JOIN repos rp ON rp.id = r.repo_id
      WHERE r.id = $1`,
     [req.params.id]
@@ -111,6 +111,11 @@ runsRouter.get("/runs/:id", async (req, res) => {
     budget_cap_usd: Number(run.budget_cap_usd),
     coverage: artifactRows[0]?.coverage ?? null,
     failure: run.failure_code ? { code: run.failure_code, detail: run.failure_detail } : null,
+    started_at: run.started_at,
+    finished_at: run.finished_at,
+    // M4 "time ... measured": wall-clock duration once the run has a start
+    // and an end. null while still running/queued, or if it never started.
+    duration_ms: run.started_at && run.finished_at ? new Date(run.finished_at).getTime() - new Date(run.started_at).getTime() : null,
   });
 });
 
@@ -121,7 +126,7 @@ runsRouter.get("/runs", async (req, res) => {
   const before = req.query.before ? new Date(String(req.query.before)) : new Date();
 
   const { rows } = await pool.query(
-    `SELECT r.id, r.status, r.resolved_sha, r.cost_usd, r.created_at, rp.owner, rp.name
+    `SELECT r.id, r.status, r.resolved_sha, r.cost_usd, r.created_at, r.started_at, r.finished_at, rp.owner, rp.name
      FROM runs r JOIN repos rp ON rp.id = r.repo_id
      WHERE r.created_at < $1
      ORDER BY r.created_at DESC
@@ -138,6 +143,7 @@ runsRouter.get("/runs", async (req, res) => {
       created_at: r.created_at,
       cost_usd: Number(r.cost_usd),
       open_findings: 0,
+      duration_ms: r.started_at && r.finished_at ? new Date(r.finished_at).getTime() - new Date(r.started_at).getTime() : null,
     })),
   });
 });
