@@ -95,7 +95,9 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
   // AI, no fallback needed - they *are* the fallback, per §2); overview is
   // the one AI-narrative page in Task 4's scope and has no deterministic
   // substitute, so it's simply absent (not a degraded page) if it fails.
-  await startStage(runId, "architect", 4);
+  // 4 deterministic pages always, +1 (overview) only when there's at least
+  // one module summary to synthesize from - total isn't fixed up front.
+  await startStage(runId, "architect");
   const architectPages = [buildTechStackPage(index), buildDataModelPage(index), buildArchitecturePage(index), buildApiEndpointsPage(index)];
   let architectFailed = 0;
   try {
