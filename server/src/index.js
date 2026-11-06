@@ -7,6 +7,7 @@ import { sessionRouter } from "./routes/session.js";
 import { healthRouter } from "./routes/health.js";
 import { runsRouter } from "./routes/runs.js";
 import { requireSession } from "./auth.js";
+import { recoverInterruptedRuns, tryStartNext } from "./runner/queue.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -35,6 +36,16 @@ export function createApp() {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const port = process.env.PORT || 4000;
+  // §4a restart recovery: any run stuck 'running' from before this boot
+  // can't be resumed - mark it failed, then let the queue pick up whatever
+  // was still 'queued'.
+  recoverInterruptedRuns()
+    .then((recovered) => {
+      if (recovered.length > 0) console.log(`Recovered ${recovered.length} interrupted run(s): ${recovered.join(", ")}`);
+      return tryStartNext();
+    })
+    .catch((err) => console.error("startup recovery failed:", err));
+
   createApp().listen(port, () => {
     console.log(`DocSync server listening on ${port}`);
   });

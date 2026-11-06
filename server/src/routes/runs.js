@@ -2,15 +2,17 @@ import express from "express";
 import { getPool } from "../db/pool.js";
 import { parseRepoUrl } from "../repo-url.js";
 import { startRun } from "../runner/start-run.js";
-import { runPipeline } from "../runner/pipeline.js";
+import { tryStartNext } from "../runner/queue.js";
+import { QueueFullError, RateLimitedError } from "../runner/limits.js";
 
 export const runsRouter = express.Router();
 
 // POST /api/runs - start a run. Real Repo Reader + Scanner + Analyst +
-// Writer + Renderer (Task 1-3). AI_STUB_MODE defaults to true (canned
-// Analyst/Writer responses, zero cost) so this never spends money by
-// accident - set AI_STUB_MODE=false with a real ANTHROPIC_API_KEY to call
-// Claude for real. Architect and Verifier (Task 4-5) aren't built yet.
+// Writer + Renderer (Task 1-3), run through the queue (T04: active-run,
+// queue-size and runs-per-hour limits, §4a). AI_STUB_MODE defaults to true
+// (canned Analyst/Writer responses, zero cost) so this never spends money
+// by accident - set AI_STUB_MODE=false with a real ANTHROPIC_API_KEY to
+// call Claude for real. Architect and Verifier (Task 4-5) aren't built yet.
 runsRouter.post("/runs", async (req, res) => {
   const { repo_url, ref } = req.body ?? {};
   const parsed = parseRepoUrl(repo_url);
@@ -19,12 +21,21 @@ runsRouter.post("/runs", async (req, res) => {
   }
 
   const resolvedRef = ref ?? parsed.ref;
-  const { runId, duplicateOf } = await startRun({ owner: parsed.owner, name: parsed.name, ref: resolvedRef });
+  let runId, duplicateOf;
+  try {
+    ({ runId, duplicateOf } = await startRun({ owner: parsed.owner, name: parsed.name, ref: resolvedRef }));
+  } catch (err) {
+    if (err instanceof RateLimitedError) {
+      return res.status(429).json({ error: { code: "rate_limited", message: err.message } });
+    }
+    if (err instanceof QueueFullError) {
+      return res.status(503).json({ error: { code: "queue_full", message: err.message } });
+    }
+    throw err;
+  }
+
   if (!duplicateOf) {
-    const aiStub = process.env.AI_STUB_MODE !== "false";
-    runPipeline(runId, { owner: parsed.owner, name: parsed.name, ref: resolvedRef }, { aiStub }).catch((err) => {
-      console.error(`run ${runId} pipeline crashed:`, err);
-    });
+    tryStartNext().catch((err) => console.error("tryStartNext failed:", err));
   }
   res.status(202).json({ run_id: runId, status: "queued", duplicate_of: duplicateOf });
 });
