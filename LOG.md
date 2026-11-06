@@ -4,6 +4,33 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-06 — Task 4 started: Architect stage (T15) + run list (T14 partial)
+
+**Done**
+- **T15 Architect:** four pages built deterministically, unconditionally (not just as a fallback - §2 says these *are* the fallback): `tech-stack.md` (workspace scripts/deps as tables), `data-model.md` (real tables via `table_ref`), `architecture.md` (a Mermaid import graph from the parser's own edges), `api-endpoints.md` (every Express route via `endpoint_ref`, reusing the Writer's commit-pinned renderer). Plus one AI-narrative page, `overview.md` (Sonnet, synthesizing every module's summary) - same claim/symbol_id discipline as the Writer, no deterministic fallback defined for this one so it's simply absent if it fails, not degraded.
+- **T14 (partial):** a "Recent runs" list in the client (`GET /api/runs`), each entry reopens that run's progress + generated pages - the other half of M4 ("a full run ... is saved and can be reopened"), which previously only existed as an API with no UI.
+- User declined posting a GitHub issue to resolve the SpecsDoctor design-direction question with Diane for now ("no need, we can go ahead with the task") - still open, not blocking.
+
+**Bug found and fixed**
+- The Architect stage's `run_stages` row was initialized with a hardcoded `items_total` of 4, but it can produce 5 pages (the 4 deterministic ones plus `overview.md` when summaries exist) - showed as "DONE 5/4" in the UI. Fixed by leaving `items_total` unset for this stage, same as the other variable-count stages (reader, scanner).
+
+**Verification**
+- Unit tests for every deterministic Architect page (`server/test/architect-deterministic.test.js`): page/1-valid, real content from real index data, honest "none found" copy when a repo has nothing of that kind.
+- Real-repo checks: `expressjs/express`'s tech-stack table, Mermaid graph and endpoint links all verified correct; `jonschlinkert/is-number`'s Architecture page's Mermaid graph confirmed to match the repo's actual `require()` relationship.
+- Full browser walkthrough: run list → reopen a past (failed) run → back to list → start a fresh run → open a generated Architect page.
+- Full suite: 51/51 passing.
+
+**Not done**
+- Task 4's other narrative pages (getting-started, configuration, frontend) aren't built - `frontend.md` is gated behind Task 9 anyway, but getting-started/configuration are genuine gaps.
+- T14's sidebar-with-page-statuses and findings panel aren't built (findings need Task 5's Verifier, which doesn't exist).
+- M4's "time... measured" half isn't instrumented anywhere yet (cost is; wall-clock time per run isn't surfaced).
+- Still using real public repos as fellowship-repo stand-ins - PRD §8's repo choice is still open.
+
+**Next**
+- Finish Task 4 (remaining narrative pages, sidebar) or move to Task 5 (Verifier, repair loop, editing, findings).
+
+---
+
 ## 2026-11-06 — Repo merged into specsdoctor; finished T04
 
 **Repo**
