@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { sessionRouter } from "./routes/session.js";
 import { healthRouter } from "./routes/health.js";
 import { runsRouter } from "./routes/runs.js";
+import { findingsRouter } from "./routes/findings.js";
 import { requireSession } from "./auth.js";
 import { recoverInterruptedRuns, tryStartNext } from "./runner/queue.js";
 
@@ -22,6 +23,7 @@ export function createApp() {
 
   // Every other /api route needs the session cookie (SEC-8).
   app.use("/api", requireSession, runsRouter);
+  app.use("/api", requireSession, findingsRouter);
 
   const clientDist = path.join(__dirname, "..", "..", "client", "dist");
   if (existsSync(clientDist)) {
