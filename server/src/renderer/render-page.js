@@ -8,6 +8,12 @@ import { buildSourceLink } from "./source-link.js";
  * doesn't have (an id that doesn't resolve), the renderer's own evidence
  * for the Verifier (T13) to turn into review items.
  */
+function middlewareName(item, fallbackId) {
+  if (!item) return fallbackId;
+  if (item.name !== "default") return item.name;
+  return item.path.split("/").pop().replace(/\.[^.]+$/, ""); // anonymous default export: the file name identifies it
+}
+
 export function renderPage(page, index, repo) {
   const itemsById = new Map(index.items.map((i) => [i.id, i]));
   const envById = new Map(index.project.env_vars.map((e) => [e.id, e]));
@@ -78,7 +84,7 @@ function renderEndpointRef(endpointId, ctx) {
   const out = [`#### \`${item.method} ${item.path}\``, "", `[${item.declaration.path}:${item.declaration.start_line}](${link})`];
   if (!item.resolved) out.push("", "_Route prefix could not be fully resolved statically._");
   if (item.middleware.length) {
-    out.push("", `Middleware: ${item.middleware.map((m) => `\`${ctx.itemsById.get(m)?.name ?? m}\``).join(", ")}`);
+    out.push("", `Middleware: ${item.middleware.map((m) => `\`${middlewareName(ctx.itemsById.get(m), m)}\``).join(", ")}`);
   }
   const handlerName = item.handler.symbol_id ? ctx.itemsById.get(item.handler.symbol_id)?.name ?? item.handler.symbol_id : "(inline handler)";
   out.push("", `Handler: \`${handlerName}\``);

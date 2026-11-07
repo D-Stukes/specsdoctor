@@ -12,6 +12,7 @@ async function api(path, options) {
     const err = new Error(body?.error?.message ?? `Request to ${path} failed`);
     err.code = body?.error?.code;
     err.status = res.status;
+    if (res.status === 401 && path !== "/session") window.dispatchEvent(new Event("docsync:signed-out"));
     throw err;
   }
   return res.status === 204 ? null : res.json();
@@ -456,8 +457,24 @@ function RunProgress({ runId, onBackToList }) {
 
 export default function App() {
   const [signedIn, setSignedIn] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [runId, setRunId] = useState(null);
 
+  useEffect(() => {
+    // A reload keeps the session cookie; ask the server instead of assuming we're signed out.
+    api("/runs?limit=1")
+      .then(() => setSignedIn(true))
+      .catch(() => {})
+      .finally(() => setChecking(false));
+    const onSignedOut = () => {
+      setSignedIn(false);
+      setRunId(null);
+    };
+    window.addEventListener("docsync:signed-out", onSignedOut);
+    return () => window.removeEventListener("docsync:signed-out", onSignedOut);
+  }, []);
+
+  if (checking) return null;
   if (!signedIn) return <AccessCodeForm onSignedIn={() => setSignedIn(true)} />;
   if (!runId) return <RepoForm onRunStarted={setRunId} onOpenRun={setRunId} />;
   return <RunProgress runId={runId} onBackToList={() => setRunId(null)} />;
