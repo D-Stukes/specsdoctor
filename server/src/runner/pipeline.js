@@ -1,4 +1,7 @@
 import { forEachConcurrent, AI_CONCURRENCY } from "./concurrency.js";
+import { buildGraph } from "../graph/build-graph.js";
+import { makeGraphGroups } from "../stages/grouper.js";
+import { saveGraphGroups } from "../db/load-graph.js";
 import { getPool } from "../db/pool.js";
 import { fetchRepo } from "../reader/fetch-repo.js";
 import { scan } from "../scanner/index.js";
@@ -125,6 +128,20 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
     await recordEvent(runId, "architect", "error", "page_generation_failed", { slug: "overview", message: err.message });
   }
   await finishStage(runId, "architect", architectFailed === 0 ? "done" : "partial", { itemsDone: architectPages.length, itemsFailed: architectFailed });
+
+  // Repo map areas: one cheap model call, folder grouping if it can't help. Never fails the run.
+  try {
+    const grouping = await makeGraphGroups({
+      runId,
+      graph: buildGraph(index),
+      summaries: [...summaries.entries()].map(([modulePath, summary]) => ({ module_path: modulePath, summary })),
+      budgetManager,
+      stub: aiStub,
+    });
+    await saveGraphGroups(runId, grouping);
+  } catch (err) {
+    await recordEvent(runId, "architect", "warn", "graph_groups_failed", { message: err.message });
+  }
 
   await startStage(runId, "writer", modules.length);
   await startStage(runId, "render", modules.length + architectPages.length);

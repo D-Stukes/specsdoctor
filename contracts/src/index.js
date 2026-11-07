@@ -14,6 +14,7 @@ const SCHEMA_FILES = {
   "page/1": "page.schema.json",
   "verify/1": "verify.schema.json",
   "graph/1": "graph.schema.json",
+  "graph-groups/1": "graph-groups.schema.json",
 };
 
 function loadSchema(file) {

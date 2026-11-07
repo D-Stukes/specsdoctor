@@ -1,0 +1,66 @@
+{
+  "date": "2026-11-07T18:59:29.805Z",
+  "total_cap_usd": 4,
+  "spent_usd": 0.0273,
+  "models": "see src/ai/models.js",
+  "results": [
+    {
+      "url": "https://github.com/AndrewJBateman/pern-stack-auth",
+      "run_id": "c37cab37-59ee-42d1-b202-c4c3c87a2373",
+      "status": "complete",
+      "resolved_sha": "071db2eb4a0eea033660a87fffeb08e705f89745",
+      "duration_s": 32.3,
+      "cost_usd": 0.0273,
+      "budget_cap_usd": 0.75,
+      "coverage": {
+        "files": {
+          "failed": 0,
+          "scanned": 19,
+          "skipped": 1,
+          "unsupported": 14
+        },
+        "flagged_patterns": []
+      },
+      "failed_stages": [],
+      "pages": [
+        "api-endpoints:generated",
+        "architecture:generated",
+        "client-src-App:generated",
+        "client-src-components-dashboard-Dashboard:generated",
+        "client-src-components-dashboard-todolist-EditTodo:generated",
+        "client-src-components-dashboard-todolist-InputTodo:generated",
+        "client-src-components-dashboard-todolist-ListTodos:generated",
+        "client-src-components-Landing:generated",
+        "client-src-components-Login:generated",
+        "client-src-components-Register:generated",
+        "configuration:generated",
+        "data-model:generated",
+        "getting-started:generated",
+        "overview:generated",
+        "server-db:generated",
+        "server-middleware-authorize:generated",
+        "server-middleware-validInfo:generated",
+        "server-utils-jwtGenerator:generated",
+        "tech-stack:generated"
+      ],
+      "page_count": 19,
+      "findings": [],
+      "model_calls": [
+        {
+          "model": "claude-haiku-5-5",
+          "calls": 25,
+          "input_tokens": 56397,
+          "output_tokens": 12860,
+          "failed": 0
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "calls": 1,
+          "input_tokens": 3771,
+          "output_tokens": 770,
+          "failed": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docsync.dev/schemas/graph-groups/1",
+  "title": "Repo map areas",
+  "description": "Grouper output (Technical Design SS4f): named areas and which graph nodes belong to each. The validator rejects any member id that is not a node in the graph.",
+  "type": "object",
+  "required": ["schema_version", "groups"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "graph-groups/1" },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "summary", "members"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "summary": { "type": "string" },
+          "members": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}
