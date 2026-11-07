@@ -6,7 +6,7 @@ import { createApp } from "../src/index.js";
 
 process.env.SESSION_SECRET ??= "test-secret";
 process.env.ACCESS_CODE ??= "test-code";
-process.env.DATABASE_URL ??= "postgres://localhost:5432/docsync_dev";
+process.env.DATABASE_URL ??= "postgres://localhost:5432/docsync_test";
 
 let server;
 let baseUrl;
