@@ -17,6 +17,14 @@ const { rowCount } = await admin.query("SELECT 1 FROM pg_database WHERE datname 
 if (rowCount === 0) await admin.query(`CREATE DATABASE ${dbName}`);
 await admin.end();
 
+// Start every invocation from empty run data: leftover runs from the last invocation would count
+// against the runs-per-hour limit and break the first test that starts a run.
+const testDb = new pg.Client({ connectionString: testUrl });
+await testDb.connect();
+const { rows: tables } = await testDb.query("SELECT to_regclass('public.runs') AS runs");
+if (tables[0].runs) await testDb.query("TRUNCATE runs, repos CASCADE");
+await testDb.end();
+
 const result = spawnSync(process.execPath, ["--test", "--test-timeout=120000", ...process.argv.slice(2)], {
   stdio: "inherit",
   env: { ...process.env, DATABASE_URL: testUrl },

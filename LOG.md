@@ -4,6 +4,43 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-07 — Hardening pass: everything left open, checked and fixed
+
+**Fixed**
+- **Tests no longer touch dev data.** `npm test` now runs `scripts/run-tests.mjs`: its own `docsync_test` database (created on first use, truncated at the start of each run, refuses to run against `docsync_dev`). The old suite wiped saved runs from the dev database; that is how earlier real runs kept disappearing.
+- **Reload logged you out.** The app now asks the server on load whether the session cookie is still valid, and any 401 sends you back to the login screen. Verified in the browser (reload stays signed in).
+- **Findings were invisible in the UI.** The backend flagged things but the client had no way to see or resolve them. New "Needs review (N)" panel on the run screen and per page, a "N to review" badge on page rows, and three resolutions (fixed it / not an issue / keep, still unsure) that require a note. Verified in the browser: edit a page to add `ghost.thing()`, finding appears, resolve, saved as `dismissed` with the note.
+- **API page showed raw ids for middleware** (`sym:...#default`); now `authorize`.
+- **Stage failures had no message** in `run_stages`; the first error text is now kept for Analyst and Writer.
+- **False alarms:** `req.user` (member of a real parameter) and bare method names like `close()` (method items are stored as `Class.method`) are no longer flagged. Confirmed `close()` was a real method of the Amazon repo's pool class.
+- **Malformed model output (new, found in a timed run):** 1 of 6 real runs returned an overview page that broke the `page/1` contract, so the overview was dropped and the run finished `complete_with_errors`. Analyst, Writer and Architect now retry once when the answer fails schema validation (`ai/call-validated.js`, as §4a intended); each attempt reserves and records its own cost.
+- **GitHub rate limit gives a clear error.** The server calls api.github.com unauthenticated (60 requests an hour, 2 per run), which I exhausted during this pass. A bare "403" now reads "GitHub's request limit for this server is used up; it resets in about N minute(s). Set GITHUB_TOKEN to raise the limit." **A deployed instance needs `GITHUB_TOKEN` set.**
+- Tests that need live GitHub now skip with the reason shown instead of failing when the limit is exhausted.
+
+**Checked**
+- **Real-run export:** a real (non-stub) run exports a 21-file ZIP that passes `mkdocs build --strict`; provenance counts match the database (19 pages, 1 warning); the export links in the browser return valid ZIPs (with and without `review.md`).
+- **Map at 330 nodes (synthetic graph):** auto-collapses to 8 areas above 300; expanded, zoom/pan steps averaged 5.5 ms (95th percentile 12.3 ms, max 17.3 ms); the first expand takes about a second. Phone width (375 px): toolbar wraps, minimap hidden below 720 px.
+- **EV-2, 3 clean runs per repo, real API, current models** (`docs/evaluation/ev2-2026-11-07-1794079227819.json`):
+
+| Repo | Median time | Median cost | Findings per run |
+| --- | --- | --- | --- |
+| Amazon-Clone-PERN-stack (44 files scanned) | 67.1 s | $0.0569 | 0, 0, 0 |
+| pern-stack-auth (19 files scanned) | 29.9 s | $0.0286 | 0, 0, 0 |
+
+Both well inside the targets (under 3 minutes, under $2). One of the six runs was `complete_with_errors` (the overview issue above, now retried). Total evaluation spend so far about $0.65 of the $4 cap.
+- **AT-6 (false alarms):** 0 per run on both repos after the fixes (target 5 or fewer).
+- **Suite:** 130/130 passed before the GitHub limit ran out; afterwards 127 pass, 5 skipped (the live-GitHub ones), 0 fail. Those 5 need a re-run once the limit resets or with `GITHUB_TOKEN`.
+
+**New**
+- `scripts/eval-summary.mjs` (medians per repo) and `scripts/sample-claims.mjs` (EV-1 draw: 10 statements per page type from the latest real runs, written to a rating sheet with two rater columns). First sheet: `docs/evaluation/ev1-sample-2026-11-07-seed1.csv`, 46 statements; the architecture type only had 6 available across two small repos, so a third repo is needed to fill the 50.
+
+**Still open**
+- EV-1 (the two authors rating the 50 statements), EV-3 (a classmate follows `getting-started.md`), EV-4 (stopwatch), AT-1 recall inventories for the evaluation repos: all need people.
+- Layout positions are still recomputed in the browser; AI node labels not done; guided tour (Task 11) and add-ons 7, 8, 9, 12 not started; Task 6's T25 demo assets not started.
+- The wrong-access-code error message was not re-checked in the browser this pass (an old session cookie was still valid); it is covered by the automated test.
+
+---
+
 ## 2026-11-07 — Task 10 finished: AI areas, collapse, graph.json export
 
 **Done**
