@@ -165,3 +165,15 @@ test("backticked file names are not flagged as unknown symbols, but unknown call
   const texts = scanRenderedPageForUnknownMentions(md, index).map((m) => m.text);
   assert.deepEqual(texts, ["fakeThing.run()", "fakeThing.size"]);
 });
+
+test("a member of a real parameter (req.user) is not an unknown symbol, a member of an invented name still is", () => {
+  const idx = { ...index, items: [...index.items, { id: "sym:h.js#handler", kind: "function", name: "handler", path: "h.js", start_line: 1, end_line: 2, signature: "handler(req, res)", params: [{ name: "req", type: null }, { name: "res", type: null }] }] };
+  const texts = scanRenderedPageForUnknownMentions("It sets `req.user` and calls `res.json()` but never `ghost.user`.", idx).map((m) => m.text);
+  assert.deepEqual(texts, ["ghost.user"]);
+});
+
+test("a class method mentioned by its bare name (close()) is known; an invented bare call is not", () => {
+  const idx = { ...index, items: [...index.items, { id: "sym:p.js#Pool.close", kind: "method", name: "Pool.close", path: "p.js", start_line: 5, end_line: 7, signature: "close()", params: [] }] };
+  const texts = scanRenderedPageForUnknownMentions("Call `close()` to end it, not `shutdown()`.", idx).map((m) => m.text);
+  assert.deepEqual(texts, ["shutdown()"]);
+});
