@@ -410,6 +410,18 @@ function RunProgress({ runId, onBackToList }) {
                 ))}
               </div>
             )}
+
+            {(run.status === "complete" || run.status === "complete_with_errors") && pages.length > 0 && (
+              <div className="page-list">
+                <h2>Export</h2>
+                <a className="page-link" href={`/api/runs/${runId}/export.zip`} download>
+                  Download docs (.zip)
+                </a>
+                <a className="page-link" href={`/api/runs/${runId}/export.zip?include_review=true`} download>
+                  Download docs + review.md (.zip)
+                </a>
+              </div>
+            )}
           </>
         )}
       </div>
