@@ -1,4 +1,5 @@
 import MapView from "./MapView.jsx";
+import FindingsList from "./Findings.jsx";
 import React, { useEffect, useRef, useState } from "react";
 import "./theme.css";
 
@@ -298,6 +299,7 @@ function PageViewer({ runId, slug, onBack }) {
               </>
             ) : (
               <>
+                <FindingsList runId={runId} pageSlug={slug} refreshKey={page.rev} />
                 <pre style={{ whiteSpace: "pre-wrap", fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--text)", lineHeight: 1.6 }}>
                   {page.markdown || "(this page has been emptied)"}
                 </pre>
@@ -345,6 +347,19 @@ function RunProgress({ runId, onBackToList }) {
     poll();
     return () => clearTimeout(timerRef.current);
   }, [runId]);
+
+  async function refreshPages() {
+    try {
+      setPages((await api(`/runs/${runId}/pages`)).pages);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  // Coming back from a page (where an edit may have added findings) or resolving one: refresh counts.
+  useEffect(() => {
+    if (!openSlug && run && !["queued", "running"].includes(run.status)) refreshPages();
+  }, [openSlug]);
 
   async function openMap() {
     setError(null);
@@ -415,6 +430,8 @@ function RunProgress({ runId, onBackToList }) {
 
             {run.failure && <p className="error-text">{run.failure.code}: {run.failure.detail}</p>}
 
+            <FindingsList runId={runId} onOpenPage={setOpenSlug} onChanged={refreshPages} refreshKey={pages.map((p) => p.open_findings).join(",")} />
+
             {pages.length > 0 && (
               <div className="page-list">
                 <h2>Generated pages</h2>
@@ -423,6 +440,7 @@ function RunProgress({ runId, onBackToList }) {
                     <span className={`dot ${PAGE_STATUS_DOT[p.status] ?? "dot-pending"}`} style={{ marginRight: "0.5rem" }} />
                     {p.title}
                     <span className="stage-status" style={{ marginLeft: "0.5rem" }}>{p.status.replace(/_/g, " ")}</span>
+                    {p.open_findings > 0 && <span className="finding-badge">{p.open_findings} to review</span>}
                   </a>
                 ))}
               </div>
