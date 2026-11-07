@@ -1,3 +1,4 @@
+import MapView from "./MapView.jsx";
 import React, { useEffect, useRef, useState } from "react";
 import "./theme.css";
 
@@ -321,6 +322,8 @@ function RunProgress({ runId, onBackToList }) {
   const [pages, setPages] = useState([]);
   const [error, setError] = useState(null);
   const [openSlug, setOpenSlug] = useState(null);
+  const [graph, setGraph] = useState(null);
+  const [showMap, setShowMap] = useState(false);
   const timerRef = useRef(null);
 
   useEffect(() => {
@@ -342,7 +345,20 @@ function RunProgress({ runId, onBackToList }) {
     return () => clearTimeout(timerRef.current);
   }, [runId]);
 
+  async function openMap() {
+    setError(null);
+    try {
+      setGraph(await api(`/runs/${runId}/graph`));
+      setShowMap(true);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   if (openSlug) return <PageViewer runId={runId} slug={openSlug} onBack={() => setOpenSlug(null)} />;
+  if (showMap && graph) {
+    return <MapView runId={runId} graph={graph} onBack={() => setShowMap(false)} onOpenPage={(slug) => { setShowMap(false); setOpenSlug(slug); }} />;
+  }
 
   return (
     <div className="shell">
@@ -408,6 +424,15 @@ function RunProgress({ runId, onBackToList }) {
                     <span className="stage-status" style={{ marginLeft: "0.5rem" }}>{p.status.replace(/_/g, " ")}</span>
                   </a>
                 ))}
+              </div>
+            )}
+
+            {(run.status === "complete" || run.status === "complete_with_errors") && (
+              <div className="page-list">
+                <h2>Repo map</h2>
+                <a className="page-link" href="#" onClick={(e) => { e.preventDefault(); openMap(); }}>
+                  Open the interactive map
+                </a>
               </div>
             )}
 

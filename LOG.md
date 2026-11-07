@@ -4,6 +4,24 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-07 — Task 10: the repo map UI (T28) + two Scanner/graph bugs it exposed
+
+**Done**
+- **Map screen** (`client/src/MapView.jsx`, React Flow + ELK.js, opened from "Repo map" on a finished run). Layered left-to-right layout (frontend, routes, middleware, handlers, database). Three views: **Architecture**, **Request trace** (pick an endpoint: who calls it, its middleware and handler, which tables it touches), **Dependencies** (file imports and router mounts). Search dims non-matching nodes, minimap, zoom controls, and a **node drawer** with kind, id, every connection with its source file and line, an "inferred" badge on string-matched edges (also dashed on the canvas), and "Open doc page". Verified in the in-app browser on a real stub-mode run of `pern-stack-auth`: all three views, search, drawer, doc-page link, and the minimap, no console errors. New deps: `@xyflow/react`, `elkjs`.
+- **Bug 1 (graph builder):** SQL inside an endpoint's own inline handler is now attached to that endpoint (by line range), not to its file, so the trace view shows the right tables per endpoint.
+- **Bug 2 (Scanner, affects the docs themselves, not just the map):** `const authorize = require("../middleware/authorize")` produced a middleware reference `...authorize.js#authorize`, but the Scanner stores that module's export as `...#default`. The reference pointed at an item that doesn't exist, so the API-endpoints page printed a dead symbol id and the map silently dropped the middleware node. References now resolve to the real item. Anonymous default exports are labelled by file name on the map (`authorize()` rather than `default()`).
+- Tests: 111/111 (new: middleware reference, graph attribution/labels).
+
+**Checked, not measured**
+- ELK lays out 320 nodes and 448 edges in about 165 ms; canvas rendering is limited to visible elements. The "300-node fixture pans without visible lag" target has not been tried in a browser, only the layout cost.
+
+**Not done**
+- No AI area grouping or one-line labels, no collapsed areas above 300 nodes, no saved layout positions (layout is computed in the browser each time), no `graph.json` in the export ZIP, no keyboard navigation of the canvas, mobile layout only lightly styled and not tested on a phone-width screen.
+- The API-endpoints page still prints raw symbol ids like `sym:server/middleware/authorize.js#default` for middleware; a readable name would be better (docs-quality issue, not fixed).
+- The login screen is shown again after a page reload (auth state isn't restored from the cookie); pre-existing, not touched.
+
+---
+
 ## 2026-11-07 — Task 10: inferred edges (T26) and an endpoint-path bug found with them
 
 **Done**
