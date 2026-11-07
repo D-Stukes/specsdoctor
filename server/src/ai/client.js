@@ -9,7 +9,7 @@ import { toModelSchema } from "./model-schema.js";
 // in model_calls and release/commit the budget reservation precisely.
 let anthropicClient;
 function getClient() {
-  if (!anthropicClient) anthropicClient = new Anthropic({ maxRetries: 0 });
+  if (!anthropicClient) anthropicClient = new Anthropic({ maxRetries: 0, timeout: 60_000 });
   return anthropicClient;
 }
 

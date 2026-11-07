@@ -159,3 +159,9 @@ test("scanRenderedPageForUnknownMentions ignores anything inside a fenced code b
   const mentions = scanRenderedPageForUnknownMentions(markdown, index);
   assert.equal(mentions.length, 0);
 });
+
+test("backticked file names are not flagged as unknown symbols, but unknown calls still are", () => {
+  const md = "Run `npm start` after editing `package.json`, `server.js` and `.env.example`; `fakeThing.run()` and `fakeThing.size` are not real.";
+  const texts = scanRenderedPageForUnknownMentions(md, index).map((m) => m.text);
+  assert.deepEqual(texts, ["fakeThing.run()", "fakeThing.size"]);
+});

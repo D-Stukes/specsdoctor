@@ -44,3 +44,8 @@ test("semicolons inside strings, comments and dollar quotes don't split statemen
   assert.deepEqual(tables.map((t) => t.id), ["tbl:t", "tbl:u"]);
   assert.deepEqual(flaggedPatterns, []);
 });
+
+test("a table-level PRIMARY KEY (a, b) makes those columns non-nullable", () => {
+  const { tables } = parseSqlTables("x.sql", "CREATE TABLE t (a int, b int, c int, PRIMARY KEY (a, b));");
+  assert.deepEqual(tables[0].columns.map((c) => [c.name, c.nullable]), [["a", false], ["b", false], ["c", true]]);
+});

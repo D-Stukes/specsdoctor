@@ -4,6 +4,23 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-07 — Table-level primary keys, file-name false positive, model-call timeout
+
+**Done**
+- **Table-level `PRIMARY KEY (a, b)`** now marks those columns non-nullable on the data-model page (was only reading inline column constraints). Verified on a real run: `users.user_id` shows Nullable "no"; `todos.user_id` (a plain foreign key) stays "yes", which is correct.
+- **Verifier false positive:** a backticked bare file name (`package.json`, `server.js`, extensions like json/js/md/yml/sql/env, or any file name present in the index) is no longer an "unknown symbol". Calls like `fakeThing.run()` are still flagged. Verified on a real run: the `package.json` finding is gone; the one remaining finding is `close()` on the Amazon repo's pool page.
+- **Model-call timeout:** `callStructured`'s client now times out at 60 s (`timeout: 60_000`), so a hung request is retried once by the existing retry instead of sitting for the SDK's 10-minute default.
+
+**Evaluation note: the timings from this verification run are not valid**
+- The network to the Anthropic API was flaky during these runs ("Request timed out", "Connection error", one `ECONNRESET` that killed an earlier attempt). The runs took 965 s and 1076 s, and `pern-stack-auth` finished `complete_with_errors` because some Analyst calls failed twice. Cost was unaffected ($0.0559 / $0.0227). The valid timing numbers remain the previous pass (61 s and 25 s). The JSON from this run is kept in `docs/evaluation/` for the record only.
+- A reminder from this session: running the full `npm test` deletes rows from the shared dev database (`queue.test.js` cleanup), including saved evaluation runs. Re-scan checks against stored runs must be done before running the suite.
+
+**Still open**
+- `close()` on the Amazon pool page is flagged; not yet checked whether it is a genuine unknown or a false positive.
+- EV-2 still needs 3 clean timed runs per repo for the median; EV-1, EV-3, EV-4 and AT-1 inventories need people.
+
+---
+
 ## 2026-11-07 — T24 follow-up: SQL parsing and concurrency fixes
 
 **Done**

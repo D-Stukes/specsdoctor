@@ -81,8 +81,13 @@ function computeCoverage(page, renderWarnings) {
  * identifiers shaped like a call or member access that don't match a real
  * item name, a JS/Node builtin, or a declared dependency.
  */
+const FILE_EXTENSIONS = new Set(["json", "js", "jsx", "mjs", "cjs", "ts", "tsx", "md", "yml", "yaml", "sql", "env", "toml", "lock", "html", "css", "txt", "sh", "prisma"]);
+
 function scanUnknownMentions(markdown, index, dependencyNames) {
   const knownNames = new Set(index.items.map((i) => i.name));
+  // Backticked file names (package.json, server.js) look like member access;
+  // a bare name.ext whose extension is a file type is a file mention, not a symbol.
+  const knownFileNames = new Set(index.items.flatMap((i) => [i.path, i.declaration?.path].filter(Boolean).map((p) => p.split("/").pop())));
   const withoutFencedBlocks = markdown.replace(/```[\s\S]*?```/g, "");
   const inlineCodeRegex = /`([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?\(\)|[A-Za-z_$][\w$]*\.[A-Za-z_$][\w$]*)`/g;
 
@@ -92,6 +97,7 @@ function scanUnknownMentions(markdown, index, dependencyNames) {
   while ((match = inlineCodeRegex.exec(withoutFencedBlocks))) {
     const text = match[1];
     const baseName = text.replace(/\(\)$/, "").split(".")[0];
+    if (!text.endsWith("()") && (FILE_EXTENSIONS.has(text.split(".").pop().toLowerCase()) || knownFileNames.has(text))) continue;
     if (knownNames.has(baseName) || JS_GLOBALS.has(baseName) || NODE_CORE_MODULES.has(baseName) || dependencyNames.has(baseName)) continue;
     mentions.push({ text, block: position });
     position += 1;
