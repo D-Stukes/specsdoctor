@@ -186,3 +186,38 @@ test("AT-13: editing, reviewing and resolving findings on a saved run", async ()
     assert.equal(resolved.resolution_note, "fixed it");
   }
 });
+
+// AT-14: export ZIP has the mkdocs skeleton, provenance, no word "verified"
+// as a claim, and review.md only when asked for.
+test("AT-14: export ZIP contents", async () => {
+  const { execFileSync } = await import("node:child_process");
+  const { mkdtempSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+
+  const notReady = await fetch(`${baseUrl}/api/runs/00000000-0000-0000-0000-000000000000/export.zip`, { headers: { cookie: sessionCookie } });
+  assert.equal(notReady.status, 404);
+
+  const dir = mkdtempSync(join(tmpdir(), "docsync-export-"));
+  async function fetchZip(query) {
+    const res = await fetch(`${baseUrl}/api/runs/${m3RunId}/export.zip${query}`, { headers: { cookie: sessionCookie } });
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("content-type"), "application/zip");
+    const file = join(dir, `export${query ? "-review" : ""}.zip`);
+    writeFileSync(file, Buffer.from(await res.arrayBuffer()));
+    return file;
+  }
+  const list = (file) => execFileSync("unzip", ["-Z1", file]).toString().split("\n").filter(Boolean);
+
+  const plain = list(await fetchZip(""));
+  for (const name of ["mkdocs.yml", "README.md", "docs/provenance.md"]) assert.ok(plain.includes(name), `missing ${name}`);
+  assert.ok(plain.some((n) => n.startsWith("docs/") && n !== "docs/provenance.md"), "expected at least one page");
+  assert.ok(!plain.includes("docs/review.md"), "review.md only with include_review");
+
+  const withReview = list(await fetchZip("?include_review=true"));
+  assert.ok(withReview.includes("docs/review.md"));
+
+  const prov = execFileSync("unzip", ["-p", join(dir, "export.zip"), "docs/provenance.md"]).toString();
+  assert.match(prov, /Resolved commit/);
+  assert.ok(!/verified spec[^.]*\./.test(prov.replace("not a verified spec", "")), "must not claim verified");
+});
