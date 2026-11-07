@@ -212,10 +212,51 @@ const PAGE_STATUS_DOT = {
 
 function PageViewer({ runId, slug, onBack }) {
   const [page, setPage] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    const data = await api(`/runs/${runId}/pages/${slug}`);
+    setPage(data);
+    setDraft(data.markdown);
+  }
 
   useEffect(() => {
-    api(`/runs/${runId}/pages/${slug}`).then(setPage);
+    load();
   }, [runId, slug]);
+
+  async function handleSave() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/runs/${runId}/pages/${slug}`, { method: "PUT", body: JSON.stringify({ base_rev: page.rev, markdown: draft }) });
+      await load();
+      setEditing(false);
+    } catch (err) {
+      if (err.status === 409) {
+        setError("Someone else saved a newer revision - reload before editing again.");
+      } else {
+        setError(err.message);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleReview() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/runs/${runId}/pages/${slug}/review`, { method: "POST", body: JSON.stringify({ rev: page.rev, note: "" }) });
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="shell">
@@ -229,9 +270,46 @@ function PageViewer({ runId, slug, onBack }) {
         {!page ? (
           <p className="lede">Loading…</p>
         ) : (
-          <pre style={{ whiteSpace: "pre-wrap", fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--text)", lineHeight: 1.6 }}>
-            {page.markdown}
-          </pre>
+          <>
+            <div className="status-pill">
+              <span className={`dot ${page.checks.fresh ? "dot-done" : "dot-pending"}`} />
+              rev {page.rev} · {page.origin} · {page.checks.fresh ? "checks fresh" : "checks stale"}
+              {page.reviewed_at && " · reviewed"}
+            </div>
+            {error && <p className="error-text">{error}</p>}
+            {editing ? (
+              <>
+                <textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  rows={16}
+                  style={{ width: "100%", background: "var(--surface-raised)", color: "var(--text)", fontFamily: "var(--font-mono)", fontSize: 12.5, border: "1px solid var(--hairline-hover)", borderRadius: 10, padding: "0.75rem" }}
+                />
+                <div className="write-for" style={{ marginTop: "0.75rem" }}>
+                  <button type="button" className="btn-primary" style={{ width: "auto" }} disabled={busy} onClick={handleSave}>
+                    {busy ? "Saving…" : "Save"}
+                  </button>
+                  <button type="button" onClick={() => { setDraft(page.markdown); setEditing(false); }}>
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <pre style={{ whiteSpace: "pre-wrap", fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--text)", lineHeight: 1.6 }}>
+                  {page.markdown || "(this page has been emptied)"}
+                </pre>
+                <div className="write-for">
+                  <button type="button" className="btn-primary" style={{ width: "auto" }} onClick={() => setEditing(true)}>
+                    Edit
+                  </button>
+                  <button type="button" disabled={busy || Boolean(page.reviewed_at)} onClick={handleReview}>
+                    {page.reviewed_at ? "Reviewed" : busy ? "Marking…" : "Mark reviewed"}
+                  </button>
+                </div>
+              </>
+            )}
+          </>
         )}
       </div>
     </div>
