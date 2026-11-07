@@ -2,7 +2,7 @@ import { getPool } from "../db/pool.js";
 import { MODELS } from "../ai/models.js";
 import { getLimits, QueueFullError, RateLimitedError } from "./limits.js";
 
-const DEFAULT_BUDGET_CAP_USD = 1.5; // §4a
+const DEFAULT_BUDGET_CAP_USD = Number(process.env.RUN_BUDGET_CAP_USD) || 1.5; // §4a; env override for evaluation runs
 
 /**
  * Creates (or returns the existing) run row for owner/name/ref as 'queued'.

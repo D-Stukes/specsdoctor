@@ -4,6 +4,33 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-07 — T24 first evaluation pass (EV-2, partial)
+
+**Setup**
+- Test repos are public stand-ins (the fellowship repos weren't named): `wasim15185/Amazon-Clone-PERN-stack` (44 files scanned, routes split across files, knex migrations) and `AndrewJBateman/pern-stack-auth` (19 scanned, one SQL schema file). Real API, models per `ai/models.js`, per-run cap $0.75 (`RUN_BUDGET_CAP_USD`, new env override), total evaluation cap $4. Runner: `server/scripts/eval-runs.mjs`; raw results in `docs/evaluation/`.
+
+**Results (one run each, not the required 3)**
+
+| Repo | Status | Time | Cost | Pages | Model calls | Findings |
+| --- | --- | --- | --- | --- | --- | --- |
+| Amazon-Clone-PERN-stack | complete | 196 s | $0.0564 | 42 | 70 Haiku + 1 Sonnet | 2 |
+| pern-stack-auth | complete | 66 s | $0.0260 | 19 | 24 Haiku + 1 Sonnet | 0 |
+
+Total spend $0.0824 of the $4 cap. Cost is far under the $2/run target.
+
+**Findings**
+- **Time target missed on the larger repo:** 196 s vs under 3 minutes. Every Analyst/Writer call runs one after another (~2.7 s each); running them a few at a time would fix it. The budget manager is already built for concurrent reservations (AT-9).
+- **SQL schema lost on `pern-stack-auth`:** the Scanner flagged `sql_parse_error` and the data-model page says "No SQL CREATE TABLE ... were found", although `server/database.sql` has two plain tables. Likely the file's `CREATE DATABASE` line or psql-only syntax makes `pgsql-ast-parser` reject the whole file. Parsing statement by statement would keep the tables. The coverage report does flag the failure; the page text is misleading.
+- **knex migrations not parsed** (flagged `knex_migration`, matches the support matrix, so expected).
+- **Per-file pages for React components** produce 30+ pages on the Amazon repo; fine for completeness but noisy.
+- **Duplicate pages** from the repo's own copies (`server/migrations` and `server/database/migrations`).
+- AT-6: 2 unknown-mention warnings on one run, 0 on the other (target 5 or fewer). One is the known `package.json` false positive.
+
+**Not done**
+- EV-1 accuracy sample, EV-3 newcomer test, EV-4 stopwatch, AT-1 recall inventories (all need people), the other 2 runs per repo for the median, and a write-up for the fellowship repos.
+
+---
+
 ## 2026-11-07 — First real-API run (AI_STUB_MODE=false)
 
 **Done**
