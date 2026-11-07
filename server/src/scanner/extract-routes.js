@@ -26,6 +26,16 @@ export function extractRoutes(ast) {
   const mounts = []; // { ownerVar, prefixLiteral, prefixResolved, targetIdentifier, line }
   const flaggedPatterns = [];
 
+  // `app.use("/x", require("./routes/x"))`: the router is loaded inline, with no
+  // variable. Give it a synthetic binding so mount resolution treats it like
+  // `const x = require("./routes/x"); app.use("/x", x)`.
+  function inlineRequireBinding(node, line) {
+    if (node?.type !== "CallExpression" || node.callee.type !== "Identifier" || node.callee.name !== "require" || node.arguments[0]?.type !== "StringLiteral") return null;
+    const name = `<inline-require@${line}:${node.loc.start.column}>`;
+    requireBindings.set(name, node.arguments[0].value);
+    return name;
+  }
+
   // Pass 1: find router/app instances and require bindings.
   for (const stmt of ast.program.body) {
     if (stmt.type !== "VariableDeclaration") continue;
@@ -91,13 +101,18 @@ export function extractRoutes(ast) {
         const ownerVar = callee.object.name;
         if (args.length === 1) {
           const target = args[0];
-          if (target.type === "Identifier" && (routerInstanceVars.has(target.name) || requireBindings.has(target.name))) {
+          const inlineName = inlineRequireBinding(target, path.node.loc.start.line);
+          if (inlineName) {
+            mounts.push({ ownerVar, prefixLiteral: "", prefixResolved: true, targetIdentifier: inlineName, line: path.node.loc.start.line });
+          } else if (target.type === "Identifier" && (routerInstanceVars.has(target.name) || requireBindings.has(target.name))) {
             mounts.push({ ownerVar, prefixLiteral: "", prefixResolved: true, targetIdentifier: target.name, line: path.node.loc.start.line });
           }
           return;
         }
         const [prefixArg, ...rest] = args;
-        const target = rest[rest.length - 1];
+        const lastArg = rest[rest.length - 1];
+        const inlineName = inlineRequireBinding(lastArg, path.node.loc.start.line);
+        const target = inlineName ? { type: "Identifier", name: inlineName } : lastArg;
         if (target?.type !== "Identifier") return;
         const prefixLiteral = prefixArg.type === "StringLiteral" ? prefixArg.value : null;
         const prefixResolved = prefixArg.type === "StringLiteral";

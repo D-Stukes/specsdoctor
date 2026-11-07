@@ -12,6 +12,7 @@ export async function loadIndexForRun(runId) {
   return {
     items: itemRows.map((r) => r.data),
     imports: artifactRows[0]?.import_graph?.imports ?? [],
+    graph_facts: artifactRows[0]?.import_graph?.graph_facts,
     project: artifactRows[0]?.project_facts ?? { workspaces: [], env_vars: [], tables: [] },
   };
 }

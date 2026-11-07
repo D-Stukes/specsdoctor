@@ -1,6 +1,7 @@
 import { parseFile } from "./babel.js";
 import { extractItemsAndExports } from "./extract-items-exports.js";
 import { extractImportsAndEnv } from "./extract-imports-env.js";
+import { extractGraphFacts, tablesInSql } from "./extract-graph-facts.js";
 import { extractRoutes } from "./extract-routes.js";
 import { parseSqlTables, parsePrismaTables } from "./extract-schemas.js";
 import { resolveModuleSpecifier, looksLikeNonModuleAsset, isAliasedSpecifier } from "./resolve-module.js";
@@ -35,6 +36,7 @@ export function scan(snapshot, contentByPath) {
   const routesByFile = new Map();
   const perFileItemsByName = new Map(); // path -> Map(localName -> item draft)
   const perFileRequireBindings = new Map(); // path -> Map(localName -> spec)
+  const rawGraphFacts = new Map(); // path -> { sqlStrings, httpCalls }
 
   for (const file of updatedFiles) {
     if (file.status !== "scanned") continue;
@@ -84,6 +86,7 @@ export function scan(snapshot, contentByPath) {
     const { items, flaggedPatterns: fp1 } = extractItemsAndExports(ast, { language: "javascript" });
     const { staticSpecifiers, dynamicUnresolved, envRefs, flaggedPatterns: fp2 } = extractImportsAndEnv(ast);
     const routeFacts = extractRoutes(ast);
+    rawGraphFacts.set(file.path, extractGraphFacts(ast));
 
     flaggedPatterns.push(...fp1.map((f) => ({ ...f, path: file.path })));
     flaggedPatterns.push(...fp2.map((f) => ({ ...f, path: file.path })));
@@ -167,6 +170,20 @@ export function scan(snapshot, contentByPath) {
     in_env_example: envExampleNames.has(name),
   }));
 
+  // T26: resolve the raw string matches now that every table and workspace is known.
+  const tableNames = new Set(tables.map((t) => t.id.replace(/^tbl:/, "").toLowerCase()));
+  const frontendDirs = workspaces.filter((w) => w.frontend).map((w) => (w.dir === "" ? "" : `${w.dir}/`));
+  const queriesTable = [];
+  const callsEndpoint = [];
+  for (const [filePath, facts] of rawGraphFacts) {
+    for (const sql of facts.sqlStrings) {
+      for (const table of tablesInSql(sql.text, tableNames)) queriesTable.push({ path: filePath, line: sql.line, table });
+    }
+    if (frontendDirs.some((d) => filePath.startsWith(d))) {
+      for (const call of facts.httpCalls) callsEndpoint.push({ path: filePath, line: call.line, url: call.url, method: call.method });
+    }
+  }
+
   const index = {
     schema_version: "index/1",
     parser_version: PARSER_VERSION,
@@ -174,6 +191,7 @@ export function scan(snapshot, contentByPath) {
     project: { workspaces, env_vars: envVars, tables },
     imports: importsEdges,
     unresolved_imports: unresolvedImports,
+    graph_facts: { queries_table: queriesTable, calls_endpoint: callsEndpoint },
     coverage: {
       files: countByStatus(updatedFiles),
       flagged_patterns: flaggedPatterns.map((f) => ({ path: f.path, line: f.line, pattern: f.pattern })),

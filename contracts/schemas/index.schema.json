@@ -99,6 +99,36 @@
         }
       }
     },
+    "graph_facts": {
+      "type": "object",
+      "required": ["queries_table", "calls_endpoint"],
+      "additionalProperties": false,
+      "properties": {
+        "queries_table": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "line", "table"],
+            "additionalProperties": false,
+            "properties": { "path": { "type": "string" }, "line": { "type": "integer", "minimum": 1 }, "table": { "type": "string" } }
+          }
+        },
+        "calls_endpoint": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "line", "url", "method"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string" },
+              "line": { "type": "integer", "minimum": 1 },
+              "url": { "type": "string" },
+              "method": { "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", null] }
+            }
+          }
+        }
+      }
+    },
     "unresolved_imports": {
       "type": "array",
       "items": {
