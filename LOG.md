@@ -4,6 +4,28 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-07 — T24 follow-up: SQL parsing and concurrency fixes
+
+**Done**
+- **SQL schema no longer lost:** `parseSqlTables` now splits a `.sql` file into statements (respecting comments, quotes, dollar-quoted bodies) and parses only the `CREATE TABLE` ones separately. `CREATE DATABASE`, psql-only lines and INSERTs no longer take the tables down with them, and one unparseable table is flagged with its own line while the rest survive. `pern-stack-auth` now yields `users` and `todos` with correct source links. Tests in `extract-schemas.test.js`.
+- **Speed:** Analyst and Writer module loops now run up to 4 calls at once (`AI_CONCURRENCY`, `runner/concurrency.js`). The budget manager reserves synchronously, so overlapping calls can't overspend.
+
+**Re-run, same two repos, same models**
+
+| Repo | Before | After | Cost before / after |
+| --- | --- | --- | --- |
+| Amazon-Clone-PERN-stack | 196 s | **61 s** | $0.0564 / $0.0562 |
+| pern-stack-auth | 66 s | **25 s** | $0.0260 / $0.0259 |
+
+Both well under the 3-minute target; cost unchanged; no failed stages; findings unchanged (2 and 0). Full suite 85/85.
+
+**Still open**
+- Table-level `PRIMARY KEY (user_id)` isn't read, so `users.user_id` shows Nullable "yes" on the data-model page. Only inline column constraints are handled.
+- Verifier false positive on `package.json`, duplicate pages from repeated migration folders, many per-component pages.
+- Single timed run per repo; EV-2 needs 3 runs for the median. EV-1, EV-3, EV-4 and AT-1 inventories still need people.
+
+---
+
 ## 2026-11-07 — T24 first evaluation pass (EV-2, partial)
 
 **Setup**
