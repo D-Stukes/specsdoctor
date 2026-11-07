@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getPool } from "../db/pool.js";
 import { PRICES, estimateCostUsd } from "./models.js";
+import { redactSecrets } from "./redact.js";
 
 // maxRetries: 0 - we implement the single retry ourselves (§4a "retries a
 // model call once on 429, 5xx, or timeout"), so we can record each attempt
@@ -52,7 +53,15 @@ async function recordModelCall(runId, { stage, model, attempt, usage, costUsd, s
  * Returns { parsed, usage, costUsd }. Throws BudgetExceededError if the
  * reservation can't be made, or the underlying API error after one retry.
  */
-export async function callStructured({ runId, stage, model, system, userMessage, jsonSchema, maxOutputTokens, estimatedInputTokens, budgetManager, stub }) {
+let promptCapture = null;
+/** Test hook (SEC-T): receives every outgoing prompt, post-redaction. */
+export function setPromptCapture(fn) {
+  promptCapture = fn;
+}
+
+export async function callStructured({ runId, stage, model, system, userMessage: rawUserMessage, jsonSchema, maxOutputTokens, estimatedInputTokens, budgetManager, stub }) {
+  const userMessage = redactSecrets(rawUserMessage);
+  promptCapture?.({ stage, system, userMessage });
   if (stub) {
     const parsed = await stub();
     return { parsed, usage: null, costUsd: 0 };
