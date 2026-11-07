@@ -136,7 +136,13 @@ export function scan(snapshot, contentByPath) {
     const [modulePath, exportedName] = spec.split("#");
     const resolved = resolveModuleSpecifier(filePath, modulePath, scannedPaths);
     if (!resolved) return null;
-    return `sym:${resolved}#${exportedName ?? name}`;
+    // `const authorize = require("./authorize")` binds the module's whole export, which the
+    // Scanner records as the module's "default" item (module.exports = fn), not under the local name.
+    const known = new Set(allItems.map((i) => i.id));
+    const candidates = exportedName ? [`sym:${resolved}#${exportedName}`] : [`sym:${resolved}#default`, `sym:${resolved}#${name}`];
+    const hit = candidates.find((id) => known.has(id));
+    if (hit) return hit;
+    return exportedName ? candidates[0] : null;
   }
 
   for (const [filePath, facts] of routesByFile) {

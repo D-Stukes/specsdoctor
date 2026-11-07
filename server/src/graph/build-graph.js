@@ -39,7 +39,9 @@ export function buildGraph(index) {
   function symbolNode(id, layer) {
     const item = itemsById.get(id);
     if (!item || item.kind === "endpoint") return null;
-    addNode({ id, kind: item.kind, layer, label: item.kind === "function" || item.kind === "method" ? `${item.name}()` : item.name });
+    // An anonymous default export has no name of its own; the module's file name identifies it.
+    const name = item.name === "default" ? item.path.split("/").pop().replace(/\.[^.]+$/, "") : item.name;
+    addNode({ id, kind: item.kind, layer, label: item.kind === "function" || item.kind === "method" ? `${name}()` : name });
     return id;
   }
 
@@ -98,7 +100,14 @@ export function buildGraph(index) {
   for (const q of index.graph_facts?.queries_table ?? []) {
     const tableId = tableIdByName.get(q.table);
     if (!tableId) continue;
-    addEdge({ from: callerNode(q.path, q.line, "handler"), to: tableId, kind: "queries_table", inferred: true, evidence: [{ path: q.path, start_line: q.line, end_line: q.line }] });
+    // SQL inside an endpoint's own inline handler belongs to that endpoint; otherwise to the enclosing function or file.
+    let owner = null;
+    for (const ep of index.items) {
+      if (ep.kind !== "endpoint" || !("inline" in ep.handler)) continue;
+      const d = ep.declaration;
+      if (d.path === q.path && d.start_line <= q.line && q.line <= d.end_line && (!owner || d.end_line - d.start_line < owner.declaration.end_line - owner.declaration.start_line)) owner = ep;
+    }
+    addEdge({ from: owner ? owner.id : callerNode(q.path, q.line, "handler"), to: tableId, kind: "queries_table", inferred: true, evidence: [{ path: q.path, start_line: q.line, end_line: q.line }] });
   }
 
   const endpoints = index.items.filter((i) => i.kind === "endpoint" && i.resolved);
