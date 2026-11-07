@@ -9,6 +9,7 @@ import { runsRouter } from "./routes/runs.js";
 import { findingsRouter } from "./routes/findings.js";
 import { requireSession } from "./auth.js";
 import { recoverInterruptedRuns, tryStartNext } from "./runner/queue.js";
+import { startRetentionJob } from "./runner/retention.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -50,5 +51,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   createApp().listen(port, () => {
     console.log(`DocSync server listening on ${port}`);
+    startRetentionJob();
   });
 }

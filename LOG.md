@@ -4,6 +4,21 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-07 — Task 6 (part): Retention cleanup (T23)
+
+**Done**
+- `server/src/runner/retention.js`: `deleteExpiredFailedRuns()` deletes `failed` runs older than 7 days (by `finished_at`, falling back to `created_at`). Every child table (stages, pages, findings, source text) cascades from `runs`, so one `DELETE` covers it. `startRetentionJob()` runs it at server startup and every 24 hours (timer is `unref`'d), wired into `index.js` next to restart recovery.
+- `server/test/retention.test.js`: an 8-day-old failed run is removed along with its child rows; a 1-day-old failed run, a 30-day-old complete run and a 30-day-old queued run all stay. Full suite passed 3 times in a row (77/77), so it doesn't collide with `queue.test.js`'s global cleanup.
+
+**Not done / caveats**
+- Only the `failed` case in the spec. Complete runs are kept forever by design (they can be rechecked); there's no storage-pressure cleanup for the Neon 0.5 GB limit.
+- The 24-hour timer isn't tested; only the delete function is.
+
+**Next**
+- T24 evaluation, T25 demo assets.
+
+---
+
 ## 2026-11-07 — Task 6 (part): Security hardening (T22, SEC-T)
 
 **Done**
