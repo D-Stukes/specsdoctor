@@ -8,6 +8,7 @@ import { loadIndexForRun } from "../db/load-index.js";
 import { scanRenderedPageForUnknownMentions } from "../stages/verifier.js";
 import { buildMkdocsYml, buildExportReadme } from "../export/mkdocs-config.js";
 import { buildProvenanceMarkdown } from "../export/provenance.js";
+import { buildGraph } from "../graph/build-graph.js";
 import { buildExportZip } from "../export/build-zip.js";
 import { appendInlineFindings, buildReviewMarkdown } from "../export/review.js";
 import crypto from "node:crypto";
@@ -262,6 +263,18 @@ runsRouter.get("/runs/:id/export.zip", async (req, res) => {
     "Content-Disposition": `attachment; filename="${run.owner}-${run.name}-docs.zip"`,
   });
   res.send(zip);
+});
+
+// GET /api/runs/:id/graph - repo map data (graph/1), straight from parser facts.
+runsRouter.get("/runs/:id/graph", async (req, res) => {
+  const { rows } = await getPool().query(`SELECT status FROM runs WHERE id = $1`, [req.params.id]);
+  if (rows.length === 0) {
+    return res.status(404).json({ error: { code: "run_not_found", message: "No such run" } });
+  }
+  if (rows[0].status !== "complete" && rows[0].status !== "complete_with_errors") {
+    return res.status(409).json({ error: { code: "run_not_ready", message: `Run is ${rows[0].status}; the map needs a finished run` } });
+  }
+  res.json(buildGraph(await loadIndexForRun(req.params.id)));
 });
 
 // GET /api/runs/:id - progress, polled every 2s by the client.

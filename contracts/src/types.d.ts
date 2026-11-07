@@ -108,6 +108,7 @@ export interface Import {
   from: string;
   to: string;
   kind: "import" | "require";
+  line?: number;
 }
 
 export interface UnresolvedImport {

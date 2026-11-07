@@ -13,6 +13,7 @@ const SCHEMA_FILES = {
   "summary/1": "summary.schema.json",
   "page/1": "page.schema.json",
   "verify/1": "verify.schema.json",
+  "graph/1": "graph.schema.json",
 };
 
 function loadSchema(file) {
