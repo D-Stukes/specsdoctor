@@ -4,6 +4,32 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-08 — Task 11: guided tours (T29 to T32)
+
+**Done**
+- **Contracts:** `tour/1` (the saved tour) and `tour-narration/1` (what the model returns: only a title and narration per numbered stop). New `tours` table (migration `0002_tours.sql`), `GET /api/runs/:id/tours`, and `tours.json` in the export ZIP.
+- **Planner (`tours/plan-tours.js`), all code, no model:** four tours, each 2 to 8 stops. Big picture (one stop per map area, ordered front to back), Follow a request (the endpoint with the most tables behind it, ties broken by id, then caller, middleware, handler, tables), How data is stored (tables and the code that queries them), Where to start (server entry that mounts routers, front-end entry, busiest endpoint, most-used table). Every stop is a real graph node, every `via_edge` is a real edge, and evidence lines come from the graph, so the model cannot invent a place. Test files are never chosen as entry points. A tour with fewer than two stops is left out.
+- **Tour Agent (`stages/tour-agent.js`, Sonnet):** writes the words only. Each narration is checked for code names that are not in the index (new prose-mode scan in the Verifier); a bad name gets one rewrite request, and a stop that still fails falls back to a plain description built from parser facts and raises a review item. A malformed answer is retried once, a budget or API failure gives plain-description tours instead of nothing, and stub mode always does. Tours never fail a run.
+- **Player (`TourPlayer.jsx`):** the camera glides to each node (instant plus a fade under reduced motion), a glowing dot travels the edge, the guide sits at the node's corner, captions show the narration and the source file and line, controls are previous / play / next, stop dots, speed 0.75 to 1.5, captions and voice toggles. Space plays and pauses; arrow keys step. Opened from a "Guided tour" button on the map.
+- **Guide (`GuideCharacter.jsx`):** an original amber orb with two rounded eyes, five states (idle, talking, pointing, thinking, celebrating), plain SVG, a few hundred bytes.
+- **Voice:** the browser's speech synthesis at the chosen speed; it advances to the next stop when speech ends (or after a reading-time timer when voice is off).
+- Tests: 150/150 (planner, Tour Agent with a fake model for good, rewritten, fallback, malformed and failing cases, tour helpers, endpoint and export).
+
+**Checked in the browser** (real run of `pern-stack-auth`): all four tours listed; stepping with arrow keys; play through all five stops of "Follow a request" at 1.5x with narration handed to speech synthesis in order and the guide ending in the celebrating state; Space pauses and resumes; under a faked reduced-motion preference the fade class is applied, no travelling dot appears, and the camera jumps instead of gliding. Also confirmed the wrong-access-code message ("Incorrect access code") that was pending from the last pass.
+
+**Real-API results**
+- `pern-stack-auth`: 4 of 4 tours, 5, 7, 5 and 4 stops, all stops narrated by the model, 0 invalid stops, 0 review items. Run cost $0.065 (tours add roughly $0.04).
+- `Amazon-Clone-PERN-stack`: 2 of 4 tours (big picture, start here); the other two need tables or a request path and this repo has no SQL schema file and its client builds URLs from variables. Its first "start here" tour picked a test file as the front-end entry point, which led to the test-file exclusion and index/main preference above (re-run not yet done after the fix). The model's own narration admitted it only knew the file's name there.
+
+**Not done / caveats**
+- Voice was verified by handing the narration to `speechSynthesis` and advancing on its end event, with a stand-in so nothing was spoken aloud during testing. I did not listen to the real voices; quality varies by browser and operating system.
+- Narration gets the structural check only (names must exist in the index). The AI claim check (Task 7) is not built, so "treated as claims" is half done; a wrong statement that uses only real names would not be caught.
+- The Task 11 "done when" (all four tours for both fellowship repos with zero unknown stops, and a classmate can retell "Follow a request") is not met: only one evaluation repo has all four tours, and the retell test needs a person.
+- The tour mockup in the design canvas was not compared pixel for pixel; the player follows the spec's behaviour, not a pixel-perfect design.
+- No tour on phone-width screens was tested; the layout reuses the map's responsive rules.
+
+---
+
 ## 2026-11-07 — Hardening pass: everything left open, checked and fixed
 
 **Fixed**

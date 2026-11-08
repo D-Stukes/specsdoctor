@@ -4,6 +4,7 @@
 
 const MAX_STOPS = 8;
 const MIN_STOPS = 2;
+const isTestPath = (id) => /(^|[/:])(__tests__|tests?|spec)\/|\.(test|spec)\.[a-z]+$/i.test(id);
 const LAYER_RANK = { frontend: 0, route: 1, middleware: 2, handler: 3, database: 4, module: 5 };
 
 function degree(graph) {
@@ -105,11 +106,14 @@ function bigPicture(graph, h) {
   }
   if (byGroup.size >= 2) {
     const reps = [...byGroup.entries()].map(([gid, nodes]) => {
-      const rep = [...nodes].sort((a, b) => (deg.get(b.id) ?? 0) - (deg.get(a.id) ?? 0) || a.id.localeCompare(b.id))[0];
+      const candidates = nodes.filter((n) => !isTestPath(n.id));
+      if (candidates.length === 0) return null;
+      const rep = [...candidates].sort((a, b) => (deg.get(b.id) ?? 0) - (deg.get(a.id) ?? 0) || a.id.localeCompare(b.id))[0];
       // Order areas front to back by their representative node's layer, so the walk reads client, server, data.
       const layerRank = LAYER_RANK[rep.layer] ?? 5;
       return { gid, rep, layerRank, group: graph.groups.find((g) => g.id === gid) };
     });
+    reps.splice(0, reps.length, ...reps.filter(Boolean));
     reps.sort((a, b) => a.layerRank - b.layerRank || a.group.name.localeCompare(b.group.name));
     let prev = null;
     for (const r of reps.slice(0, MAX_STOPS)) {
@@ -140,10 +144,14 @@ function startHere(graph, h) {
   if (mountSources[0]) stops.push(h.stop(mountSources[0].id, "The server's entry point: where the routers are mounted"));
 
   const frontendRoots = modules
-    .filter((m) => m.layer === "frontend" && h.inn(m.id, "imports").length > 0 === false && h.out(m.id, "imports").length > 0)
+    .filter((m) => m.layer === "frontend" && !isTestPath(m.id) && h.inn(m.id, "imports").length === 0 && h.out(m.id, "imports").length > 0)
     .sort((a, b) => h.out(b.id, "imports").length - h.out(a.id, "imports").length || a.id.localeCompare(b.id));
-  const appRoot = frontendRoots.find((m) => /app\./i.test(m.label)) ?? frontendRoots[0];
-  const frontendEntry = appRoot ?? modules.filter((m) => m.layer === "frontend").sort((a, b) => (deg.get(b.id) ?? 0) - (deg.get(a.id) ?? 0) || a.id.localeCompare(b.id))[0];
+  // The file that starts the front end is usually index/main (it renders the app); App is the next best.
+  const frontendEntry =
+    frontendRoots.find((m) => /^(index|main)\./i.test(m.label)) ??
+    frontendRoots.find((m) => /^app\./i.test(m.label)) ??
+    frontendRoots[0] ??
+    modules.filter((m) => m.layer === "frontend" && !isTestPath(m.id)).sort((a, b) => (deg.get(b.id) ?? 0) - (deg.get(a.id) ?? 0) || a.id.localeCompare(b.id))[0];
   if (frontendEntry) stops.push(h.stop(frontendEntry.id, "The front end's entry point"));
 
   const topEndpoint = graph.nodes.filter((n) => n.kind === "endpoint").sort((a, b) => (deg.get(b.id) ?? 0) - (deg.get(a.id) ?? 0) || a.id.localeCompare(b.id))[0];

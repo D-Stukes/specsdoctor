@@ -123,3 +123,21 @@ test("planner: the big-picture tour walks front to back (layer order never goes 
   const ranks = plan.stops.map((s) => rank[nodeById.get(s.node_id).layer] ?? 5);
   assert.deepEqual(ranks, [...ranks].sort((a, b) => a - b));
 });
+
+test("planner: test files are never chosen as an entry point or area representative", () => {
+  const n = (id, layer, kind = "module") => ({ id, kind, layer, label: id.split("/").pop() });
+  const g = {
+    schema_version: "graph/1",
+    groups: [],
+    nodes: [n("mod:src/App.test.js", "frontend"), n("mod:src/App.js", "frontend"), n("mod:src/index.js", "frontend"), n("mod:server/app.js", "module")],
+    edges: [
+      { from: "mod:src/App.test.js", to: "mod:src/App.js", kind: "imports", inferred: false, evidence: [{ path: "src/App.test.js", start_line: 1, end_line: 1 }] },
+      { from: "mod:src/index.js", to: "mod:src/App.js", kind: "imports", inferred: false, evidence: [{ path: "src/index.js", start_line: 2, end_line: 2 }] },
+      { from: "mod:server/app.js", to: "mod:src/App.js", kind: "mounts", inferred: false, evidence: [{ path: "server/app.js", start_line: 5, end_line: 5 }] },
+    ],
+  };
+  const plans = planTours(g, { items: [], project: { workspaces: [], env_vars: [], tables: [] } });
+  const start = plans.find((p) => p.tour_id === "start-here");
+  assert.ok(start.stops.every((s) => !s.node_id.includes(".test.")));
+  assert.ok(start.stops.some((s) => s.node_id === "mod:src/index.js"), "index.js is the front end entry, not App.test.js");
+});
