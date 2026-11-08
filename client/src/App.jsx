@@ -159,6 +159,12 @@ function RepoForm({ onRunStarted, onOpenRun }) {
   );
 }
 
+function formatDuration(ms) {
+  if (ms == null) return null;
+  const s = ms / 1000;
+  return s < 60 ? `${s.toFixed(1)}s` : `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`;
+}
+
 function RunList({ onOpenRun }) {
   const [runs, setRuns] = useState(null);
   const [error, setError] = useState(null);
@@ -186,6 +192,7 @@ function RunList({ onOpenRun }) {
         >
           <span className={`dot dot-${r.status === "running" || r.status === "queued" ? "running" : r.status === "failed" ? "failed" : "done"}`} style={{ marginRight: "0.5rem" }} />
           {r.repo.owner}/{r.repo.name} — {r.status} — ${Number(r.cost_usd).toFixed(2)}
+          {r.duration_ms != null && ` — ${formatDuration(r.duration_ms)}`}
         </a>
       ))}
     </div>
@@ -193,6 +200,15 @@ function RunList({ onOpenRun }) {
 }
 
 const STATUS_LABEL = { done: "Done", running: "Running", pending: "Pending", failed: "Failed", partial: "Partial", skipped: "Skipped" };
+
+// page_status (Technical Design §2) -> the same dot classes the stage list uses.
+const PAGE_STATUS_DOT = {
+  generated: "dot-done",
+  generation_failed: "dot-failed",
+  not_applicable: "dot-skipped",
+  not_detected: "dot-skipped",
+  unsupported: "dot-skipped",
+};
 
 function PageViewer({ runId, slug, onBack }) {
   const [page, setPage] = useState(null);
@@ -295,6 +311,12 @@ function RunProgress({ runId, onBackToList }) {
                 ${run.cost_usd.toFixed(2)} / ${run.budget_cap_usd.toFixed(2)} budget
               </span>
             </div>
+            {run.duration_ms != null && (
+              <div className="cost-row">
+                <span>Time</span>
+                <span>{formatDuration(run.duration_ms)}</span>
+              </div>
+            )}
 
             {run.failure && <p className="error-text">{run.failure.code}: {run.failure.detail}</p>}
 
@@ -303,7 +325,9 @@ function RunProgress({ runId, onBackToList }) {
                 <h2>Generated pages</h2>
                 {pages.map((p) => (
                   <a key={p.slug} className="page-link" href="#" onClick={(e) => { e.preventDefault(); setOpenSlug(p.slug); }}>
+                    <span className={`dot ${PAGE_STATUS_DOT[p.status] ?? "dot-pending"}`} style={{ marginRight: "0.5rem" }} />
                     {p.title}
+                    <span className="stage-status" style={{ marginLeft: "0.5rem" }}>{p.status.replace(/_/g, " ")}</span>
                   </a>
                 ))}
               </div>

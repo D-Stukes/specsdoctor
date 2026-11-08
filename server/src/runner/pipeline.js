@@ -5,7 +5,14 @@ import { BudgetManager, BudgetExceededError } from "../ai/budget-manager.js";
 import { analyzeModule } from "../stages/analyst.js";
 import { writeReferencePage } from "../stages/writer.js";
 import { writeOverviewPage } from "../stages/architect.js";
-import { buildTechStackPage, buildDataModelPage, buildArchitecturePage, buildApiEndpointsPage } from "../stages/architect-deterministic.js";
+import {
+  buildTechStackPage,
+  buildDataModelPage,
+  buildArchitecturePage,
+  buildApiEndpointsPage,
+  buildGettingStartedPage,
+  buildConfigurationPage,
+} from "../stages/architect-deterministic.js";
 import { renderPage } from "../renderer/render-page.js";
 import { savePageRevision } from "../db/pages.js";
 import { initStages, startStage, finishStage, skipStage, recordEvent } from "./stage-tracking.js";
@@ -98,7 +105,14 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
   // 4 deterministic pages always, +1 (overview) only when there's at least
   // one module summary to synthesize from - total isn't fixed up front.
   await startStage(runId, "architect");
-  const architectPages = [buildTechStackPage(index), buildDataModelPage(index), buildArchitecturePage(index), buildApiEndpointsPage(index)];
+  const architectPages = [
+    buildTechStackPage(index),
+    buildDataModelPage(index),
+    buildArchitecturePage(index),
+    buildApiEndpointsPage(index),
+    buildGettingStartedPage(index),
+    buildConfigurationPage(index),
+  ];
   let architectFailed = 0;
   try {
     const overviewInput = [...summaries.entries()].map(([modulePath, summary]) => ({ module_path: modulePath, summary }));

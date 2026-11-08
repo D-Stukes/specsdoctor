@@ -4,6 +4,29 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-06 — Task 4 continued: two more Architect pages, M4 fully satisfied
+
+**Done**
+- **getting-started.md** and **configuration.md**, built the same deterministic, never-fails way as T15's original four pages. getting-started.md deliberately only cites commands literally copied from `package.json` scripts (§2 "known vs inferred setup") - no inferred steps, since flagging those for review needs Task 5's Verifier, which doesn't exist yet. configuration.md lists every env var found referenced in the code, including ones with no `.env.example` entry.
+- **M4's "time ... measured"**: `GET /api/runs/:id` and `GET /api/runs` now return `duration_ms`, computed from `started_at`/`finished_at`; surfaced in the client next to Cost, and inline in the run list.
+- Client: the generated-pages list now shows each page's real status (generated/not_applicable/not_detected/unsupported/generation_failed), not just a bare link - a first step toward T14's "sidebar with page statuses."
+
+**Verification**
+- 8 new unit tests (real script/env content, honest "none found" copy, no inferred steps leaking in).
+- Full browser walkthrough against `jonschlinkert/is-number`: Architect now produces 7 pages; Getting started correctly cites the real `test` script; Configuration honestly reports no env vars for a repo that genuinely has none; Time shows next to Cost.
+- Full suite: 54/54 passing.
+
+**M4 status:** all three parts now hold for a real repo (not yet a fellowship repo, still blocked on PRD §8) - a full run is saved, can be reopened, and both cost and time are measured and shown.
+
+**Not done**
+- `frontend.md` (gated behind Task 9) and any AI-narrative wrapping for getting-started/configuration aren't built - both are fully deterministic for now.
+- T14's real sidebar layout and findings panel aren't built (the panel needs Task 5's Verifier).
+
+**Next**
+- Task 5 (Verifier, repair loop, editing, findings) is probably the highest-value next step - it's what makes "inferred steps become a review item" and claim-checking real, and several `page_status` values currently never get used because nothing populates review_items yet.
+
+---
+
 ## 2026-11-06 — Task 4 started: Architect stage (T15) + run list (T14 partial)
 
 **Done**
