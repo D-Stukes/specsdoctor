@@ -76,12 +76,15 @@ export function parseSqlTables(path, source) {
       if (stmt.type !== "create table") continue;
       const startLine = offsetToLine(source, offset + stmt._location.start);
       const endLine = offsetToLine(source, offset + stmt._location.end);
+      const tablePrimaryKey = new Set(
+        (stmt.constraints ?? []).filter((con) => con.type === "primary key").flatMap((con) => con.columns.map((col) => col.name))
+      );
       const columns = stmt.columns
         .filter((c) => c.kind === "column")
         .map((c) => ({
           name: c.name.name,
           type: c.dataType?.name ?? null,
-          nullable: !(c.constraints ?? []).some((con) => con.type === "not null" || con.type === "primary key"),
+          nullable: !tablePrimaryKey.has(c.name.name) && !(c.constraints ?? []).some((con) => con.type === "not null" || con.type === "primary key"),
         }));
       tables.push({
         id: `tbl:${stmt.name.name}`,
