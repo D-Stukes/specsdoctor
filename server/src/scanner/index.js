@@ -1,6 +1,8 @@
 import { parseFile } from "./babel.js";
 import { extractItemsAndExports } from "./extract-items-exports.js";
 import { extractImportsAndEnv } from "./extract-imports-env.js";
+import { extractGraphFacts, sqlOperations } from "./extract-graph-facts.js";
+import { extractFlowFacts } from "./extract-flow-facts.js";
 import { extractRoutes } from "./extract-routes.js";
 import { parseSqlTables, parsePrismaTables } from "./extract-schemas.js";
 import { resolveModuleSpecifier, looksLikeNonModuleAsset, isAliasedSpecifier } from "./resolve-module.js";
@@ -35,6 +37,8 @@ export function scan(snapshot, contentByPath) {
   const routesByFile = new Map();
   const perFileItemsByName = new Map(); // path -> Map(localName -> item draft)
   const perFileRequireBindings = new Map(); // path -> Map(localName -> spec)
+  const rawGraphFacts = new Map(); // path -> { sqlStrings, httpCalls }
+  const rawFlowFacts = new Map(); // path -> { bindings, calls, inputs, outputs }
 
   for (const file of updatedFiles) {
     if (file.status !== "scanned") continue;
@@ -84,6 +88,8 @@ export function scan(snapshot, contentByPath) {
     const { items, flaggedPatterns: fp1 } = extractItemsAndExports(ast, { language: "javascript" });
     const { staticSpecifiers, dynamicUnresolved, envRefs, flaggedPatterns: fp2 } = extractImportsAndEnv(ast);
     const routeFacts = extractRoutes(ast);
+    rawGraphFacts.set(file.path, extractGraphFacts(ast));
+    rawFlowFacts.set(file.path, extractFlowFacts(ast));
 
     flaggedPatterns.push(...fp1.map((f) => ({ ...f, path: file.path })));
     flaggedPatterns.push(...fp2.map((f) => ({ ...f, path: file.path })));
@@ -108,7 +114,7 @@ export function scan(snapshot, contentByPath) {
       if (!spec.spec.startsWith(".") && !spec.spec.startsWith("/")) continue; // external dependency, not a local edge
       const resolved = resolveModuleSpecifier(file.path, spec.spec, scannedPaths);
       if (resolved) {
-        importsEdges.push({ from: file.path, to: resolved, kind: spec.kind === "require" ? "require" : "import" });
+        importsEdges.push({ from: file.path, to: resolved, kind: spec.kind === "require" ? "require" : "import", line: spec.line });
       } else if (!looksLikeNonModuleAsset(spec.spec)) {
         unresolvedImports.push({ from: file.path, spec: spec.spec, line: spec.line, reason: "unresolved_relative" });
       }
@@ -133,7 +139,13 @@ export function scan(snapshot, contentByPath) {
     const [modulePath, exportedName] = spec.split("#");
     const resolved = resolveModuleSpecifier(filePath, modulePath, scannedPaths);
     if (!resolved) return null;
-    return `sym:${resolved}#${exportedName ?? name}`;
+    // `const authorize = require("./authorize")` binds the module's whole export, which the
+    // Scanner records as the module's "default" item (module.exports = fn), not under the local name.
+    const known = new Set(allItems.map((i) => i.id));
+    const candidates = exportedName ? [`sym:${resolved}#${exportedName}`] : [`sym:${resolved}#default`, `sym:${resolved}#${name}`];
+    const hit = candidates.find((id) => known.has(id));
+    if (hit) return hit;
+    return exportedName ? candidates[0] : null;
   }
 
   for (const [filePath, facts] of routesByFile) {
@@ -167,6 +179,72 @@ export function scan(snapshot, contentByPath) {
     in_env_example: envExampleNames.has(name),
   }));
 
+  // T26: resolve the raw string matches now that every table and workspace is known.
+  const tableNames = new Set(tables.map((t) => t.id.replace(/^tbl:/, "").toLowerCase()));
+  const frontendDirs = workspaces.filter((w) => w.frontend).map((w) => (w.dir === "" ? "" : `${w.dir}/`));
+  const queriesTable = [];
+  const callsEndpoint = [];
+  for (const [filePath, facts] of rawGraphFacts) {
+    for (const sql of facts.sqlStrings) {
+      for (const op of sqlOperations(sql.text, tableNames)) queriesTable.push({ path: filePath, line: sql.line, table: op.table, operation: op.operation, columns: op.columns });
+    }
+    if (frontendDirs.some((d) => filePath.startsWith(d))) {
+      for (const call of facts.httpCalls) callsEndpoint.push({ path: filePath, line: call.line, url: call.url, method: call.method });
+    }
+  }
+
+  // Flow facts: function-to-function calls resolved through real imports, plus the data going in and out.
+  const itemIds = new Set(allItems.map((i) => i.id));
+  const fnItemsByFile = new Map();
+  for (const it of allItems) {
+    if (it.kind !== "function" && it.kind !== "method") continue;
+    if (!fnItemsByFile.has(it.path)) fnItemsByFile.set(it.path, []);
+    fnItemsByFile.get(it.path).push(it);
+  }
+  const enclosingFn = (filePath, line) =>
+    (fnItemsByFile.get(filePath) ?? [])
+      .filter((it) => it.start_line <= line && line <= it.end_line)
+      .sort((a, b) => a.end_line - a.start_line - (b.end_line - b.start_line))[0] ?? null;
+  const callEdges = new Map();
+  const inputFacts = [];
+  const outputFacts = [];
+  for (const [filePath, flow] of rawFlowFacts) {
+    for (const call of flow.calls) {
+      const from = enclosingFn(filePath, call.line);
+      if (!from) continue;
+      let to = null;
+      if (call.object === "this") {
+        const cls = from.name.includes(".") ? from.name.split(".")[0] : null;
+        if (cls && itemIds.has(`sym:${filePath}#${cls}.${call.property}`)) to = `sym:${filePath}#${cls}.${call.property}`;
+      } else if (call.object && flow.instances.has(call.object)) {
+        // const service = new HabitService(); service.list(): the class is local or imported
+        const cls = flow.instances.get(call.object);
+        if (itemIds.has(`sym:${filePath}#${cls}.${call.property}`)) to = `sym:${filePath}#${cls}.${call.property}`;
+        else {
+          const b = flow.bindings.get(cls);
+          const resolved = b && !isAliasedSpecifier(b.spec) ? resolveModuleSpecifier(filePath, b.spec, scannedPaths) : null;
+          if (resolved && itemIds.has(`sym:${resolved}#${cls}.${call.property}`)) to = `sym:${resolved}#${cls}.${call.property}`;
+        }
+      } else if (call.name && itemIds.has(`sym:${filePath}#${call.name}`)) to = `sym:${filePath}#${call.name}`;
+      else {
+        const b = flow.bindings.get(call.name ?? call.object);
+        if (b && !isAliasedSpecifier(b.spec)) {
+          const resolved = resolveModuleSpecifier(filePath, b.spec, scannedPaths);
+          if (resolved) {
+            const names = call.object ? [call.property] : b.imported === "default" || b.imported === "*" ? ["default", call.name] : [b.imported];
+            to = names.map((n) => `sym:${resolved}#${n}`).find((id) => itemIds.has(id)) ?? null;
+          }
+        }
+      }
+      if (to && to !== from.id) {
+        const key = `${from.id}|${to}`;
+        if (!callEdges.has(key)) callEdges.set(key, { from: from.id, to, path: filePath, line: call.line });
+      }
+    }
+    for (const i of flow.inputs) inputFacts.push({ path: filePath, line: i.line, source: i.source, name: i.name });
+    for (const o of flow.outputs) outputFacts.push({ path: filePath, line: o.line, status: o.status, message: o.message, keys: o.keys });
+  }
+
   const index = {
     schema_version: "index/1",
     parser_version: PARSER_VERSION,
@@ -174,6 +252,7 @@ export function scan(snapshot, contentByPath) {
     project: { workspaces, env_vars: envVars, tables },
     imports: importsEdges,
     unresolved_imports: unresolvedImports,
+    graph_facts: { queries_table: queriesTable, calls_endpoint: callsEndpoint, calls: [...callEdges.values()], inputs: inputFacts, outputs: outputFacts },
     coverage: {
       files: countByStatus(updatedFiles),
       flagged_patterns: flaggedPatterns.map((f) => ({ path: f.path, line: f.line, pattern: f.pattern })),

@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docsync.dev/schemas/graph/1",
+  "title": "Repo graph",
+  "description": "Interactive repo map data. Technical Design SS4f. Built only from parser facts; every edge carries evidence or is marked inferred.",
+  "type": "object",
+  "required": ["schema_version", "nodes", "edges", "groups"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "graph/1" },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "layer", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["module", "function", "class", "method", "constant", "type", "endpoint", "table"] },
+          "layer": { "enum": ["frontend", "route", "middleware", "handler", "database", "module"] },
+          "label": { "type": "string", "minLength": 1 },
+          "group": { "type": "string" },
+          "plain_label": { "type": "string" },
+          "plain_summary": { "type": "string" },
+          "data": {
+            "type": "object",
+            "required": ["inputs", "outputs", "reads", "writes"],
+            "additionalProperties": false,
+            "properties": {
+              "inputs": { "type": "array", "items": { "type": "object", "required": ["source", "name"], "additionalProperties": false, "properties": { "source": { "enum": ["body", "params", "query", "header"] }, "name": { "type": "string" } } } },
+              "outputs": { "type": "array", "items": { "type": "object", "required": ["status", "message", "keys"], "additionalProperties": false, "properties": { "status": { "type": ["integer", "null"] }, "message": { "type": ["string", "null"] }, "keys": { "type": ["array", "null"], "items": { "type": "string" } } } } },
+              "reads": { "type": "array", "items": { "type": "object", "required": ["table", "columns"], "additionalProperties": false, "properties": { "table": { "type": "string" }, "columns": { "type": "array", "items": { "type": "string" } } } } },
+              "writes": { "type": "array", "items": { "type": "object", "required": ["table", "columns"], "additionalProperties": false, "properties": { "table": { "type": "string" }, "columns": { "type": "array", "items": { "type": "string" } } } } }
+            }
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "kind", "inferred", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "kind": { "enum": ["imports", "mounts", "routes_to", "uses_middleware", "calls_endpoint", "queries_table", "calls"] },
+          "operation": { "enum": ["read", "write"] },
+          "columns": { "type": "array", "items": { "type": "string" } },
+          "inferred": { "type": "boolean" },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["path", "start_line", "end_line"],
+              "additionalProperties": false,
+              "properties": {
+                "path": { "type": "string" },
+                "start_line": { "type": "integer", "minimum": 1 },
+                "end_line": { "type": "integer", "minimum": 1 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "summary"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "summary": { "type": "string" }
+        }
+      }
+    }
+  }
+}

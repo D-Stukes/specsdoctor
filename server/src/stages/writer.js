@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { callStructured } from "../ai/client.js";
+import { callValidated } from "../ai/call-validated.js";
 import { getPool } from "../db/pool.js";
 import { MODELS, MAX_OUTPUT_TOKENS } from "../ai/models.js";
 import { getValidator } from "@docsync/contracts";
@@ -75,7 +75,7 @@ export async function writeReferencePage({ runId, modulePath, items, summary, bu
 
   const deterministicBlocks = items.map((i) => ({ type: "symbol_ref", symbol_id: i.id }));
 
-  const { parsed } = await callStructured({
+  const { parsed } = await callValidated({
     runId,
     stage: "writer",
     model: MODELS.referenceProse,
@@ -86,7 +86,7 @@ export async function writeReferencePage({ runId, modulePath, items, summary, bu
     estimatedInputTokens: Math.ceil((SYSTEM_PROMPT.length + JSON.stringify(summary).length) / 4),
     budgetManager,
     stub: stub ? () => stubProsePage(modulePath, items) : null,
-  });
+  }, validate);
 
   let aiBlocks = [];
   if (validate(parsed)) {

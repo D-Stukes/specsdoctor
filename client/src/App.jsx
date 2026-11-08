@@ -1,3 +1,5 @@
+import MapView from "./MapView.jsx";
+import FindingsList from "./Findings.jsx";
 import React, { useEffect, useRef, useState } from "react";
 import "./theme.css";
 
@@ -11,6 +13,7 @@ async function api(path, options) {
     const err = new Error(body?.error?.message ?? `Request to ${path} failed`);
     err.code = body?.error?.code;
     err.status = res.status;
+    if (res.status === 401 && path !== "/session") window.dispatchEvent(new Event("docsync:signed-out"));
     throw err;
   }
   return res.status === 204 ? null : res.json();
@@ -78,7 +81,7 @@ const WRITE_FOR_OPTIONS = [
   { id: "both", label: "Both", enabled: false },
 ];
 
-function RepoForm({ onRunStarted }) {
+function RepoForm({ onRunStarted, onOpenRun }) {
   const [repoUrl, setRepoUrl] = useState("");
   const [ref, setRef] = useState("");
   const [error, setError] = useState(null);
@@ -153,19 +156,110 @@ function RepoForm({ onRunStarted }) {
           <span>✓ Every claim cites its source</span>
           <span>⚠ Uncertainty flagged for review</span>
         </div>
+        <RunList onOpenRun={onOpenRun} />
       </div>
+    </div>
+  );
+}
+
+function formatDuration(ms) {
+  if (ms == null) return null;
+  const s = ms / 1000;
+  return s < 60 ? `${s.toFixed(1)}s` : `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`;
+}
+
+function RunList({ onOpenRun }) {
+  const [runs, setRuns] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    api("/runs").then((data) => setRuns(data.runs)).catch((err) => setError(err.message));
+  }, []);
+
+  if (error) return <p className="error-text">{error}</p>;
+  if (!runs) return <p className="lede">Loading…</p>;
+  if (runs.length === 0) return null;
+
+  return (
+    <div className="page-list">
+      <h2>Recent runs</h2>
+      {runs.map((r) => (
+        <a
+          key={r.run_id}
+          className="page-link"
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            onOpenRun(r.run_id);
+          }}
+        >
+          <span className={`dot dot-${r.status === "running" || r.status === "queued" ? "running" : r.status === "failed" ? "failed" : "done"}`} style={{ marginRight: "0.5rem" }} />
+          {r.repo.owner}/{r.repo.name} — {r.status} — ${Number(r.cost_usd).toFixed(2)}
+          {r.duration_ms != null && ` — ${formatDuration(r.duration_ms)}`}
+        </a>
+      ))}
     </div>
   );
 }
 
 const STATUS_LABEL = { done: "Done", running: "Running", pending: "Pending", failed: "Failed", partial: "Partial", skipped: "Skipped" };
 
+// page_status (Technical Design §2) -> the same dot classes the stage list uses.
+const PAGE_STATUS_DOT = {
+  generated: "dot-done",
+  generation_failed: "dot-failed",
+  not_applicable: "dot-skipped",
+  not_detected: "dot-skipped",
+  unsupported: "dot-skipped",
+};
+
 function PageViewer({ runId, slug, onBack }) {
   const [page, setPage] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    const data = await api(`/runs/${runId}/pages/${slug}`);
+    setPage(data);
+    setDraft(data.markdown);
+  }
 
   useEffect(() => {
-    api(`/runs/${runId}/pages/${slug}`).then(setPage);
+    load();
   }, [runId, slug]);
+
+  async function handleSave() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/runs/${runId}/pages/${slug}`, { method: "PUT", body: JSON.stringify({ base_rev: page.rev, markdown: draft }) });
+      await load();
+      setEditing(false);
+    } catch (err) {
+      if (err.status === 409) {
+        setError("Someone else saved a newer revision - reload before editing again.");
+      } else {
+        setError(err.message);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleReview() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/runs/${runId}/pages/${slug}/review`, { method: "POST", body: JSON.stringify({ rev: page.rev, note: "" }) });
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="shell">
@@ -179,20 +273,61 @@ function PageViewer({ runId, slug, onBack }) {
         {!page ? (
           <p className="lede">Loading…</p>
         ) : (
-          <pre style={{ whiteSpace: "pre-wrap", fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--text)", lineHeight: 1.6 }}>
-            {page.markdown}
-          </pre>
+          <>
+            <div className="status-pill">
+              <span className={`dot ${page.checks.fresh ? "dot-done" : "dot-pending"}`} />
+              rev {page.rev} · {page.origin} · {page.checks.fresh ? "checks fresh" : "checks stale"}
+              {page.reviewed_at && " · reviewed"}
+            </div>
+            {error && <p className="error-text">{error}</p>}
+            {editing ? (
+              <>
+                <textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  rows={16}
+                  style={{ width: "100%", background: "var(--surface-raised)", color: "var(--text)", fontFamily: "var(--font-mono)", fontSize: 12.5, border: "1px solid var(--hairline-hover)", borderRadius: 10, padding: "0.75rem" }}
+                />
+                <div className="write-for" style={{ marginTop: "0.75rem" }}>
+                  <button type="button" className="btn-primary" style={{ width: "auto" }} disabled={busy} onClick={handleSave}>
+                    {busy ? "Saving…" : "Save"}
+                  </button>
+                  <button type="button" onClick={() => { setDraft(page.markdown); setEditing(false); }}>
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <FindingsList runId={runId} pageSlug={slug} refreshKey={page.rev} />
+                <pre style={{ whiteSpace: "pre-wrap", fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--text)", lineHeight: 1.6 }}>
+                  {page.markdown || "(this page has been emptied)"}
+                </pre>
+                <div className="write-for">
+                  <button type="button" className="btn-primary" style={{ width: "auto" }} onClick={() => setEditing(true)}>
+                    Edit
+                  </button>
+                  <button type="button" disabled={busy || Boolean(page.reviewed_at)} onClick={handleReview}>
+                    {page.reviewed_at ? "Reviewed" : busy ? "Marking…" : "Mark reviewed"}
+                  </button>
+                </div>
+              </>
+            )}
+          </>
         )}
       </div>
     </div>
   );
 }
 
-function RunProgress({ runId }) {
+function RunProgress({ runId, onBackToList }) {
   const [run, setRun] = useState(null);
   const [pages, setPages] = useState([]);
   const [error, setError] = useState(null);
   const [openSlug, setOpenSlug] = useState(null);
+  const [graph, setGraph] = useState(null);
+  const [tours, setTours] = useState([]);
+  const [showMap, setShowMap] = useState(false);
   const timerRef = useRef(null);
 
   useEffect(() => {
@@ -214,13 +349,43 @@ function RunProgress({ runId }) {
     return () => clearTimeout(timerRef.current);
   }, [runId]);
 
+  async function refreshPages() {
+    try {
+      setPages((await api(`/runs/${runId}/pages`)).pages);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  // Coming back from a page (where an edit may have added findings) or resolving one: refresh counts.
+  useEffect(() => {
+    if (!openSlug && run && !["queued", "running"].includes(run.status)) refreshPages();
+  }, [openSlug]);
+
+  async function openMap() {
+    setError(null);
+    try {
+      setGraph(await api(`/runs/${runId}/graph`));
+      setTours((await api(`/runs/${runId}/tours`).catch(() => ({ tours: [] }))).tours);
+      setShowMap(true);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   if (openSlug) return <PageViewer runId={runId} slug={openSlug} onBack={() => setOpenSlug(null)} />;
+  if (showMap && graph) {
+    return <MapView runId={runId} graph={graph} tours={tours} onBack={() => setShowMap(false)} onOpenPage={(slug) => { setShowMap(false); setOpenSlug(slug); }} />;
+  }
 
   return (
     <div className="shell">
       <div className="card">
         <div className="card-header">
           <Brand />
+          <button className="btn-primary" style={{ width: "auto" }} onClick={onBackToList}>
+            ← All runs
+          </button>
         </div>
         {error && <p className="error-text">{error}</p>}
         {!run ? (
@@ -258,17 +423,49 @@ function RunProgress({ runId }) {
                 ${run.cost_usd.toFixed(2)} / ${run.budget_cap_usd.toFixed(2)} budget
               </span>
             </div>
+            {run.duration_ms != null && (
+              <div className="cost-row">
+                <span>Time</span>
+                <span>{formatDuration(run.duration_ms)}</span>
+              </div>
+            )}
 
             {run.failure && <p className="error-text">{run.failure.code}: {run.failure.detail}</p>}
+
+            <FindingsList runId={runId} onOpenPage={setOpenSlug} onChanged={refreshPages} refreshKey={pages.map((p) => p.open_findings).join(",")} />
 
             {pages.length > 0 && (
               <div className="page-list">
                 <h2>Generated pages</h2>
                 {pages.map((p) => (
                   <a key={p.slug} className="page-link" href="#" onClick={(e) => { e.preventDefault(); setOpenSlug(p.slug); }}>
+                    <span className={`dot ${PAGE_STATUS_DOT[p.status] ?? "dot-pending"}`} style={{ marginRight: "0.5rem" }} />
                     {p.title}
+                    <span className="stage-status" style={{ marginLeft: "0.5rem" }}>{p.status.replace(/_/g, " ")}</span>
+                    {p.open_findings > 0 && <span className="finding-badge">{p.open_findings} to review</span>}
                   </a>
                 ))}
+              </div>
+            )}
+
+            {(run.status === "complete" || run.status === "complete_with_errors") && (
+              <div className="page-list">
+                <h2>Repo map</h2>
+                <a className="page-link" href="#" onClick={(e) => { e.preventDefault(); openMap(); }}>
+                  Open the interactive map
+                </a>
+              </div>
+            )}
+
+            {(run.status === "complete" || run.status === "complete_with_errors") && pages.length > 0 && (
+              <div className="page-list">
+                <h2>Export</h2>
+                <a className="page-link" href={`/api/runs/${runId}/export.zip`} download>
+                  Download docs (.zip)
+                </a>
+                <a className="page-link" href={`/api/runs/${runId}/export.zip?include_review=true`} download>
+                  Download docs + review.md (.zip)
+                </a>
               </div>
             )}
           </>
@@ -280,9 +477,25 @@ function RunProgress({ runId }) {
 
 export default function App() {
   const [signedIn, setSignedIn] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [runId, setRunId] = useState(null);
 
+  useEffect(() => {
+    // A reload keeps the session cookie; ask the server instead of assuming we're signed out.
+    api("/runs?limit=1")
+      .then(() => setSignedIn(true))
+      .catch(() => {})
+      .finally(() => setChecking(false));
+    const onSignedOut = () => {
+      setSignedIn(false);
+      setRunId(null);
+    };
+    window.addEventListener("docsync:signed-out", onSignedOut);
+    return () => window.removeEventListener("docsync:signed-out", onSignedOut);
+  }, []);
+
+  if (checking) return null;
   if (!signedIn) return <AccessCodeForm onSignedIn={() => setSignedIn(true)} />;
-  if (!runId) return <RepoForm onRunStarted={setRunId} />;
-  return <RunProgress runId={runId} />;
+  if (!runId) return <RepoForm onRunStarted={setRunId} onOpenRun={setRunId} />;
+  return <RunProgress runId={runId} onBackToList={() => setRunId(null)} />;
 }

@@ -1,13 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getPool } from "../db/pool.js";
 import { PRICES, estimateCostUsd } from "./models.js";
+import { redactSecrets } from "./redact.js";
+import { toModelSchema } from "./model-schema.js";
 
 // maxRetries: 0 - we implement the single retry ourselves (§4a "retries a
 // model call once on 429, 5xx, or timeout"), so we can record each attempt
 // in model_calls and release/commit the budget reservation precisely.
 let anthropicClient;
-function getClient() {
-  if (!anthropicClient) anthropicClient = new Anthropic({ maxRetries: 0 });
+export function getClient() {
+  if (!anthropicClient) anthropicClient = new Anthropic({ maxRetries: 0, timeout: 60_000 });
   return anthropicClient;
 }
 
@@ -22,7 +24,7 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function recordModelCall(runId, { stage, model, attempt, usage, costUsd, status, latencyMs }) {
+export async function recordModelCall(runId, { stage, model, attempt, usage, costUsd, status, latencyMs }) {
   const pool = getPool();
   await pool.query(
     `INSERT INTO model_calls (run_id, stage, model, attempt, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, est_cost_usd, status, latency_ms)
@@ -52,7 +54,15 @@ async function recordModelCall(runId, { stage, model, attempt, usage, costUsd, s
  * Returns { parsed, usage, costUsd }. Throws BudgetExceededError if the
  * reservation can't be made, or the underlying API error after one retry.
  */
-export async function callStructured({ runId, stage, model, system, userMessage, jsonSchema, maxOutputTokens, estimatedInputTokens, budgetManager, stub }) {
+let promptCapture = null;
+/** Test hook (SEC-T): receives every outgoing prompt, post-redaction. */
+export function setPromptCapture(fn) {
+  promptCapture = fn;
+}
+
+export async function callStructured({ runId, stage, model, system, userMessage: rawUserMessage, jsonSchema, maxOutputTokens, estimatedInputTokens, budgetManager, stub }) {
+  const userMessage = redactSecrets(rawUserMessage);
+  promptCapture?.({ stage, system, userMessage });
   if (stub) {
     const parsed = await stub();
     return { parsed, usage: null, costUsd: 0 };
@@ -70,7 +80,7 @@ export async function callStructured({ runId, stage, model, system, userMessage,
         max_tokens: maxOutputTokens,
         system,
         messages: [{ role: "user", content: userMessage }],
-        output_config: { format: { type: "json_schema", schema: jsonSchema } },
+        output_config: { format: { type: "json_schema", schema: toModelSchema(jsonSchema) } },
       });
       const latencyMs = Date.now() - startedAt;
       const costUsd = estimateCostUsd(model, response.usage.input_tokens, response.usage.output_tokens);
@@ -79,6 +89,7 @@ export async function callStructured({ runId, stage, model, system, userMessage,
       return { parsed: response.parsed_output, usage: response.usage, costUsd };
     } catch (err) {
       lastErr = err;
+      console.error(`model call failed (stage=${stage}, attempt=${attempt}): ${err.status ?? ""} ${String(err.message).slice(0, 300)}`);
       const latencyMs = Date.now() - startedAt;
       await recordModelCall(runId, { stage, model, attempt, usage: null, costUsd: 0, status: "failed", latencyMs });
       if (attempt === 1 && isRetryable(err)) {

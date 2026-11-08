@@ -7,6 +7,9 @@ export const MODELS = {
   referenceProse: "claude-haiku-5-5",
   narrative: "claude-sonnet-5-5",
   claimCheck: "claude-haiku-5-5",
+  grouper: "claude-haiku-5-5",
+  translator: "claude-haiku-5-5",
+  chat: "claude-sonnet-5-5",
 };
 
 // $ per million tokens.
@@ -20,6 +23,10 @@ export const MAX_OUTPUT_TOKENS = {
   architect: 6000,
   writer: 4000,
   claimCheck: 1500,
+  grouper: 2500,
+  tour: 2500,
+  translator: 4000,
+  chat: 1500,
 };
 
 export function estimateCostUsd(model, inputTokens, outputTokens) {

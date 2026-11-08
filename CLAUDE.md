@@ -26,8 +26,10 @@ React (Vite) · Node + Express · PostgreSQL (Neon) · one Render web service (E
 
 ## Current status
 
-- Docs and designs are done. **Next: Task 1 — Foundations** (T01 contracts, T02 fixtures + independent inventory, T03 scaffold + stub deploy).
-- Open decisions are in PRD §12 (test repos, owners A/B, hosting tier, API budget, models).
+- Tasks 1 to 6 are built and tested, plus add-on Tasks 10 (repo map), 11 (guided tours), a plain-English flow layer, and an "Ask this repo" agent. 200 tests pass. Not built: AI claim check (7), Python (8), frontend page (9), plain-language guides (12), the demo recording.
+- Everything is on a stack of unmerged PRs (#2 to #21); the newest branch is `dikshyant-ask-agent`.
+- **Read the newest entry in `LOG.md` first**: it has the full handoff, the "wow factor" brainstorm (ideas 1, 3 and 4 preferred: a self-exploring talking guide, data in motion, voice conversation), and the open questions.
+- Open decisions are in PRD §12 and in the LOG handoff.
 
 ## Working agreements
 

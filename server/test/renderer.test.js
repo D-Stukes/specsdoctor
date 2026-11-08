@@ -102,3 +102,17 @@ test("a known_command code block credits its package.json script", () => {
   const { markdown } = renderPage(page, index, repo);
   assert.ok(markdown.includes("From `server/package.json` script `dev`"));
 });
+
+test("middleware that is an anonymous default export is shown by its file name, not 'default'", async () => {
+  const localIndex = {
+    items: [
+      { id: "sym:mw/authorize.js#default", kind: "function", name: "default", path: "mw/authorize.js", start_line: 1, end_line: 3, signature: "default()", language: "javascript" },
+      { id: "ep:GET /x@r.js:1", kind: "endpoint", method: "GET", path: "/x", resolved: true, declaration: { path: "r.js", start_line: 1, end_line: 2 }, mounts: [], middleware: ["sym:mw/authorize.js#default"], handler: { inline: { path: "r.js", start_line: 1, end_line: 2 } } },
+    ],
+    project: { workspaces: [], env_vars: [], tables: [] },
+  };
+  const page = { schema_version: "page/1", slug: "api-endpoints", title: "API", sections: [{ heading: "Endpoints", blocks: [{ type: "endpoint_ref", endpoint_id: "ep:GET /x@r.js:1" }] }] };
+  const { markdown } = renderPage(page, localIndex, repo);
+  assert.ok(markdown.includes("Middleware: `authorize`"), markdown);
+  assert.ok(!markdown.includes("`default`"));
+});

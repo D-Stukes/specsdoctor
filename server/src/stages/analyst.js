@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { callStructured } from "../ai/client.js";
+import { callValidated } from "../ai/call-validated.js";
 import { getPool } from "../db/pool.js";
 import { MODELS, MAX_OUTPUT_TOKENS } from "../ai/models.js";
 import { getValidator } from "@docsync/contracts";
@@ -58,7 +58,7 @@ export async function analyzeModule({ runId, modulePath, items, source, budgetMa
   const validate = getValidator("summary/1");
   const knownIds = new Set(items.map((i) => i.id));
 
-  const { parsed } = await callStructured({
+  const { parsed } = await callValidated({
     runId,
     stage: "analyst",
     model: MODELS.analyst,
@@ -69,7 +69,7 @@ export async function analyzeModule({ runId, modulePath, items, source, budgetMa
     estimatedInputTokens: Math.ceil((SYSTEM_PROMPT.length + source.length) / 4),
     budgetManager,
     stub: stub ? () => stubSummary(modulePath, items) : null,
-  });
+  }, validate);
 
   if (!validate(parsed)) {
     await recordEvent(runId, "analyst", "warn", "module_not_summarized", { modulePath, errors: validate.errors });

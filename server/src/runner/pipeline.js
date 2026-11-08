@@ -1,12 +1,31 @@
+import { forEachConcurrent, AI_CONCURRENCY } from "./concurrency.js";
+import { buildGraph } from "../graph/build-graph.js";
+import { makeGraphGroups } from "../stages/grouper.js";
+import { saveGraphGroups, savePlainLanguage } from "../db/load-graph.js";
+import { makePlainLanguage, overlayPlainLanguage } from "../stages/plain-language.js";
+import { applyGroups } from "../graph/groups.js";
+import { makeTours } from "../stages/tour-agent.js";
+import { saveTours } from "../db/tours.js";
 import { getPool } from "../db/pool.js";
 import { fetchRepo } from "../reader/fetch-repo.js";
 import { scan } from "../scanner/index.js";
 import { BudgetManager, BudgetExceededError } from "../ai/budget-manager.js";
 import { analyzeModule } from "../stages/analyst.js";
 import { writeReferencePage } from "../stages/writer.js";
+import { writeOverviewPage } from "../stages/architect.js";
+import {
+  buildTechStackPage,
+  buildDataModelPage,
+  buildArchitecturePage,
+  buildApiEndpointsPage,
+  buildGettingStartedPage,
+  buildConfigurationPage,
+} from "../stages/architect-deterministic.js";
 import { renderPage } from "../renderer/render-page.js";
+import { verifyPage, scanRenderedPageForUnknownMentions } from "../stages/verifier.js";
 import { savePageRevision } from "../db/pages.js";
-import { initStages, startStage, finishStage, skipStage, recordEvent } from "./stage-tracking.js";
+import { saveClaimChecks, saveFindings } from "../db/verification.js";
+import { initStages, startStage, finishStage, recordEvent } from "./stage-tracking.js";
 
 const STAGES = ["reader", "scanner", "analyst", "architect", "writer", "verifier", "render"];
 const MODULE_LIMIT = 100; // §4a
@@ -58,21 +77,19 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
     return;
   }
 
-  await skipStage(runId, "architect", "Task 4 (not built yet)");
-  await skipStage(runId, "verifier", "Task 5 (not built yet)");
-
   const modules = groupItemsByModule(index.items).slice(0, MODULE_LIMIT);
   const repo = { owner, name, sha: resolvedSha };
 
   await startStage(runId, "analyst", modules.length);
   const summaries = new Map();
   let analystFailed = 0;
+  let analystFirstError = null;
   let budgetExhausted = false;
-  for (const mod of modules) {
+  await forEachConcurrent(modules, AI_CONCURRENCY, async (mod) => {
     if (budgetExhausted) {
       await recordEvent(runId, "analyst", "warn", "budget_skipped", { modulePath: mod.path });
       analystFailed += 1;
-      continue;
+      return;
     }
     try {
       const summary = await analyzeModule({ runId, modulePath: mod.path, items: mod.items, source: contentByPath[mod.path] ?? "", budgetManager, stub: aiStub });
@@ -84,41 +101,132 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
         await recordEvent(runId, "analyst", "warn", "budget_skipped", { modulePath: mod.path });
       } else {
         await recordEvent(runId, "analyst", "error", "module_failed", { modulePath: mod.path, message: err.message });
+        analystFirstError ??= err.message;
       }
       analystFailed += 1;
     }
+  });
+  await finishStage(runId, "analyst", analystFailed === 0 ? "done" : analystFailed === modules.length ? "failed" : "partial", { itemsDone: summaries.size, itemsFailed: analystFailed, message: analystFirstError });
+
+  // T15 Architect: tech-stack/data-model/architecture are always built (no
+  // AI, no fallback needed - they *are* the fallback, per §2); overview is
+  // the one AI-narrative page in Task 4's scope and has no deterministic
+  // substitute, so it's simply absent (not a degraded page) if it fails.
+  // 4 deterministic pages always, +1 (overview) only when there's at least
+  // one module summary to synthesize from - total isn't fixed up front.
+  await startStage(runId, "architect");
+  const architectPages = [
+    buildTechStackPage(index),
+    buildDataModelPage(index),
+    buildArchitecturePage(index),
+    buildApiEndpointsPage(index),
+    buildGettingStartedPage(index),
+    buildConfigurationPage(index),
+  ];
+  let architectFailed = 0;
+  try {
+    const overviewInput = [...summaries.entries()].map(([modulePath, summary]) => ({ module_path: modulePath, summary }));
+    const overview = await writeOverviewPage({ runId, index, summaries: overviewInput, budgetManager, stub: aiStub });
+    if (overview) architectPages.push(overview);
+    else architectFailed += 1;
+  } catch (err) {
+    architectFailed += 1;
+    await recordEvent(runId, "architect", "error", "page_generation_failed", { slug: "overview", message: err.message });
   }
-  await finishStage(runId, "analyst", analystFailed === 0 ? "done" : analystFailed === modules.length ? "failed" : "partial", { itemsDone: summaries.size, itemsFailed: analystFailed });
+  await finishStage(runId, "architect", architectFailed === 0 ? "done" : "partial", { itemsDone: architectPages.length, itemsFailed: architectFailed });
+
+  // Repo map areas, then the guided tours that play on that map. Neither can fail the run.
+  const summaryList = [...summaries.entries()].map(([modulePath, summary]) => ({ module_path: modulePath, summary }));
+  const itemSummaries = new Map();
+  for (const sm of summaries.values()) for (const it of sm.items ?? []) if (it.symbol_id && it.what_it_does) itemSummaries.set(it.symbol_id, it.what_it_does);
+  let groupedGraph = buildGraph(index, { summaries: itemSummaries });
+  try {
+    const grouping = await makeGraphGroups({ runId, graph: groupedGraph, summaries: summaryList, budgetManager, stub: aiStub });
+    await saveGraphGroups(runId, grouping);
+    groupedGraph = applyGroups(groupedGraph, grouping.groups);
+  } catch (err) {
+    await recordEvent(runId, "architect", "warn", "graph_groups_failed", { message: err.message });
+  }
+  try {
+    const plain = await makePlainLanguage({ runId, graph: groupedGraph, budgetManager, stub: aiStub });
+    await savePlainLanguage(runId, plain);
+    groupedGraph = overlayPlainLanguage(groupedGraph, plain.nodes);
+  } catch (err) {
+    await recordEvent(runId, "architect", "warn", "plain_language_failed", { message: err.message });
+  }
+  try {
+    const { tours, findings } = await makeTours({ runId, graph: groupedGraph, index, summaries: summaryList, budgetManager, stub: aiStub });
+    await saveTours(runId, tours, findings);
+  } catch (err) {
+    await recordEvent(runId, "architect", "warn", "tours_failed", { message: err.message });
+  }
 
   await startStage(runId, "writer", modules.length);
-  await startStage(runId, "render", modules.length);
-  let pagesSaved = 0;
+  await startStage(runId, "render", modules.length + architectPages.length);
+  await startStage(runId, "verifier", modules.length + architectPages.length);
+  let modulePagesSaved = 0;
   let writerFailed = 0;
-  for (const mod of modules) {
+  let writerFirstError = null;
+  let totalFindings = 0;
+  let pagesWithFailedClaims = 0;
+
+  for (const page of architectPages) {
+    const result = await saveAndVerifyPage({ runId, page, index, contentByPath, repo, ownerStage: page.slug === "overview" ? "architect" : "renderer" });
+    totalFindings += result.findings.length;
+    if (result.hasFailedClaim) pagesWithFailedClaims += 1;
+  }
+  await forEachConcurrent(modules, AI_CONCURRENCY, async (mod) => {
     try {
       const summary = summaries.get(mod.path);
       const page = summary
         ? await writeReferencePage({ runId, modulePath: mod.path, items: mod.items, summary, budgetManager, stub: aiStub })
         : deterministicOnlyPage(mod);
-      const { markdown } = renderPage(page, index, repo);
-      await savePageRevision({ runId, page, markdown });
-      pagesSaved += 1;
+      const result = await saveAndVerifyPage({ runId, page, index, contentByPath, repo });
+      totalFindings += result.findings.length;
+      if (result.hasFailedClaim) pagesWithFailedClaims += 1;
+      modulePagesSaved += 1;
     } catch (err) {
       writerFailed += 1;
       await recordEvent(runId, "writer", "error", "page_generation_failed", { modulePath: mod.path, message: err.message });
+      writerFirstError ??= err.message;
     }
-  }
-  await finishStage(runId, "writer", writerFailed === 0 ? "done" : writerFailed === modules.length ? "failed" : "partial", { itemsDone: pagesSaved, itemsFailed: writerFailed });
+  });
+  const pagesSaved = architectPages.length + modulePagesSaved;
+  await finishStage(runId, "writer", writerFailed === 0 ? "done" : writerFailed === modules.length ? "failed" : "partial", { itemsDone: modulePagesSaved, itemsFailed: writerFailed, message: writerFirstError });
   await finishStage(runId, "render", "done", { itemsDone: pagesSaved });
+  await finishStage(runId, "verifier", pagesWithFailedClaims === 0 ? "done" : "partial", { itemsDone: pagesSaved, itemsFailed: pagesWithFailedClaims, message: `${totalFindings} finding(s)` });
 
   const hasDocumentedSubject = index.items.some((i) => i.kind === "endpoint" || i.documented);
   const usable = hasDocumentedSubject && pagesSaved > 0;
-  const status = !usable ? "failed" : writerFailed > 0 || analystFailed > 0 ? "complete_with_errors" : "complete";
+  const status = !usable
+    ? "failed"
+    : writerFailed > 0 || analystFailed > 0 || architectFailed > 0 || pagesWithFailedClaims > 0
+      ? "complete_with_errors"
+      : "complete";
 
   await pool.query(`UPDATE runs SET status = $2, cost_usd = $3, finished_at = now() WHERE id = $1`, [runId, status, budgetManager.spentUsd]);
   if (!usable) {
     await pool.query(`UPDATE runs SET failure_code = 'no_usable_output' WHERE id = $1`, [runId]);
   }
+}
+
+/**
+ * Renders, saves, and verifies one page in one place - every page in this
+ * pipeline goes through the same render -> save -> verify sequence, so this
+ * is the single definition of what "a saved page" means here (T13/T17).
+ */
+async function saveAndVerifyPage({ runId, page, index, contentByPath, repo, ownerStage }) {
+  const { markdown, warnings } = renderPage(page, index, repo);
+  const { pageId, rev } = await savePageRevision({ runId, page, markdown, ownerStage });
+
+  const unknownMentions = scanRenderedPageForUnknownMentions(markdown, index);
+  const { verifyResult, findings } = verifyPage({ page, rev, index, contentByPath, renderWarnings: warnings, unknownMentions });
+
+  await saveClaimChecks({ pageId, rev, verifyResult });
+  await saveFindings({ runId, pageId, findings });
+  await getPool().query(`UPDATE page_revisions SET checks_fresh = true WHERE page_id = $1 AND rev = $2`, [pageId, rev]);
+
+  return { findings, hasFailedClaim: verifyResult.claims.some((c) => c.structural.status === "fail") };
 }
 
 function groupItemsByModule(items) {
@@ -156,7 +264,7 @@ async function saveIndex(runId, index) {
   await pool.query(
     `INSERT INTO run_artifacts (run_id, coverage, project_facts, import_graph) VALUES ($1, $2, $3, $4)
      ON CONFLICT (run_id) DO UPDATE SET coverage = EXCLUDED.coverage, project_facts = EXCLUDED.project_facts, import_graph = EXCLUDED.import_graph`,
-    [runId, index.coverage, index.project, { imports: index.imports, unresolved_imports: index.unresolved_imports }]
+    [runId, index.coverage, index.project, { imports: index.imports, unresolved_imports: index.unresolved_imports, graph_facts: index.graph_facts }]
   );
   for (const item of index.items) {
     await pool.query(

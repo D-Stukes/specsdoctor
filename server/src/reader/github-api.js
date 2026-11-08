@@ -17,6 +17,14 @@ async function githubFetch(path) {
     headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
   }
   const res = await fetch(`${GITHUB_API}${path}`, { headers });
+  if ((res.status === 403 || res.status === 429) && res.headers.get("x-ratelimit-remaining") === "0") {
+    const resetAt = Number(res.headers.get("x-ratelimit-reset")) * 1000;
+    const minutes = Number.isFinite(resetAt) ? Math.max(1, Math.ceil((resetAt - Date.now()) / 60000)) : null;
+    throw new RepoReaderError(
+      "github_rate_limited",
+      `GitHub's request limit for this server is used up${minutes ? `; it resets in about ${minutes} minute(s)` : ""}. Set GITHUB_TOKEN to raise the limit.`
+    );
+  }
   return res;
 }
 

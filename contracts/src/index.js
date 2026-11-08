@@ -13,6 +13,11 @@ const SCHEMA_FILES = {
   "summary/1": "summary.schema.json",
   "page/1": "page.schema.json",
   "verify/1": "verify.schema.json",
+  "graph/1": "graph.schema.json",
+  "graph-groups/1": "graph-groups.schema.json",
+  "tour/1": "tour.schema.json",
+  "plain-language/1": "plain-language.schema.json",
+  "tour-narration/1": "tour-narration.schema.json",
 };
 
 function loadSchema(file) {

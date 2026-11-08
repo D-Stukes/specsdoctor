@@ -1,0 +1,519 @@
+{
+  "date": "2026-11-07T19:20:27.714Z",
+  "total_cap_usd": 4,
+  "spent_usd": 0.2575,
+  "models": "see src/ai/models.js",
+  "results": [
+    {
+      "url": "https://github.com/wasim15185/Amazon-Clone-PERN-stack",
+      "run_id": "1aa10db7-9eae-4d9b-ba9c-d180cf130539",
+      "status": "complete",
+      "resolved_sha": "aa386ec8880831bc13ae6b413c14946046ae5e40",
+      "duration_s": 67.7,
+      "cost_usd": 0.0569,
+      "budget_cap_usd": 0.75,
+      "coverage": {
+        "files": {
+          "failed": 0,
+          "scanned": 44,
+          "skipped": 2,
+          "unsupported": 34
+        },
+        "flagged_patterns": [
+          {
+            "line": 1,
+            "path": "server/database/migrations/1611409687633_user-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/database/migrations/1611413364673_products-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/database/migrations/1611855706197_cart-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/migrations/1611409687633_user-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/migrations/1611413364673_products-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/migrations/1611855706197_cart-migration.js",
+            "pattern": "knex_migration"
+          }
+        ]
+      },
+      "failed_stages": [],
+      "pages": [
+        "api-endpoints:generated",
+        "architecture:generated",
+        "configuration:generated",
+        "data-model:generated",
+        "getting-started:generated",
+        "overview:generated",
+        "server-app:generated",
+        "server-database-db-details:generated",
+        "server-database-migrations-1611409687633_user-migration:generated",
+        "server-database-migrations-1611413364673_products-migration:generated",
+        "server-database-migrations-1611855706197_cart-migration:generated",
+        "server-database-pool:generated",
+        "server-middleware-authMiddleware:generated",
+        "server-migrations-1611409687633_user-migration:generated",
+        "server-migrations-1611413364673_products-migration:generated",
+        "server-migrations-1611855706197_cart-migration:generated",
+        "server-utils-jwt-generator:generated",
+        "src-App:generated",
+        "src-components-AmazonCart:generated",
+        "src-components-Card:generated",
+        "src-components-Card_for_cart:generated",
+        "src-components-Carousel:generated",
+        "src-components-custom_hooks-activeUser:generated",
+        "src-components-custom_hooks-CustomHook:generated",
+        "src-components-custom_hooks-formHook:generated",
+        "src-components-custom_hooks-GetJwtToken:generated",
+        "src-components-custom_hooks-navDisplay:generated",
+        "src-components-Footer:generated",
+        "src-components-Homepage:generated",
+        "src-components-Loading:generated",
+        "src-components-Login:generated",
+        "src-components-Navbar:generated",
+        "src-components-OneItemPage:generated",
+        "src-components-RequestUser-ForLogIn:generated",
+        "src-components-RequestUser-ForSignUp:generated",
+        "src-components-Signup:generated",
+        "src-redux-actionCreator:generated",
+        "src-redux-reducer:generated",
+        "src-redux-store:generated",
+        "src-reportWebVitals:generated",
+        "src-urls:generated",
+        "tech-stack:generated"
+      ],
+      "page_count": 42,
+      "findings": [],
+      "model_calls": [
+        {
+          "model": "claude-sonnet-5-5",
+          "calls": 1,
+          "input_tokens": 6629,
+          "output_tokens": 878,
+          "failed": 0
+        },
+        {
+          "model": "claude-haiku-5-5",
+          "calls": 71,
+          "input_tokens": 158773,
+          "output_tokens": 37982,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "url": "https://github.com/AndrewJBateman/pern-stack-auth",
+      "run_id": "49187af7-c6bd-44fd-abb5-51dc65b02583",
+      "status": "complete",
+      "resolved_sha": "071db2eb4a0eea033660a87fffeb08e705f89745",
+      "duration_s": 29.9,
+      "cost_usd": 0.0269,
+      "budget_cap_usd": 0.75,
+      "coverage": {
+        "files": {
+          "failed": 0,
+          "scanned": 19,
+          "skipped": 1,
+          "unsupported": 14
+        },
+        "flagged_patterns": []
+      },
+      "failed_stages": [],
+      "pages": [
+        "api-endpoints:generated",
+        "architecture:generated",
+        "client-src-App:generated",
+        "client-src-components-dashboard-Dashboard:generated",
+        "client-src-components-dashboard-todolist-EditTodo:generated",
+        "client-src-components-dashboard-todolist-InputTodo:generated",
+        "client-src-components-dashboard-todolist-ListTodos:generated",
+        "client-src-components-Landing:generated",
+        "client-src-components-Login:generated",
+        "client-src-components-Register:generated",
+        "configuration:generated",
+        "data-model:generated",
+        "getting-started:generated",
+        "overview:generated",
+        "server-db:generated",
+        "server-middleware-authorize:generated",
+        "server-middleware-validInfo:generated",
+        "server-utils-jwtGenerator:generated",
+        "tech-stack:generated"
+      ],
+      "page_count": 19,
+      "findings": [],
+      "model_calls": [
+        {
+          "model": "claude-haiku-5-5",
+          "calls": 25,
+          "input_tokens": 56159,
+          "output_tokens": 11735,
+          "failed": 0
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "calls": 1,
+          "input_tokens": 3713,
+          "output_tokens": 795,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "url": "https://github.com/wasim15185/Amazon-Clone-PERN-stack",
+      "run_id": "38763df3-2461-4042-af2f-e9c4be9a1a5d",
+      "status": "complete",
+      "resolved_sha": "aa386ec8880831bc13ae6b413c14946046ae5e40",
+      "duration_s": 67.1,
+      "cost_usd": 0.0602,
+      "budget_cap_usd": 0.75,
+      "coverage": {
+        "files": {
+          "failed": 0,
+          "scanned": 44,
+          "skipped": 2,
+          "unsupported": 34
+        },
+        "flagged_patterns": [
+          {
+            "line": 1,
+            "path": "server/database/migrations/1611409687633_user-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/database/migrations/1611413364673_products-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/database/migrations/1611855706197_cart-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/migrations/1611409687633_user-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/migrations/1611413364673_products-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/migrations/1611855706197_cart-migration.js",
+            "pattern": "knex_migration"
+          }
+        ]
+      },
+      "failed_stages": [],
+      "pages": [
+        "api-endpoints:generated",
+        "architecture:generated",
+        "configuration:generated",
+        "data-model:generated",
+        "getting-started:generated",
+        "overview:generated",
+        "server-app:generated",
+        "server-database-db-details:generated",
+        "server-database-migrations-1611409687633_user-migration:generated",
+        "server-database-migrations-1611413364673_products-migration:generated",
+        "server-database-migrations-1611855706197_cart-migration:generated",
+        "server-database-pool:generated",
+        "server-middleware-authMiddleware:generated",
+        "server-migrations-1611409687633_user-migration:generated",
+        "server-migrations-1611413364673_products-migration:generated",
+        "server-migrations-1611855706197_cart-migration:generated",
+        "server-utils-jwt-generator:generated",
+        "src-App:generated",
+        "src-components-AmazonCart:generated",
+        "src-components-Card:generated",
+        "src-components-Card_for_cart:generated",
+        "src-components-Carousel:generated",
+        "src-components-custom_hooks-activeUser:generated",
+        "src-components-custom_hooks-CustomHook:generated",
+        "src-components-custom_hooks-formHook:generated",
+        "src-components-custom_hooks-GetJwtToken:generated",
+        "src-components-custom_hooks-navDisplay:generated",
+        "src-components-Footer:generated",
+        "src-components-Homepage:generated",
+        "src-components-Loading:generated",
+        "src-components-Login:generated",
+        "src-components-Navbar:generated",
+        "src-components-OneItemPage:generated",
+        "src-components-RequestUser-ForLogIn:generated",
+        "src-components-RequestUser-ForSignUp:generated",
+        "src-components-Signup:generated",
+        "src-redux-actionCreator:generated",
+        "src-redux-reducer:generated",
+        "src-redux-store:generated",
+        "src-reportWebVitals:generated",
+        "src-urls:generated",
+        "tech-stack:generated"
+      ],
+      "page_count": 42,
+      "findings": [],
+      "model_calls": [
+        {
+          "model": "claude-sonnet-5-5",
+          "calls": 1,
+          "input_tokens": 6684,
+          "output_tokens": 1191,
+          "failed": 0
+        },
+        {
+          "model": "claude-haiku-5-5",
+          "calls": 71,
+          "input_tokens": 158848,
+          "output_tokens": 37998,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "url": "https://github.com/AndrewJBateman/pern-stack-auth",
+      "run_id": "343f173c-89af-4cc4-8ad9-2a7f0448ed4f",
+      "status": "complete",
+      "resolved_sha": "071db2eb4a0eea033660a87fffeb08e705f89745",
+      "duration_s": 31.3,
+      "cost_usd": 0.0286,
+      "budget_cap_usd": 0.75,
+      "coverage": {
+        "files": {
+          "failed": 0,
+          "scanned": 19,
+          "skipped": 1,
+          "unsupported": 14
+        },
+        "flagged_patterns": []
+      },
+      "failed_stages": [],
+      "pages": [
+        "api-endpoints:generated",
+        "architecture:generated",
+        "client-src-App:generated",
+        "client-src-components-dashboard-Dashboard:generated",
+        "client-src-components-dashboard-todolist-EditTodo:generated",
+        "client-src-components-dashboard-todolist-InputTodo:generated",
+        "client-src-components-dashboard-todolist-ListTodos:generated",
+        "client-src-components-Landing:generated",
+        "client-src-components-Login:generated",
+        "client-src-components-Register:generated",
+        "configuration:generated",
+        "data-model:generated",
+        "getting-started:generated",
+        "overview:generated",
+        "server-db:generated",
+        "server-middleware-authorize:generated",
+        "server-middleware-validInfo:generated",
+        "server-utils-jwtGenerator:generated",
+        "tech-stack:generated"
+      ],
+      "page_count": 19,
+      "findings": [],
+      "model_calls": [
+        {
+          "model": "claude-haiku-5-5",
+          "calls": 25,
+          "input_tokens": 56322,
+          "output_tokens": 12295,
+          "failed": 0
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "calls": 1,
+          "input_tokens": 3741,
+          "output_tokens": 938,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "url": "https://github.com/wasim15185/Amazon-Clone-PERN-stack",
+      "run_id": "9bc6545c-a61f-4cef-87fd-1c99ab80e59b",
+      "status": "complete",
+      "resolved_sha": "aa386ec8880831bc13ae6b413c14946046ae5e40",
+      "duration_s": 65.2,
+      "cost_usd": 0.0553,
+      "budget_cap_usd": 0.75,
+      "coverage": {
+        "files": {
+          "failed": 0,
+          "scanned": 44,
+          "skipped": 2,
+          "unsupported": 34
+        },
+        "flagged_patterns": [
+          {
+            "line": 1,
+            "path": "server/database/migrations/1611409687633_user-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/database/migrations/1611413364673_products-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/database/migrations/1611855706197_cart-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/migrations/1611409687633_user-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/migrations/1611413364673_products-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/migrations/1611855706197_cart-migration.js",
+            "pattern": "knex_migration"
+          }
+        ]
+      },
+      "failed_stages": [],
+      "pages": [
+        "api-endpoints:generated",
+        "architecture:generated",
+        "configuration:generated",
+        "data-model:generated",
+        "getting-started:generated",
+        "overview:generated",
+        "server-app:generated",
+        "server-database-db-details:generated",
+        "server-database-migrations-1611409687633_user-migration:generated",
+        "server-database-migrations-1611413364673_products-migration:generated",
+        "server-database-migrations-1611855706197_cart-migration:generated",
+        "server-database-pool:generated",
+        "server-middleware-authMiddleware:generated",
+        "server-migrations-1611409687633_user-migration:generated",
+        "server-migrations-1611413364673_products-migration:generated",
+        "server-migrations-1611855706197_cart-migration:generated",
+        "server-utils-jwt-generator:generated",
+        "src-App:generated",
+        "src-components-AmazonCart:generated",
+        "src-components-Card:generated",
+        "src-components-Card_for_cart:generated",
+        "src-components-Carousel:generated",
+        "src-components-custom_hooks-activeUser:generated",
+        "src-components-custom_hooks-CustomHook:generated",
+        "src-components-custom_hooks-formHook:generated",
+        "src-components-custom_hooks-GetJwtToken:generated",
+        "src-components-custom_hooks-navDisplay:generated",
+        "src-components-Footer:generated",
+        "src-components-Homepage:generated",
+        "src-components-Loading:generated",
+        "src-components-Login:generated",
+        "src-components-Navbar:generated",
+        "src-components-OneItemPage:generated",
+        "src-components-RequestUser-ForLogIn:generated",
+        "src-components-RequestUser-ForSignUp:generated",
+        "src-components-Signup:generated",
+        "src-redux-actionCreator:generated",
+        "src-redux-reducer:generated",
+        "src-redux-store:generated",
+        "src-reportWebVitals:generated",
+        "src-urls:generated",
+        "tech-stack:generated"
+      ],
+      "page_count": 42,
+      "findings": [],
+      "model_calls": [
+        {
+          "model": "claude-haiku-5-5",
+          "calls": 71,
+          "input_tokens": 158722,
+          "output_tokens": 36823,
+          "failed": 0
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "calls": 1,
+          "input_tokens": 6645,
+          "output_tokens": 773,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "url": "https://github.com/AndrewJBateman/pern-stack-auth",
+      "run_id": "39f5c0fc-4e74-4596-ad8e-cb85e6464535",
+      "status": "complete_with_errors",
+      "resolved_sha": "071db2eb4a0eea033660a87fffeb08e705f89745",
+      "duration_s": 29.4,
+      "cost_usd": 0.0296,
+      "budget_cap_usd": 0.75,
+      "coverage": {
+        "files": {
+          "failed": 0,
+          "scanned": 19,
+          "skipped": 1,
+          "unsupported": 14
+        },
+        "flagged_patterns": []
+      },
+      "failed_stages": [
+        "architect"
+      ],
+      "pages": [
+        "api-endpoints:generated",
+        "architecture:generated",
+        "client-src-App:generated",
+        "client-src-components-dashboard-Dashboard:generated",
+        "client-src-components-dashboard-todolist-EditTodo:generated",
+        "client-src-components-dashboard-todolist-InputTodo:generated",
+        "client-src-components-dashboard-todolist-ListTodos:generated",
+        "client-src-components-Landing:generated",
+        "client-src-components-Login:generated",
+        "client-src-components-Register:generated",
+        "configuration:generated",
+        "data-model:generated",
+        "getting-started:generated",
+        "server-db:generated",
+        "server-middleware-authorize:generated",
+        "server-middleware-validInfo:generated",
+        "server-utils-jwtGenerator:generated",
+        "tech-stack:generated"
+      ],
+      "page_count": 18,
+      "findings": [],
+      "model_calls": [
+        {
+          "model": "claude-haiku-5-5",
+          "calls": 25,
+          "input_tokens": 56341,
+          "output_tokens": 12204,
+          "failed": 0
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "calls": 1,
+          "input_tokens": 3748,
+          "output_tokens": 1039,
+          "failed": 0
+        }
+      ]
+    }
+  ]
+}

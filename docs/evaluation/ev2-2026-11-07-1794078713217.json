@@ -1,0 +1,73 @@
+{
+  "date": "2026-11-07T19:11:53.217Z",
+  "total_cap_usd": 4,
+  "spent_usd": 0.0276,
+  "models": "see src/ai/models.js",
+  "results": [
+    {
+      "url": "https://github.com/AndrewJBateman/pern-stack-auth",
+      "run_id": "c45cdb77-f287-463b-869b-7d1ab3a6f7f8",
+      "status": "complete",
+      "resolved_sha": "071db2eb4a0eea033660a87fffeb08e705f89745",
+      "duration_s": 27.5,
+      "cost_usd": 0.0276,
+      "budget_cap_usd": 0.75,
+      "coverage": {
+        "files": {
+          "failed": 0,
+          "scanned": 19,
+          "skipped": 1,
+          "unsupported": 14
+        },
+        "flagged_patterns": []
+      },
+      "failed_stages": [],
+      "pages": [
+        "api-endpoints:generated",
+        "architecture:generated",
+        "client-src-App:generated",
+        "client-src-components-dashboard-Dashboard:generated",
+        "client-src-components-dashboard-todolist-EditTodo:generated",
+        "client-src-components-dashboard-todolist-InputTodo:generated",
+        "client-src-components-dashboard-todolist-ListTodos:generated",
+        "client-src-components-Landing:generated",
+        "client-src-components-Login:generated",
+        "client-src-components-Register:generated",
+        "configuration:generated",
+        "data-model:generated",
+        "getting-started:generated",
+        "overview:generated",
+        "server-db:generated",
+        "server-middleware-authorize:generated",
+        "server-middleware-validInfo:generated",
+        "server-utils-jwtGenerator:generated",
+        "tech-stack:generated"
+      ],
+      "page_count": 19,
+      "findings": [
+        {
+          "page": "overview",
+          "reason": "unknown_symbol",
+          "severity": "warning",
+          "message": "Unmatched mention in rendered text: `req.user`"
+        }
+      ],
+      "model_calls": [
+        {
+          "model": "claude-sonnet-5-5",
+          "calls": 1,
+          "input_tokens": 3718,
+          "output_tokens": 885,
+          "failed": 0
+        },
+        {
+          "model": "claude-haiku-5-5",
+          "calls": 25,
+          "input_tokens": 56291,
+          "output_tokens": 11316,
+          "failed": 0
+        }
+      ]
+    }
+  ]
+}

@@ -108,6 +108,7 @@ export interface Import {
   from: string;
   to: string;
   kind: "import" | "require";
+  line?: number;
 }
 
 export interface UnresolvedImport {
@@ -134,6 +135,10 @@ export interface Index {
   };
   imports: Import[];
   unresolved_imports: UnresolvedImport[];
+  graph_facts?: {
+    queries_table: { path: string; line: number; table: string }[];
+    calls_endpoint: { path: string; line: number; url: string; method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | null }[];
+  };
   coverage: {
     files: { scanned: number; skipped: number; unsupported: number; failed: number };
     flagged_patterns: FlaggedPattern[];
