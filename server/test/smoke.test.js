@@ -221,3 +221,15 @@ test("AT-14: export ZIP contents", async () => {
   assert.match(prov, /Resolved commit/);
   assert.ok(!/verified spec[^.]*\./.test(prov.replace("not a verified spec", "")), "must not claim verified");
 });
+
+test("GET /api/runs/:id/graph returns a valid graph/1 for a finished run", async () => {
+  const { validateDoc } = await import("@docsync/contracts");
+  const res = await fetch(`${baseUrl}/api/runs/${m3RunId}/graph`, { headers: { cookie: sessionCookie } });
+  assert.equal(res.status, 200);
+  const graph = await res.json();
+  const { valid, errors } = validateDoc(graph);
+  assert.equal(valid, true, JSON.stringify(errors));
+
+  const missing = await fetch(`${baseUrl}/api/runs/00000000-0000-0000-0000-000000000000/graph`, { headers: { cookie: sessionCookie } });
+  assert.equal(missing.status, 404);
+});

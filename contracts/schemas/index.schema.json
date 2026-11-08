@@ -94,7 +94,8 @@
         "properties": {
           "from": { "type": "string" },
           "to": { "type": "string" },
-          "kind": { "enum": ["import", "require"] }
+          "kind": { "enum": ["import", "require"] },
+          "line": { "type": "integer", "minimum": 1 }
         }
       }
     },

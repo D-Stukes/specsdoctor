@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docsync.dev/schemas/graph/1",
+  "title": "Repo graph",
+  "description": "Interactive repo map data. Technical Design SS4f. Built only from parser facts; every edge carries evidence or is marked inferred.",
+  "type": "object",
+  "required": ["schema_version", "nodes", "edges", "groups"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "graph/1" },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "layer", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["module", "function", "class", "method", "constant", "type", "endpoint", "table"] },
+          "layer": { "enum": ["frontend", "route", "middleware", "handler", "database", "module"] },
+          "label": { "type": "string", "minLength": 1 },
+          "group": { "type": "string" }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "kind", "inferred", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "kind": { "enum": ["imports", "mounts", "routes_to", "uses_middleware", "calls_endpoint", "queries_table"] },
+          "inferred": { "type": "boolean" },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["path", "start_line", "end_line"],
+              "additionalProperties": false,
+              "properties": {
+                "path": { "type": "string" },
+                "start_line": { "type": "integer", "minimum": 1 },
+                "end_line": { "type": "integer", "minimum": 1 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "summary"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "summary": { "type": "string" }
+        }
+      }
+    }
+  }
+}

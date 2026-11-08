@@ -108,7 +108,7 @@ export function scan(snapshot, contentByPath) {
       if (!spec.spec.startsWith(".") && !spec.spec.startsWith("/")) continue; // external dependency, not a local edge
       const resolved = resolveModuleSpecifier(file.path, spec.spec, scannedPaths);
       if (resolved) {
-        importsEdges.push({ from: file.path, to: resolved, kind: spec.kind === "require" ? "require" : "import" });
+        importsEdges.push({ from: file.path, to: resolved, kind: spec.kind === "require" ? "require" : "import", line: spec.line });
       } else if (!looksLikeNonModuleAsset(spec.spec)) {
         unresolvedImports.push({ from: file.path, spec: spec.spec, line: spec.line, reason: "unresolved_relative" });
       }

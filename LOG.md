@@ -4,6 +4,25 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-07 — Task 10 started: repo map graph backend (T27, deterministic half)
+
+**Done**
+- `graph/1` contract (`contracts/schemas/graph.schema.json`), registered with the validator.
+- `server/src/graph/build-graph.js`: builds the map's nodes and edges only from Scanner facts. Edge kinds so far: `routes_to` (endpoint to its named handler), `uses_middleware`, `mounts` (file that mounts a router to the file declaring the routes), `imports` (file to file). Tables from the schema parser become database-layer nodes. Every edge cites a source line or is marked `inferred`; edges never reference a node that doesn't exist.
+- Scanner now records the line of each resolved import (`imports[].line`, optional in `index/1`), so import edges have real evidence. Runs saved before this change still work: their import edges come out `inferred` with no evidence.
+- `GET /api/runs/:id/graph` (finished runs only; 404 unknown, 409 `run_not_ready`, 401 without a session).
+- Test helper `test/helpers/fixture.js` (the fixture loader, pulled out of `scanner-fixture.test.js` so graph tests can reuse it). 8 new tests; full suite 95/95.
+- Fixture graph: 26 nodes (6 routes, 4 handlers, 1 middleware, 12 modules, 3 tables), 18 edges (4 `routes_to`, 2 `mounts`, 1 `uses_middleware`, 11 `imports`).
+
+**Not done (rest of Task 10)**
+- T26 extractors: `calls_endpoint` (frontend `fetch`/`axios` literal URLs matched to endpoint paths, needs Task 9 for full coverage) and `queries_table` (table names in SQL strings inside handlers); both will be `inferred`.
+- T27 remainder: AI area grouping and one-line labels (one Haiku call), ELK layered layout and saved positions, `graph.json` in the export ZIP.
+- T28: the React Flow UI (three views, search, minimap, node drawer). Nothing visual exists yet.
+- Endpoints with inline handlers have no handler node, so no `routes_to` edge for them.
+- Project rule: add-ons come after Task 6 ships; Task 6 still has the human parts of T24 and T25 open.
+
+---
+
 ## 2026-11-07 — Table-level primary keys, file-name false positive, model-call timeout
 
 **Done**
