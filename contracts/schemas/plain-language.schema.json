@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docsync.dev/schemas/plain-language/1",
+  "title": "Plain-language node descriptions",
+  "description": "Translator output (Technical Design SS4f, plain-language layer): everyday-words labels and one-sentence summaries for map nodes, for readers who are not programmers. The validator rejects unknown ids and anything that still reads like code.",
+  "type": "object",
+  "required": ["schema_version", "nodes"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "plain-language/1" },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "summary"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "minLength": 1 },
+          "summary": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

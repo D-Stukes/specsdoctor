@@ -1,7 +1,8 @@
 import { forEachConcurrent, AI_CONCURRENCY } from "./concurrency.js";
 import { buildGraph } from "../graph/build-graph.js";
 import { makeGraphGroups } from "../stages/grouper.js";
-import { saveGraphGroups } from "../db/load-graph.js";
+import { saveGraphGroups, savePlainLanguage } from "../db/load-graph.js";
+import { makePlainLanguage, overlayPlainLanguage } from "../stages/plain-language.js";
 import { applyGroups } from "../graph/groups.js";
 import { makeTours } from "../stages/tour-agent.js";
 import { saveTours } from "../db/tours.js";
@@ -145,6 +146,13 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
     groupedGraph = applyGroups(groupedGraph, grouping.groups);
   } catch (err) {
     await recordEvent(runId, "architect", "warn", "graph_groups_failed", { message: err.message });
+  }
+  try {
+    const plain = await makePlainLanguage({ runId, graph: groupedGraph, budgetManager, stub: aiStub });
+    await savePlainLanguage(runId, plain);
+    groupedGraph = overlayPlainLanguage(groupedGraph, plain.nodes);
+  } catch (err) {
+    await recordEvent(runId, "architect", "warn", "plain_language_failed", { message: err.message });
   }
   try {
     const { tours, findings } = await makeTours({ runId, graph: groupedGraph, index, summaries: summaryList, budgetManager, stub: aiStub });
