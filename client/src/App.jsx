@@ -1,6 +1,8 @@
 import MapView from "./MapView.jsx";
 import FindingsList from "./Findings.jsx";
 import React, { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import "./theme.css";
 
 async function api(path, options) {
@@ -213,6 +215,35 @@ const PAGE_STATUS_DOT = {
   unsupported: "dot-skipped",
 };
 
+// Renders a generated doc page as formatted text. Links into a GitHub file
+// (source citations) become "View source" chips that open in a new tab.
+function DocLink({ href = "", children }) {
+  const isSource = /github\.com\/[^/]+\/[^/]+\/blob\//.test(href);
+  if (isSource) {
+    return (
+      <a className="source-link" href={href} target="_blank" rel="noopener noreferrer" title="Open this line on GitHub">
+        <span aria-hidden="true">{"</>"}</span> {children} <span className="source-link-arrow" aria-hidden="true">↗</span>
+      </a>
+    );
+  }
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  );
+}
+
+function DocPage({ markdown }) {
+  if (!markdown) return <p className="lede">(this page has been emptied)</p>;
+  return (
+    <article className="doc-page">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ a: DocLink }}>
+        {markdown}
+      </ReactMarkdown>
+    </article>
+  );
+}
+
 function PageViewer({ runId, slug, onBack }) {
   const [page, setPage] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -262,8 +293,8 @@ function PageViewer({ runId, slug, onBack }) {
   }
 
   return (
-    <div className="shell">
-      <div className="card" style={{ maxWidth: 720 }}>
+    <div className="shell shell-results">
+      <div className="card card-reading">
         <div className="card-header">
           <Brand />
           <button className="btn-primary" style={{ width: "auto" }} onClick={onBack}>
@@ -300,9 +331,7 @@ function PageViewer({ runId, slug, onBack }) {
             ) : (
               <>
                 <FindingsList runId={runId} pageSlug={slug} refreshKey={page.rev} />
-                <pre style={{ whiteSpace: "pre-wrap", fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--text)", lineHeight: 1.6 }}>
-                  {page.markdown || "(this page has been emptied)"}
-                </pre>
+                <DocPage markdown={page.markdown} />
                 <div className="write-for">
                   <button type="button" className="btn-primary" style={{ width: "auto" }} onClick={() => setEditing(true)}>
                     Edit
