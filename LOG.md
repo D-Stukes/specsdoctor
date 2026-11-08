@@ -4,6 +4,25 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-08 — T25: demo assets (script, stale-README repo, defect demo) — recording NOT done
+
+**Done**
+- **Stale-README demo repo** (`fixtures/demo-habit-tracker/`, built by `server/scripts/build-demo-repo.sh`): a small Express + Postgres + React habit tracker with a README that matches the code on `main`, and a `demo-stale-readme` branch where the code is renamed (`createHabit` to `addHabit`, `DB_URL` to `DATABASE_URL`, the `dev` script to `start`) and the README is left alone. `--git <dir>` builds the two-branch repo; `--flat v1|v2 <dir>` emits one version for tests.
+- **README-vs-code check** (`scripts/demo-readme-check.mjs`, logic in `scripts/lib/readme-check.mjs`): lists README statements the code no longer supports. On the stale branch it names exactly three: `DB_URL` (line 7), `npm run dev` (line 9), `createHabit()` (line 13); on `main` it names none. It is demo tooling; the product's pages never read the README.
+- **EV-5 as a test** (`test/demo-fixture.test.js`): none of the generated setup, configuration, API, data and architecture pages repeats a stale name; they give `DATABASE_URL` and `npm start`. The demo repo also yields the map edges and a "follow a request" tour.
+- **Injected-defect demo** (`scripts/demo-inject-defects.mjs`): five injected mistakes shown against the Verifier. A made-up function, a line past the end of a file, a missing file and a made-up endpoint are all flagged; a real function with the wrong behaviour passes the structural check, and the script says so plainly (only the unbuilt AI claim check could catch it).
+- **Demo script and checklist** (`docs/demo/DEMO-SCRIPT.md`): a five-minute, timed script with what to say and click, setup steps, words to avoid ("verified"), what to do when something goes wrong, and the numbers worth quoting.
+- Suite: 156/156.
+- **Rehearsal in the browser** of the edit step as the script words it: adding `` `sendWelcomeEmail()` `` to a page and saving raises "Needs review (1)" on that page with the warning.
+
+**Not done (needs a person)**
+- **The recording.** I cannot record the screen or the narration; the M6 "demo recorded" box stays unchecked. The script ends with how to record it.
+- **Publishing the demo repo to GitHub.** DocSync reads public GitHub repos only, and creating a public repo is a deliberate step, so I did not do it. The exact commands are in the script. Until it is published, the stale-README act cannot run live in the app; it runs from the terminal scripts and the test.
+- The full script has not been rehearsed end to end, because the habit-tracker run does not exist yet. The other steps were each checked earlier on `pern-stack-auth` (map, collapse, request trace, tour, export links, edit and review).
+- A live run takes 30 to 70 seconds, so the script opens saved runs; a deployed server also needs `GITHUB_TOKEN`.
+
+---
+
 ## 2026-11-08 — Task 11: guided tours (T29 to T32)
 
 **Done**
