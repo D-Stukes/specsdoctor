@@ -108,3 +108,24 @@ test("queries_table: only known tables produce edges; code outside any function 
   const edges = g.edges.filter((e) => e.kind === "queries_table");
   assert.deepEqual(edges.map((e) => [e.from, e.to]), [["mod:db.js", "tbl:users"]]);
 });
+
+test("queries_table: SQL inside an endpoint's inline handler attaches to that endpoint, not its file", () => {
+  const inline = {
+    id: "ep:GET /todos@r.js:5", kind: "endpoint", method: "GET", path: "/todos", resolved: true,
+    declaration: { path: "r.js", start_line: 5, end_line: 12 }, mounts: [], middleware: [], handler: { inline: { path: "r.js", start_line: 5, end_line: 12 } },
+  };
+  const other = { ...inline, id: "ep:POST /todos@r.js:14", method: "POST", declaration: { path: "r.js", start_line: 14, end_line: 20 }, handler: { inline: { path: "r.js", start_line: 14, end_line: 20 } } };
+  const g = buildGraph({
+    items: [inline, other], imports: [],
+    graph_facts: { queries_table: [{ path: "r.js", line: 8, table: "todos" }, { path: "r.js", line: 16, table: "users" }], calls_endpoint: [] },
+    project: { workspaces: [], env_vars: [], tables: [{ id: "tbl:todos" }, { id: "tbl:users" }] },
+  });
+  assert.deepEqual(g.edges.filter((e) => e.kind === "queries_table").map((e) => [e.from, e.to]).sort(), [["ep:GET /todos@r.js:5", "tbl:todos"], ["ep:POST /todos@r.js:14", "tbl:users"]]);
+});
+
+test("an anonymous default export is labelled by its file name, not 'default'", () => {
+  const fn = { id: "sym:mw/authorize.js#default", kind: "function", name: "default", path: "mw/authorize.js", start_line: 1, end_line: 3, signature: "default()" };
+  const e = { ...ep("GET", "/x"), middleware: [fn.id] };
+  const g = buildGraph({ items: [fn, e], imports: [], project: { workspaces: [], env_vars: [], tables: [] } });
+  assert.equal(g.nodes.find((n) => n.id === fn.id).label, "authorize()");
+});
