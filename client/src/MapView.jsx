@@ -6,6 +6,15 @@ import FollowTheData from "./FollowTheData.jsx";
 import AskPanel from "./AskPanel.jsx";
 import { NODE_W, NODE_H, LAYER_COLOR, layout } from "./map-shared.js";
 import TourPlayer from "./TourPlayer.jsx";
+import ExplorerPlayer from "./ExplorerPlayer.jsx";
+
+async function fetchExplorer(runId) {
+  const res = await fetch(`/api/runs/${runId}/explore`, { method: "POST" });
+  const body = await res.json().catch(() => ({}));
+  if (res.status === 401) window.dispatchEvent(new Event("docsync:signed-out"));
+  if (!res.ok) throw new Error(body?.error?.message ?? "The guide could not start exploring right now.");
+  return body.explorer;
+}
 
 const VIEWS = [
   { id: "flow", label: "Follow the data" },
@@ -33,6 +42,7 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
   const [areaFilter, setAreaFilter] = useState("");
   const [tourId, setTourId] = useState(null); // set while a guided tour is playing
   const [askOpen, setAskOpen] = useState(false);
+  const [explorer, setExplorer] = useState({ status: "idle" }); // idle | loading | ready | error
 
   const endpoints = useMemo(() => graph.nodes.filter((n) => n.kind === "endpoint"), [graph]);
   useEffect(() => {
@@ -124,9 +134,26 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
   }, [graph, plain]);
   const slug = selected && !selectedGroup ? pageSlugFor(selected) : null;
 
+  const startExplore = useCallback(async () => {
+    if (explorer.status === "ready") {
+      setExplorer((s) => ({ ...s, open: true }));
+      return;
+    }
+    setExplorer({ status: "loading" });
+    try {
+      const doc = await fetchExplorer(runId);
+      setExplorer({ status: "ready", open: true, explorer: doc });
+    } catch (err) {
+      setExplorer({ status: "error", message: err.message });
+    }
+  }, [runId, explorer.status]);
+
   const activeTour = tourId ? tours.find((t) => t.tour_id === tourId) : null;
   if (activeTour) {
     return <TourPlayer graph={graph} tour={activeTour} tours={tours} onSelectTour={setTourId} onBack={() => setTourId(null)} />;
+  }
+  if (explorer.status === "ready" && explorer.open) {
+    return <ExplorerPlayer graph={graph} explorer={explorer.explorer} onBack={() => setExplorer((s) => ({ ...s, open: false }))} />;
   }
 
   return (
@@ -162,6 +189,10 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
             Guided tour
           </button>
         )}
+        <button className="btn-primary" style={{ width: "auto" }} onClick={startExplore} disabled={explorer.status === "loading"} title="Let the guide pick its own walk through this app">
+          {explorer.status === "loading" ? "Exploring…" : "Explore"}
+        </button>
+        {explorer.status === "error" && <span className="map-note map-note-error">{explorer.message}</span>}
         {hasAreas && view !== "flow" && (
           <select className="map-input" value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)} aria-label="Highlight an area">
             <option value="">All areas</option>

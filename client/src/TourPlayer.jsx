@@ -110,10 +110,11 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
         setTimeout(() => !cancelled && setIndex((i) => i + 1), 350 / speed);
       }
     };
+    const spoken = stop.thought ? `${stop.thought} ${stop.title}. ${stop.narration}` : `${stop.title}. ${stop.narration}`;
     let cancelNarration;
-    if (voice && voiceSupported) cancelNarration = speak(`${stop.title}. ${stop.narration}`, { rate: speed, onEnd: advance });
+    if (voice && voiceSupported) cancelNarration = speak(spoken, { rate: speed, onEnd: advance });
     else {
-      const timer = setTimeout(advance, readingMs(stop.narration, speed));
+      const timer = setTimeout(advance, readingMs(spoken, speed));
       cancelNarration = () => clearTimeout(timer);
     }
     return () => {
@@ -217,13 +218,15 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
         <button className="btn-primary" style={{ width: "auto" }} onClick={onBack}>
           ← Map
         </button>
-        <select className="map-input" value={tour.tour_id} onChange={(e) => onSelectTour(e.target.value)} aria-label="Choose a tour">
-          {tours.map((t) => (
-            <option key={t.tour_id} value={t.tour_id}>
-              {t.title}
-            </option>
-          ))}
-        </select>
+        {tours.length > 1 && (
+          <select className="map-input" value={tour.tour_id} onChange={(e) => onSelectTour(e.target.value)} aria-label="Choose a tour">
+            {tours.map((t) => (
+              <option key={t.tour_id} value={t.tour_id}>
+                {t.title}
+              </option>
+            ))}
+          </select>
+        )}
         <select className="map-input" style={{ minWidth: 0 }} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} aria-label="Speed">
           {SPEEDS.map((s) => (
             <option key={s} value={s}>
@@ -264,6 +267,9 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
               {pos && (
                 <div className="tour-guide" style={{ left: pos.x + NODE_W - 30, top: pos.y - 40, transition: reduced ? "none" : "left 0.6s ease, top 0.6s ease" }}>
                   <GuideCharacter state={guideState} size={52} />
+                  {stop?.thought && arrived === index && (
+                    <div className="tour-thought-bubble">{stop.thought}</div>
+                  )}
                 </div>
               )}
             </ViewportPortal>
@@ -275,6 +281,7 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
         <p className="tour-title">
           {index + 1} of {tour.stops.length} · {stop?.title}
         </p>
+        {captions && stop?.thought && <p className="tour-thought">{stop.thought}</p>}
         {captions && <p className="tour-narration">{stop?.narration}</p>}
         {evidence && (
           <span className="tour-evidence">
