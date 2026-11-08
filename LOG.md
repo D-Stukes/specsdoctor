@@ -4,6 +4,33 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-08 — Three wow-factor builds shipped as stacked PRs; paused mid-pivot to VoiceStudio
+
+**Why:** picking up the "wow factor" brainstorm from the earlier 2026-11-08 handoff entry below. The user chose to build ideas 1, 3 and 4, in that order, then asked for voice specifically to use a self-hosted VoiceStudio instead of the browser's built-in speech.
+
+**Housekeeping first:** merged the entire unmerged PR stack (#2-#21) into `main` on `D-Stukes/specsdoctor`, in order, as merge commits, after confirming with the user that Diane had been told. `main` is now caught up; new work branches from it again (updated the `project_docsync_specsdoctor_pr_workflow` memory to match).
+
+**Built (three stacked PRs, each still open, each verified live in the browser against a real run with no regressions to the other two or to the pre-existing map/tour/ask features):**
+- **[PR #22](https://github.com/D-Stukes/specsdoctor/pull/22) — The Explorer** (idea 1, "the guide explores on its own"): a new `POST /api/runs/:id/explore`, cached per run. The guide uses the same read-only tools Ask has (`server/src/chat/tools.js`) in a tool-use loop (`server/src/chat/explorer.js`) to pick 5-9 places worth showing a newcomer, writing a short in-character "thought" plus narration for each, grounded against ids it actually looked up (one retry on a bad grounding or invented name, then a deterministic "big picture" walk as the always-works fallback, reusing Task 11's planner). New `explorer/1` schema. Reused `TourPlayer.jsx` almost unmodified - the thought bubble is additive.
+- **[PR #23](https://github.com/D-Stukes/specsdoctor/pull/23) — Data in motion** (idea 3): a "Watch the data move" button on Follow the Data. The real input field names travel as glowing tags along the already-lit path to where they're saved, land as a "new row" flourish naming the real table/columns, then the reply step's outcomes reveal (errors pulse red). No new AI call, schema or endpoint - pure presentation over what `traceSteps()` already produces. New `client/src/data-motion.js` for the pure parsing, unit tested.
+- **[PR #24](https://github.com/D-Stukes/specsdoctor/pull/24) — Talk to the guide** (idea 4): a mic button on Ask (browser `SpeechRecognition` - free, no server work, audio goes to the browser vendor) that fills and sends the question hands-free; a "Voice" toggle that speaks the answer aloud (reuses `speech.js`); when Voice is on, the map automatically flies its camera to the answer's first source and opens its drawer (confirmed this is a real camera move, not just a highlight, across two different questions). `MapView.jsx` now wraps its canvas in a `ReactFlowProvider` (same split `TourPlayer` already uses) so the sibling Ask panel can reach `setCenter`.
+- Tests: 214/214 passing (209 + 9 new for Explorer + 5 new for data-motion; talk-to-the-guide added no server-side changes so no new tests there).
+
+**Code review of the full stack (medium effort, 8 angles, this session):** 8 findings filed, two are real bugs worth fixing before merge:
+1. `server/src/chat/explorer.js` - on a repo too small for any viable tour, the deterministic fallback can return an empty `stops` array, which isn't schema-validated server-side and crashes `TourPlayer` client-side with a `TypeError`.
+2. `client/src/ExplorerPlayer.jsx` - `asTour(explorer)` isn't memoized, so any unrelated parent re-render (e.g. selecting an Ask source) rebuilds the tour object and silently rewinds the Explorer walk to stop 1, mid-playback.
+Plus six lower-severity ones: a double-click/two-tab race on `/explore` that can double its AI spend; the mic's `onerror` not checking the `done` flag, so deliberately stopping it shows a spurious error; the data-move animation can get stuck if the tab is backgrounded right after clicking Play; `explorer.js` duplicates ~30 lines of `agent.js`'s retry/budget-query logic (and is missing the backoff the third copy in `ai/client.js` has); a `stepRefs` Map in `FollowTheData.jsx` that never clears stale entries on endpoint switch; and `MapView.jsx`'s camera-fly gating on `view !== "flow"` being a patch for stale `positions` state rather than the layout effect clearing it properly. **None of these are fixed yet** - paused to go work on voice instead.
+
+**Mid-pivot on voice (not finished):** the user decided, after idea 4 shipped, that they want voice to actually run through a self-hosted VoiceStudio (open source, `github.com/debpalash/voicestudio`, OpenAI-compatible local API with both TTS `/v1/audio/speech` and STT `/v1/audio/transcriptions`) instead of the browser's built-in speech - reversing the earlier "browser first, VoiceStudio later" decision from the prior brainstorm session. Planned but not built: replacing `client/src/speech.js` and `client/src/voice-input.js` with calls to a local VoiceStudio server (mic capture via `MediaRecorder`, audio playback via an `<audio>` element, a VoiceStudio health-check with a fallback to the current browser implementation if it isn't running). The user has VoiceStudio **installed** on their Mac (an installer app, not built from source - confirmed that's fine, the source/Docker route is only needed to modify VoiceStudio itself or deploy it to a remote server, neither of which applies yet) but as of this entry **its server isn't actually running** - nothing listening on port 3900, no process found. Session paused here at the user's request before confirming it's up.
+
+**Not done / open for next session:**
+1. Launch VoiceStudio's app on the Mac, confirm `http://127.0.0.1:3900/.well-known/voicestudio-speech` responds, then build the swap (speech.js/voice-input.js -> VoiceStudio calls, with the browser APIs kept as an automatic fallback).
+2. Fix the two real bugs from the code review above (Explorer crash on tiny repos; Explorer-walk rewind) before merging #22-#24.
+3. Decide whether to merge #22-#24 into `main` now or keep stacking (same "tell Diane first" rule as before).
+4. Idea 5 (the public résumé share link) is the only brainstormed idea not yet built or started.
+
+---
+
 ## 2026-11-08 — Session handoff: where things stand, and the "wow factor" brainstorm (nothing built from the brainstorm yet)
 
 **Where things stand (all committed and pushed; nothing running in the background)**
