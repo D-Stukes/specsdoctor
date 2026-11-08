@@ -10,6 +10,8 @@ import { buildMkdocsYml, buildExportReadme } from "../export/mkdocs-config.js";
 import { buildProvenanceMarkdown } from "../export/provenance.js";
 import { loadGraphForRun } from "../db/load-graph.js";
 import { loadTours } from "../db/tours.js";
+import { askRepo, ChatLimitError } from "../chat/agent.js";
+import { makeToolbox } from "../chat/tools.js";
 import { buildExportZip } from "../export/build-zip.js";
 import { appendInlineFindings, buildReviewMarkdown } from "../export/review.js";
 import crypto from "node:crypto";
@@ -290,6 +292,46 @@ runsRouter.get("/runs/:id/tours", async (req, res) => {
     return res.status(409).json({ error: { code: "run_not_ready", message: `Run is ${rows[0].status}; tours need a finished run` } });
   }
   res.json({ tours: await loadTours(req.params.id) });
+});
+
+// POST /api/runs/:id/ask - "Ask this repo": a question answered from the run's parsed facts, map and pages,
+// with the sources it used. AI_STUB_MODE gives closest matches instead of a model call.
+const toolboxCache = new Map(); // runId -> { at, toolbox, index }
+async function toolboxFor(runId) {
+  const hit = toolboxCache.get(runId);
+  if (hit && Date.now() - hit.at < 120_000) return hit;
+  const [graph, index, pages] = await Promise.all([
+    loadGraphForRun(runId),
+    loadIndexForRun(runId),
+    getPool().query(`SELECT p.slug, p.title, pr.markdown FROM pages p JOIN page_revisions pr ON pr.page_id = p.id AND pr.rev = p.current_rev WHERE p.run_id = $1 AND p.status = 'generated'`, [runId]),
+  ]);
+  const entry = { at: Date.now(), index, toolbox: makeToolbox({ graph, index, pages: pages.rows }) };
+  toolboxCache.set(runId, entry);
+  return entry;
+}
+
+runsRouter.post("/runs/:id/ask", async (req, res) => {
+  const { question, history } = req.body ?? {};
+  if (typeof question !== "string" || (history !== undefined && !Array.isArray(history))) {
+    return res.status(400).json({ error: { code: "invalid_body", message: "question (string) is required; history, if given, must be a list" } });
+  }
+  const { rows } = await getPool().query(`SELECT status FROM runs WHERE id = $1`, [req.params.id]);
+  if (rows.length === 0) return res.status(404).json({ error: { code: "run_not_found", message: "No such run" } });
+  if (rows[0].status !== "complete" && rows[0].status !== "complete_with_errors") {
+    return res.status(409).json({ error: { code: "run_not_ready", message: `Run is ${rows[0].status}; questions need a finished run` } });
+  }
+  try {
+    const { toolbox, index } = await toolboxFor(req.params.id);
+    const result = await askRepo({ runId: req.params.id, question, history: history ?? [], toolbox, index, stub: process.env.AI_STUB_MODE !== "false" });
+    res.json(result);
+  } catch (err) {
+    if (err instanceof ChatLimitError) {
+      const status = err.code === "chat_rate_limited" || err.code === "chat_budget_used" ? 429 : 400;
+      return res.status(status).json({ error: { code: err.code, message: err.message } });
+    }
+    console.error("ask failed:", err?.status ?? "", String(err?.message ?? err).slice(0, 200));
+    res.status(502).json({ error: { code: "ask_failed", message: "The assistant could not answer right now. Try again in a moment." } });
+  }
 });
 
 // GET /api/runs/:id - progress, polled every 2s by the client.

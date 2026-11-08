@@ -289,3 +289,20 @@ test("the tours endpoint returns valid tour/1 documents and the export carries t
   const missing = await fetch(`${baseUrl}/api/runs/00000000-0000-0000-0000-000000000000/tours`, { headers: { cookie: sessionCookie } });
   assert.equal(missing.status, 404);
 });
+
+test("POST /api/runs/:id/ask validates input, needs a finished run, and answers (closest matches in stub mode)", async (t) => {
+  if (githubSkip) return t.skip(githubSkip);
+  const url = `${baseUrl}/api/runs/${m3RunId}/ask`;
+  assert.equal((await postJson(`/api/runs/${m3RunId}/ask`, {}, sessionCookie)).status, 400);
+  assert.equal((await postJson(`/api/runs/${m3RunId}/ask`, { question: "x", history: "nope" }, sessionCookie)).status, 400);
+  assert.equal((await postJson(`/api/runs/${m3RunId}/ask`, { question: "x".repeat(600) }, sessionCookie)).status, 400);
+  assert.equal((await postJson(`/api/runs/00000000-0000-0000-0000-000000000000/ask`, { question: "x" }, sessionCookie)).status, 404);
+
+  const ok = await postJson(`/api/runs/${m3RunId}/ask`, { question: "what does the number check do" }, sessionCookie);
+  assert.equal(ok.status, 200);
+  const body = await ok.json();
+  assert.equal(body.mode, "stub");
+  assert.equal(typeof body.answer, "string");
+  assert.ok(Array.isArray(body.sources) && Array.isArray(body.warnings));
+  void url;
+});

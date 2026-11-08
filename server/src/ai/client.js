@@ -8,7 +8,7 @@ import { toModelSchema } from "./model-schema.js";
 // model call once on 429, 5xx, or timeout"), so we can record each attempt
 // in model_calls and release/commit the budget reservation precisely.
 let anthropicClient;
-function getClient() {
+export function getClient() {
   if (!anthropicClient) anthropicClient = new Anthropic({ maxRetries: 0, timeout: 60_000 });
   return anthropicClient;
 }
@@ -24,7 +24,7 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function recordModelCall(runId, { stage, model, attempt, usage, costUsd, status, latencyMs }) {
+export async function recordModelCall(runId, { stage, model, attempt, usage, costUsd, status, latencyMs }) {
   const pool = getPool();
   await pool.query(
     `INSERT INTO model_calls (run_id, stage, model, attempt, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, est_cost_usd, status, latency_ms)

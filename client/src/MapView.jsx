@@ -3,6 +3,7 @@ import { ReactFlow, MiniMap, Controls, Background, MarkerType } from "@xyflow/re
 import "@xyflow/react/dist/style.css";
 import { LAYER_ORDER, COLLAPSE_ABOVE, subgraphFor, collapseByGroup, edgeLabel, nodeTitle, functionsSubgraph, endpointChoices } from "./map-model.js";
 import FollowTheData from "./FollowTheData.jsx";
+import AskPanel from "./AskPanel.jsx";
 import { NODE_W, NODE_H, LAYER_COLOR, layout } from "./map-shared.js";
 import TourPlayer from "./TourPlayer.jsx";
 
@@ -31,6 +32,7 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
   const [expanded, setExpanded] = useState(() => new Set());
   const [areaFilter, setAreaFilter] = useState("");
   const [tourId, setTourId] = useState(null); // set while a guided tour is playing
+  const [askOpen, setAskOpen] = useState(false);
 
   const endpoints = useMemo(() => graph.nodes.filter((n) => n.kind === "endpoint"), [graph]);
   useEffect(() => {
@@ -152,6 +154,9 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
         <label className="map-check" title="Show everyday words instead of code names">
           <input type="checkbox" checked={plain} onChange={(e) => setPlain(e.target.checked)} /> Plain English
         </label>
+        <button className="btn-primary" style={{ width: "auto" }} onClick={() => setAskOpen((o) => !o)} aria-pressed={askOpen}>
+          Ask
+        </button>
         {tours.length > 0 && (
           <button className="btn-primary" style={{ width: "auto", background: "var(--amber)", color: "var(--mint-ink)" }} onClick={() => setTourId(tours[0].tour_id)}>
             Guided tour
@@ -209,6 +214,10 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
             </ReactFlow>
           )}
         </div>
+
+        {askOpen && (
+          <AskPanel runId={runId} graph={graph} plain={plain} onClose={() => setAskOpen(false)} onSelectSource={(id) => setSelectedId(id)} onOpenPage={onOpenPage} />
+        )}
 
         {selected && (
           <aside className="map-drawer" aria-label="Node details">
