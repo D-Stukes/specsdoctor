@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docsync.dev/schemas/tour-narration/1",
+  "title": "Tour narration",
+  "description": "Tour Agent output: only words. The stops, nodes, edges and evidence are chosen and attached by code; the model writes a title and narration for each numbered stop.",
+  "type": "object",
+  "required": ["schema_version", "title", "stops"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "tour-narration/1" },
+    "title": { "type": "string", "minLength": 1 },
+    "stops": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["index", "title", "narration"],
+        "additionalProperties": false,
+        "properties": {
+          "index": { "type": "integer", "minimum": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "narration": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

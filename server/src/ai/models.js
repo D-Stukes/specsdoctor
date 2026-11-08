@@ -22,6 +22,7 @@ export const MAX_OUTPUT_TOKENS = {
   writer: 4000,
   claimCheck: 1500,
   grouper: 2500,
+  tour: 2500,
 };
 
 export function estimateCostUsd(model, inputTokens, outputTokens) {

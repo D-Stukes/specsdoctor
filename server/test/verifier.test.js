@@ -9,6 +9,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { verifyPage, scanRenderedPageForUnknownMentions } from "../src/stages/verifier.js";
+import * as awaitedVerifier from "../src/stages/verifier.js";
 import { getValidator } from "@docsync/contracts";
 
 const index = {
@@ -176,4 +177,11 @@ test("a class method mentioned by its bare name (close()) is known; an invented 
   const idx = { ...index, items: [...index.items, { id: "sym:p.js#Pool.close", kind: "method", name: "Pool.close", path: "p.js", start_line: 5, end_line: 7, signature: "close()", params: [] }] };
   const texts = scanRenderedPageForUnknownMentions("Call `close()` to end it, not `shutdown()`.", idx).map((m) => m.text);
   assert.deepEqual(texts, ["shutdown()"]);
+});
+
+test("prose scan (tour narration): unknown call/member names are caught, files, e.g. and known names are not", () => {
+  const { scanProseForUnknownNames } = awaitedVerifier;
+  const idx = { ...index, items: [...index.items, { id: "sym:p.js#Pool.close", kind: "method", name: "Pool.close", path: "p.js", start_line: 5, end_line: 7, signature: "close()", params: [] }] };
+  const text = "It lives in server/routes/dashboard.js, e.g. real() and close() work, but ghost.run() and phantom.value do not, and v1.2 is fine.";
+  assert.deepEqual(scanProseForUnknownNames(text, idx).map((m) => m.text), ["ghost.run()", "phantom.value"]);
 });
