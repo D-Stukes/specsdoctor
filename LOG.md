@@ -27,8 +27,15 @@ Plus six lower-severity ones: a double-click/two-tab race on `/explore` that can
 
 **Also noticed in passing:** Diane opened her own PR #26 ("LadyD ui", against a `develop` branch, unrelated to this stack) while this session was working - she's actively on the repo right now too.
 
+**Picking the voice and making the wait feel good (second commit on #27, same session):** the user asked for their own cloned "brit butler" voice profile specifically, then asked to test real synthesis time and design around it "like big companies do" rather than leave a dead pause. Measuring found two real problems, not just a slow voice:
+- A realistic one-line narration took **16-17.5s even warm**, with the cloned voice *and* with the generic built-in voice - the OmniVoice engine itself is just slow for longer text on this machine's Apple Silicon/MPS path, not a cloning cost. (A lighter engine, `kittentts`, got it to ~11s but can't use the cloned voice.)
+- The request timeout was **15s** - shorter than real narration needs - so lines were silently falling back to the browser voice with no indication why.
+- Fixing the timeout then surfaced a second bug: prefetching the *next* line while the *current* line was still synthesizing sent two concurrent requests to VoiceStudio's local engine, which started returning 502s under that contention. Fixed by only starting the next line's prefetch once the current line's audio actually begins playing (new `onStart` callback on `speak()`), so synthesis requests never overlap.
+- Built a "composing" state instead of silence: the guide now visibly pulses and a small equalizer + "Finding the words…" status shows during any wait that prefetching didn't manage to hide; the narration text itself was already shown instantly, before audio arrives.
+- Verified live over a full 5-stop guided tour: stop 1 showed the composing wait (~18s, nothing prefetched yet for it), stops 2 and 3 started with **no** wait at all (prefetched during the previous stop's own playback), no console errors, no more 502s.
+
 **Not done / open for next session:**
-1. The user should actually talk into the mic once and confirm VoiceStudio's transcription quality and the TTS voice sound right - not yet human-verified.
+1. The user should actually talk into the mic once and confirm VoiceStudio's transcription quality - not yet human-verified (TTS/the composing UX *was* verified live, including the voice actually speaking).
 2. Fix the two real bugs from the code review above (Explorer crash on tiny repos; Explorer-walk rewind) before merging #22-#24.
 3. Decide whether to merge #22-#24 (+ #25, #27) into `main` now or keep stacking (same "tell Diane first" rule as before) - note she has her own unmerged PR #26 in flight too.
 4. Idea 5 (the public résumé share link) is the only brainstormed idea not yet built or started.
