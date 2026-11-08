@@ -7,6 +7,7 @@ import { sessionRouter } from "./routes/session.js";
 import { healthRouter } from "./routes/health.js";
 import { runsRouter } from "./routes/runs.js";
 import { findingsRouter } from "./routes/findings.js";
+import { voiceRouter } from "./routes/voice.js";
 import { requireSession } from "./auth.js";
 import { recoverInterruptedRuns, tryStartNext } from "./runner/queue.js";
 import { startRetentionJob } from "./runner/retention.js";
@@ -25,6 +26,7 @@ export function createApp() {
   // Every other /api route needs the session cookie (SEC-8).
   app.use("/api", requireSession, runsRouter);
   app.use("/api", requireSession, findingsRouter);
+  app.use("/api", requireSession, voiceRouter);
 
   const clientDist = path.join(__dirname, "..", "..", "client", "dist");
   if (existsSync(clientDist)) {
