@@ -1,12 +1,15 @@
 import { getPool } from "../db/pool.js";
 import { MODELS } from "../ai/models.js";
+import { getLimits, QueueFullError, RateLimitedError } from "./limits.js";
 
 const DEFAULT_BUDGET_CAP_USD = 1.5; // §4a
 
 /**
- * Creates (or returns the existing) run row for owner/name/ref, then the
- * caller fires runPipeline() without awaiting it - the run continues
- * server-side even if the browser disconnects (§4a).
+ * Creates (or returns the existing) run row for owner/name/ref as 'queued'.
+ * The caller is responsible for calling tryStartNext() afterwards (queue.js)
+ * to actually begin work - this function only enqueues, matching the real
+ * state machine (`queued -> running: Runner picks the oldest queued run
+ * when no run is active`, §4a).
  *
  * Duplicate guard: keyed on (repo, requested_ref) rather than the schema's
  * (repo, resolved_sha) unique index, since resolved_sha is only known once
@@ -14,6 +17,9 @@ const DEFAULT_BUDGET_CAP_USD = 1.5; // §4a
  * while the first is still queued wouldn't collide on resolved_sha (both
  * NULL) but should still be treated as a duplicate (§4d "Duplicate
  * Generate").
+ *
+ * Throws QueueFullError or RateLimitedError if §4a's limits are hit; the
+ * caller maps those to 503 / 429 (§4d).
  */
 export async function startRun({ owner, name, ref }) {
   const pool = getPool();
@@ -34,10 +40,24 @@ export async function startRun({ owner, name, ref }) {
     return { runId: dupRows[0].id, duplicateOf: dupRows[0].id };
   }
 
-  const config = { stub: false, models: MODELS, prompt_version: "v1", schema_version: "index/1", parser_version: "js-0.1.0", limits: {} };
+  const limits = getLimits();
+  const { rows: hourlyRows } = await pool.query(`SELECT count(*)::int AS n FROM runs WHERE created_at > now() - interval '1 hour'`);
+  if (hourlyRows[0].n >= limits.runsPerHour) {
+    throw new RateLimitedError(`Runs-per-hour limit (${limits.runsPerHour}) reached`);
+  }
+
+  // "Queued runs, app-wide: 3 (further requests get 429)" and "Active runs,
+  // app-wide: 1" are separate limits (§4a) - a full active slot doesn't by
+  // itself block new requests from queuing.
+  const { rows: queuedRows } = await pool.query(`SELECT count(*)::int AS n FROM runs WHERE status = 'queued'`);
+  if (queuedRows[0].n >= limits.queuedRuns) {
+    throw new QueueFullError(`Queue is full (${limits.queuedRuns} already queued)`);
+  }
+
+  const config = { stub: false, models: MODELS, prompt_version: "v1", schema_version: "index/1", parser_version: "js-0.1.0", limits };
   const { rows } = await pool.query(
-    `INSERT INTO runs (repo_id, requested_ref, status, config, budget_cap_usd, started_at)
-     VALUES ($1, $2, 'running', $3, $4, now())
+    `INSERT INTO runs (repo_id, requested_ref, status, config, budget_cap_usd)
+     VALUES ($1, $2, 'queued', $3, $4)
      RETURNING id`,
     [repoId, ref, config, DEFAULT_BUDGET_CAP_USD]
   );

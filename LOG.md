@@ -4,6 +4,33 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-06 — Repo merged into specsdoctor; finished T04
+
+**Repo**
+- PR #1 (all of Tasks 1-3 plus the UI restyle) was reviewed and merged into `D-Stukes/specsdoctor` main. This project now builds on top of that shared history.
+- Diane shared a landing page concept under the name "SpecsDoctor" (bright corporate-SaaS look, stock photography) - different visual direction from the already-built "Precision Instrument Developer System." Flagged for discussion, not yet resolved: is it a separate public marketing page, or a replacement for the app's own look? Naming-wise, "SpecsDoctor" (unlike bare "SpecDoctor") doesn't collide with the CPU-security-research tool found earlier.
+
+**Done - finished T04**
+- **Queue limits (§4a):** `runner/limits.js` + `runner/queue.js`. `POST /api/runs` now actually enqueues (`status: 'queued'`) instead of starting immediately; `tryStartNext()` is the in-process runner's single thread of execution (one active run at a time, matching "no external queue"), picking the oldest queued run, chaining to the next one when a run finishes. Separate limits for queued-runs-app-wide (503 `queue_full`) and runs-per-hour (429 `rate_limited`) - these turned out to be independent limits in §4a, not combined, which an early draft got wrong before the tests caught it.
+- **Queue timeout:** a run queued past 30 minutes is marked `failed: queue_timeout` instead of starting stale.
+- **Restart recovery:** `recoverInterruptedRuns()` runs on server boot - any run stuck `running` from a dead process becomes `failed: interrupted`; queued runs are left alone for `tryStartNext()` to pick up normally.
+- Made `getLimits()` a function reading `process.env` live rather than a frozen constant - needed for tests to set different limits, and more correct for a real deploy changing env vars without a restart.
+
+**Verification**
+- `server/test/queue.test.js`: unit tests for every new transition (queue_full, rate_limited, duplicate Generate, queue_timeout, queued→running chaining, AT-11's interrupted-recovery). All isolated per-test since these limits are global ("app-wide"), not per-repo.
+- **Real kill-and-restart**, not just simulated: started a run against `lodash/lodash`, `kill -9`'d the server process immediately, restarted, confirmed the run (still `queued` at kill time) resumed and completed normally. The "stuck `running` → `failed: interrupted`" half is covered deterministically by the automated test instead, since hitting that exact race window via shell timing proved too flaky to rely on manually.
+- Full suite: 46/46 passing.
+
+**Not done**
+- T04 is now feature-complete per its backlog item. Task 4 (Architect, full Viewer UI) and Task 5 (Verifier, review/editing) remain unbuilt.
+- The SpecsDoctor landing-page/naming question is still open.
+
+**Next**
+- Push this to specsdoctor (new branch + PR, same pattern as before).
+- Then: Task 4, or resolve the design-direction question with Diane first.
+
+---
+
 ## 2026-11-05 — Restyled the Task 1 UI against the design system
 
 **Done**
