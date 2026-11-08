@@ -209,7 +209,7 @@ function addPlainLanguage(nodeList, index, itemsById, summaries) {
     } else {
       const item = itemsById.get(node.id);
       const name = item?.name === "default" ? item.path.split("/").pop() : (item?.name ?? node.label).replace(/\(\)$/, "");
-      node.plain_label = humanizeName(name.includes(".") && item?.kind === "method" ? name.split(".").pop() : name);
+      node.plain_label = item?.kind === "method" && name.includes(".") ? `${humanizeName(name.split(".").pop())} (${humanizeName(name.split(".")[0]).toLowerCase()})` : humanizeName(name);
       const said = summaries.get(node.id) ?? item?.doc ?? null;
       if (said) node.plain_summary = said;
     }

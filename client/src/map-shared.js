@@ -4,7 +4,7 @@ import { LAYER_ORDER } from "./map-model.js";
 const elk = new ELK();
 
 export const NODE_W = 260;
-export const NODE_H = 42;
+export const NODE_H = 52;
 
 export const LAYER_COLOR = {
   frontend: "var(--periwinkle)",
