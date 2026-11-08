@@ -4,6 +4,8 @@ import { scan } from "../scanner/index.js";
 import { BudgetManager, BudgetExceededError } from "../ai/budget-manager.js";
 import { analyzeModule } from "../stages/analyst.js";
 import { writeReferencePage } from "../stages/writer.js";
+import { writeOverviewPage } from "../stages/architect.js";
+import { buildTechStackPage, buildDataModelPage, buildArchitecturePage, buildApiEndpointsPage } from "../stages/architect-deterministic.js";
 import { renderPage } from "../renderer/render-page.js";
 import { savePageRevision } from "../db/pages.js";
 import { initStages, startStage, finishStage, skipStage, recordEvent } from "./stage-tracking.js";
@@ -58,7 +60,6 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
     return;
   }
 
-  await skipStage(runId, "architect", "Task 4 (not built yet)");
   await skipStage(runId, "verifier", "Task 5 (not built yet)");
 
   const modules = groupItemsByModule(index.items).slice(0, MODULE_LIMIT);
@@ -90,10 +91,35 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
   }
   await finishStage(runId, "analyst", analystFailed === 0 ? "done" : analystFailed === modules.length ? "failed" : "partial", { itemsDone: summaries.size, itemsFailed: analystFailed });
 
+  // T15 Architect: tech-stack/data-model/architecture are always built (no
+  // AI, no fallback needed - they *are* the fallback, per §2); overview is
+  // the one AI-narrative page in Task 4's scope and has no deterministic
+  // substitute, so it's simply absent (not a degraded page) if it fails.
+  // 4 deterministic pages always, +1 (overview) only when there's at least
+  // one module summary to synthesize from - total isn't fixed up front.
+  await startStage(runId, "architect");
+  const architectPages = [buildTechStackPage(index), buildDataModelPage(index), buildArchitecturePage(index), buildApiEndpointsPage(index)];
+  let architectFailed = 0;
+  try {
+    const overviewInput = [...summaries.entries()].map(([modulePath, summary]) => ({ module_path: modulePath, summary }));
+    const overview = await writeOverviewPage({ runId, index, summaries: overviewInput, budgetManager, stub: aiStub });
+    if (overview) architectPages.push(overview);
+    else architectFailed += 1;
+  } catch (err) {
+    architectFailed += 1;
+    await recordEvent(runId, "architect", "error", "page_generation_failed", { slug: "overview", message: err.message });
+  }
+  await finishStage(runId, "architect", architectFailed === 0 ? "done" : "partial", { itemsDone: architectPages.length, itemsFailed: architectFailed });
+
   await startStage(runId, "writer", modules.length);
-  await startStage(runId, "render", modules.length);
-  let pagesSaved = 0;
+  await startStage(runId, "render", modules.length + architectPages.length);
+  let modulePagesSaved = 0;
   let writerFailed = 0;
+
+  for (const page of architectPages) {
+    const { markdown } = renderPage(page, index, repo);
+    await savePageRevision({ runId, page, markdown, ownerStage: page.slug === "overview" ? "architect" : "renderer" });
+  }
   for (const mod of modules) {
     try {
       const summary = summaries.get(mod.path);
@@ -102,18 +128,19 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
         : deterministicOnlyPage(mod);
       const { markdown } = renderPage(page, index, repo);
       await savePageRevision({ runId, page, markdown });
-      pagesSaved += 1;
+      modulePagesSaved += 1;
     } catch (err) {
       writerFailed += 1;
       await recordEvent(runId, "writer", "error", "page_generation_failed", { modulePath: mod.path, message: err.message });
     }
   }
-  await finishStage(runId, "writer", writerFailed === 0 ? "done" : writerFailed === modules.length ? "failed" : "partial", { itemsDone: pagesSaved, itemsFailed: writerFailed });
+  const pagesSaved = architectPages.length + modulePagesSaved;
+  await finishStage(runId, "writer", writerFailed === 0 ? "done" : writerFailed === modules.length ? "failed" : "partial", { itemsDone: modulePagesSaved, itemsFailed: writerFailed });
   await finishStage(runId, "render", "done", { itemsDone: pagesSaved });
 
   const hasDocumentedSubject = index.items.some((i) => i.kind === "endpoint" || i.documented);
   const usable = hasDocumentedSubject && pagesSaved > 0;
-  const status = !usable ? "failed" : writerFailed > 0 || analystFailed > 0 ? "complete_with_errors" : "complete";
+  const status = !usable ? "failed" : writerFailed > 0 || analystFailed > 0 || architectFailed > 0 ? "complete_with_errors" : "complete";
 
   await pool.query(`UPDATE runs SET status = $2, cost_usd = $3, finished_at = now() WHERE id = $1`, [runId, status, budgetManager.spentUsd]);
   if (!usable) {

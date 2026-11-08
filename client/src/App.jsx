@@ -78,7 +78,7 @@ const WRITE_FOR_OPTIONS = [
   { id: "both", label: "Both", enabled: false },
 ];
 
-function RepoForm({ onRunStarted }) {
+function RepoForm({ onRunStarted, onOpenRun }) {
   const [repoUrl, setRepoUrl] = useState("");
   const [ref, setRef] = useState("");
   const [error, setError] = useState(null);
@@ -153,7 +153,41 @@ function RepoForm({ onRunStarted }) {
           <span>✓ Every claim cites its source</span>
           <span>⚠ Uncertainty flagged for review</span>
         </div>
+        <RunList onOpenRun={onOpenRun} />
       </div>
+    </div>
+  );
+}
+
+function RunList({ onOpenRun }) {
+  const [runs, setRuns] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    api("/runs").then((data) => setRuns(data.runs)).catch((err) => setError(err.message));
+  }, []);
+
+  if (error) return <p className="error-text">{error}</p>;
+  if (!runs) return <p className="lede">Loading…</p>;
+  if (runs.length === 0) return null;
+
+  return (
+    <div className="page-list">
+      <h2>Recent runs</h2>
+      {runs.map((r) => (
+        <a
+          key={r.run_id}
+          className="page-link"
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            onOpenRun(r.run_id);
+          }}
+        >
+          <span className={`dot dot-${r.status === "running" || r.status === "queued" ? "running" : r.status === "failed" ? "failed" : "done"}`} style={{ marginRight: "0.5rem" }} />
+          {r.repo.owner}/{r.repo.name} — {r.status} — ${Number(r.cost_usd).toFixed(2)}
+        </a>
+      ))}
     </div>
   );
 }
@@ -188,7 +222,7 @@ function PageViewer({ runId, slug, onBack }) {
   );
 }
 
-function RunProgress({ runId }) {
+function RunProgress({ runId, onBackToList }) {
   const [run, setRun] = useState(null);
   const [pages, setPages] = useState([]);
   const [error, setError] = useState(null);
@@ -221,6 +255,9 @@ function RunProgress({ runId }) {
       <div className="card">
         <div className="card-header">
           <Brand />
+          <button className="btn-primary" style={{ width: "auto" }} onClick={onBackToList}>
+            ← All runs
+          </button>
         </div>
         {error && <p className="error-text">{error}</p>}
         {!run ? (
@@ -283,6 +320,6 @@ export default function App() {
   const [runId, setRunId] = useState(null);
 
   if (!signedIn) return <AccessCodeForm onSignedIn={() => setSignedIn(true)} />;
-  if (!runId) return <RepoForm onRunStarted={setRunId} />;
-  return <RunProgress runId={runId} />;
+  if (!runId) return <RepoForm onRunStarted={setRunId} onOpenRun={setRunId} />;
+  return <RunProgress runId={runId} onBackToList={() => setRunId(null)} />;
 }
