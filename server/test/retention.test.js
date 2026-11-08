@@ -5,7 +5,7 @@ import { migrate } from "../src/db/migrate.js";
 import { getPool, closePool } from "../src/db/pool.js";
 import { deleteExpiredFailedRuns } from "../src/runner/retention.js";
 
-process.env.DATABASE_URL ??= "postgres://localhost:5432/docsync_dev";
+process.env.DATABASE_URL ??= "postgres://localhost:5432/docsync_test";
 
 let repoId;
 before(async () => {

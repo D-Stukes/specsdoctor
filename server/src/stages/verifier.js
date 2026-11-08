@@ -84,7 +84,9 @@ function computeCoverage(page, renderWarnings) {
 const FILE_EXTENSIONS = new Set(["json", "js", "jsx", "mjs", "cjs", "ts", "tsx", "md", "yml", "yaml", "sql", "env", "toml", "lock", "html", "css", "txt", "sh", "prisma"]);
 
 function scanUnknownMentions(markdown, index, dependencyNames) {
-  const knownNames = new Set(index.items.map((i) => i.name));
+  // Parameter names (req, res, next, ...) count as known: `req.user` is a member of a real parameter.
+  // A method item is named "Class.method"; prose often says just `method()`.
+  const knownNames = new Set(index.items.flatMap((i) => [i.name, i.kind === "method" ? i.name.split(".").pop() : null, ...(i.params ?? []).map((p) => p.name)].filter(Boolean)));
   // Backticked file names (package.json, server.js) look like member access;
   // a bare name.ext whose extension is a file type is a file mention, not a symbol.
   const knownFileNames = new Set(index.items.flatMap((i) => [i.path, i.declaration?.path].filter(Boolean).map((p) => p.split("/").pop())));

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { callStructured } from "../ai/client.js";
+import { callValidated } from "../ai/call-validated.js";
 import { getPool } from "../db/pool.js";
 import { MODELS, MAX_OUTPUT_TOKENS } from "../ai/models.js";
 import { getValidator } from "@docsync/contracts";
@@ -61,7 +61,7 @@ export async function writeOverviewPage({ runId, index, summaries, budgetManager
   const knownIds = new Set(codeItems.map((i) => i.id));
   const symbolList = codeItems.map((i) => `${i.id}: ${i.signature ?? i.name}`);
 
-  const { parsed } = await callStructured({
+  const { parsed } = await callValidated({
     runId,
     stage: "architect",
     model: MODELS.narrative,
@@ -72,7 +72,7 @@ export async function writeOverviewPage({ runId, index, summaries, budgetManager
     estimatedInputTokens: Math.ceil((SYSTEM_PROMPT.length + symbolList.join("\n").length + summaries.map((s) => s.summary.purpose).join("").length) / 4),
     budgetManager,
     stub: stub ? () => stubOverviewPage(summaries) : null,
-  });
+  }, validate);
 
   if (!validate(parsed)) {
     await recordEvent(runId, "architect", "warn", "page_generation_failed", { slug: "overview", errors: validate.errors });

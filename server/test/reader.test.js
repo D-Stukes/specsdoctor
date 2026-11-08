@@ -111,3 +111,26 @@ test("extractTarball stops counting new files past the archive-entries limit and
   assert.ok(limitsHit.includes("archive_entries"));
   assert.equal(files.length, MAX_ENTRIES);
 });
+
+test("a GitHub rate-limit response becomes a clear github_rate_limited error, not a bare 403", async () => {
+  const { resolveRef } = await import("../src/reader/github-api.js");
+  const realFetch = globalThis.fetch;
+  const reset = Math.floor(Date.now() / 1000) + 600;
+  globalThis.fetch = async () => new Response("{}", { status: 403, headers: { "x-ratelimit-remaining": "0", "x-ratelimit-reset": String(reset) } });
+  try {
+    await assert.rejects(() => resolveRef("o", "r", null), (err) => err.code === "github_rate_limited" && /resets in about 10 minute/.test(err.message) && /GITHUB_TOKEN/.test(err.message));
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test("a 403 that is not a rate limit stays a github_error", async () => {
+  const { resolveRef } = await import("../src/reader/github-api.js");
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("{}", { status: 403, headers: { "x-ratelimit-remaining": "42" } });
+  try {
+    await assert.rejects(() => resolveRef("o", "r", null), (err) => err.code === "github_error");
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});

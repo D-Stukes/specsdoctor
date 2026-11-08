@@ -6,12 +6,20 @@ import { createApp } from "../src/index.js";
 
 process.env.SESSION_SECRET ??= "test-secret";
 process.env.ACCESS_CODE ??= "test-code";
-process.env.DATABASE_URL ??= "postgres://localhost:5432/docsync_dev";
+process.env.DATABASE_URL ??= "postgres://localhost:5432/docsync_test";
 
 let server;
 let baseUrl;
+let githubSkip = false; // set when api.github.com can't serve this run's live-repo tests
+
 
 before(async () => {
+  try {
+    const limit = await (await fetch("https://api.github.com/rate_limit", { headers: { "user-agent": "docsync-tests" } })).json();
+    if (limit.resources.core.remaining < 5) githubSkip = `GitHub API rate limit exhausted (resets ${new Date(limit.resources.core.reset * 1000).toLocaleTimeString()}); set GITHUB_TOKEN to run the live-repo tests`;
+  } catch {
+    githubSkip = "api.github.com unreachable";
+  }
   await migrate();
   const app = createApp();
   server = app.listen(0);
@@ -95,7 +103,8 @@ let m3RunId;
 // M3: real Repo Reader -> Scanner -> Analyst -> Writer -> Renderer, against
 // a real (tiny, stable) public repo, in AI stub mode (zero cost, zero AI
 // network calls - AI_STUB_MODE defaults to true in routes/runs.js).
-test("M3: a real run against a real repo produces a generated reference page with cost recorded", async () => {
+test("M3: a real run against a real repo produces a generated reference page with cost recorded", async (t) => {
+  if (githubSkip) return t.skip(githubSkip);
   const started = await postJson("/api/runs", { repo_url: "https://github.com/jonschlinkert/is-number" }, sessionCookie);
   assert.equal(started.status, 202);
   const { run_id, status } = await started.json();
@@ -128,7 +137,8 @@ test("M3: a real run against a real repo produces a generated reference page wit
 // AT-13: edit -> save -> reload persists; emptying a page persists too;
 // rev_conflict on a stale base_rev; review marks a revision reviewed;
 // findings list + resolve a finding (T17). Builds on the run M3 just saved.
-test("AT-13: editing, reviewing and resolving findings on a saved run", async () => {
+test("AT-13: editing, reviewing and resolving findings on a saved run", async (t) => {
+  if (githubSkip) return t.skip(githubSkip);
   const slug = "index";
   const original = await (await fetch(`${baseUrl}/api/runs/${m3RunId}/pages/${slug}`, { headers: { cookie: sessionCookie } })).json();
   assert.equal(original.rev, 1);
@@ -189,7 +199,8 @@ test("AT-13: editing, reviewing and resolving findings on a saved run", async ()
 
 // AT-14: export ZIP has the mkdocs skeleton, provenance, no word "verified"
 // as a claim, and review.md only when asked for.
-test("AT-14: export ZIP contents", async () => {
+test("AT-14: export ZIP contents", async (t) => {
+  if (githubSkip) return t.skip(githubSkip);
   const { execFileSync } = await import("node:child_process");
   const { mkdtempSync, writeFileSync } = await import("node:fs");
   const { tmpdir } = await import("node:os");
@@ -222,7 +233,8 @@ test("AT-14: export ZIP contents", async () => {
   assert.ok(!/verified spec[^.]*\./.test(prov.replace("not a verified spec", "")), "must not claim verified");
 });
 
-test("GET /api/runs/:id/graph returns a valid graph/1 for a finished run", async () => {
+test("GET /api/runs/:id/graph returns a valid graph/1 for a finished run", async (t) => {
+  if (githubSkip) return t.skip(githubSkip);
   const { validateDoc } = await import("@docsync/contracts");
   const res = await fetch(`${baseUrl}/api/runs/${m3RunId}/graph`, { headers: { cookie: sessionCookie } });
   assert.equal(res.status, 200);
@@ -234,7 +246,8 @@ test("GET /api/runs/:id/graph returns a valid graph/1 for a finished run", async
   assert.equal(missing.status, 404);
 });
 
-test("the graph endpoint and the export both carry the run's areas", async () => {
+test("the graph endpoint and the export both carry the run's areas", async (t) => {
+  if (githubSkip) return t.skip(githubSkip);
   const { validateDoc } = await import("@docsync/contracts");
   const { execFileSync } = await import("node:child_process");
   const { mkdtempSync, writeFileSync } = await import("node:fs");

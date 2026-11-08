@@ -79,6 +79,7 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
   await startStage(runId, "analyst", modules.length);
   const summaries = new Map();
   let analystFailed = 0;
+  let analystFirstError = null;
   let budgetExhausted = false;
   await forEachConcurrent(modules, AI_CONCURRENCY, async (mod) => {
     if (budgetExhausted) {
@@ -96,11 +97,12 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
         await recordEvent(runId, "analyst", "warn", "budget_skipped", { modulePath: mod.path });
       } else {
         await recordEvent(runId, "analyst", "error", "module_failed", { modulePath: mod.path, message: err.message });
+        analystFirstError ??= err.message;
       }
       analystFailed += 1;
     }
   });
-  await finishStage(runId, "analyst", analystFailed === 0 ? "done" : analystFailed === modules.length ? "failed" : "partial", { itemsDone: summaries.size, itemsFailed: analystFailed });
+  await finishStage(runId, "analyst", analystFailed === 0 ? "done" : analystFailed === modules.length ? "failed" : "partial", { itemsDone: summaries.size, itemsFailed: analystFailed, message: analystFirstError });
 
   // T15 Architect: tech-stack/data-model/architecture are always built (no
   // AI, no fallback needed - they *are* the fallback, per §2); overview is
@@ -148,6 +150,7 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
   await startStage(runId, "verifier", modules.length + architectPages.length);
   let modulePagesSaved = 0;
   let writerFailed = 0;
+  let writerFirstError = null;
   let totalFindings = 0;
   let pagesWithFailedClaims = 0;
 
@@ -169,10 +172,11 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
     } catch (err) {
       writerFailed += 1;
       await recordEvent(runId, "writer", "error", "page_generation_failed", { modulePath: mod.path, message: err.message });
+      writerFirstError ??= err.message;
     }
   });
   const pagesSaved = architectPages.length + modulePagesSaved;
-  await finishStage(runId, "writer", writerFailed === 0 ? "done" : writerFailed === modules.length ? "failed" : "partial", { itemsDone: modulePagesSaved, itemsFailed: writerFailed });
+  await finishStage(runId, "writer", writerFailed === 0 ? "done" : writerFailed === modules.length ? "failed" : "partial", { itemsDone: modulePagesSaved, itemsFailed: writerFailed, message: writerFirstError });
   await finishStage(runId, "render", "done", { itemsDone: pagesSaved });
   await finishStage(runId, "verifier", pagesWithFailedClaims === 0 ? "done" : "partial", { itemsDone: pagesSaved, itemsFailed: pagesWithFailedClaims, message: `${totalFindings} finding(s)` });
 

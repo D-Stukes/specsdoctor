@@ -6,7 +6,7 @@ process.env.ACTIVE_RUNS_LIMIT = "1";
 process.env.RUNS_PER_HOUR_LIMIT = "2";
 process.env.SESSION_SECRET ??= "test-secret";
 process.env.ACCESS_CODE ??= "test-code";
-process.env.DATABASE_URL ??= "postgres://localhost:5432/docsync_dev";
+process.env.DATABASE_URL ??= "postgres://localhost:5432/docsync_test";
 
 import { test, before, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
