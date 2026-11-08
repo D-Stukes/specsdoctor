@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { endpointChoices, nodeTitle } from "./map-model.js";
+import { speak, cancelSpeech, speechAvailable } from "./speech.js";
+import { listen, voiceInputAvailable } from "./voice-input.js";
+
+/** Plain words to speak aloud: strips the Markdown marks RichText renders, so the guide doesn't read out "star star" or backticks. */
+function speakable(text) {
+  return text.replace(/\*\*([^*]+)\*\*/g, "$1").replace(/`([^`]+)`/g, "$1").replace(/^\s*[-•*]\s+/gm, "").replace(/^\s*\d+[.)]\s+/gm, "");
+}
 
 async function ask(runId, question, history) {
   const res = await fetch(`/api/runs/${runId}/ask`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ question, history }) });
@@ -51,7 +58,14 @@ export default function AskPanel({ runId, graph, plain, onClose, onSelectSource,
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const voiceSupported = useMemo(speechAvailable, []);
+  const micSupported = useMemo(voiceInputAvailable, []);
+  const [voiceOn, setVoiceOn] = useState(voiceSupported);
+  const [listening, setListening] = useState(false);
+  const [micError, setMicError] = useState(null);
   const endRef = useRef(null);
+  const stopListenRef = useRef(null);
+  const lastAnnounced = useRef(-1);
 
   const suggestions = useMemo(() => {
     const first = endpointChoices(graph)[0];
@@ -66,6 +80,50 @@ export default function AskPanel({ runId, graph, plain, onClose, onSelectSource,
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: "end" });
   }, [messages, busy]);
+
+  // The guide speaks the newest answer aloud and flies the map to its first source - idea 4,
+  // "talk to the guide" (LOG.md). Both ride the same Voice toggle, so a reader who turns it off
+  // gets the plain chat panel back with no camera jumps.
+  useEffect(() => {
+    const i = messages.length - 1;
+    if (i < 0 || i === lastAnnounced.current) return;
+    const m = messages[i];
+    if (m.role !== "assistant") return;
+    lastAnnounced.current = i;
+    if (!voiceOn) return;
+    if (!m.error && m.sources?.length > 0) onSelectSource(m.sources[0].id);
+    if (voiceSupported && !m.error && m.content) speak(speakable(m.content), { rate: 1 });
+  }, [messages, voiceOn, voiceSupported, onSelectSource]);
+
+  useEffect(
+    () => () => {
+      stopListenRef.current?.();
+      cancelSpeech();
+    },
+    []
+  );
+
+  function toggleMic() {
+    if (listening) {
+      stopListenRef.current?.();
+      setListening(false);
+      return;
+    }
+    setMicError(null);
+    cancelSpeech();
+    setListening(true);
+    stopListenRef.current = listen({
+      onResult: (text) => {
+        setInput(text);
+        send(text);
+      },
+      onEnd: () => setListening(false),
+      onError: (message) => {
+        setMicError(message);
+        setListening(false);
+      },
+    });
+  }
 
   async function send(text) {
     const question = text.trim();
@@ -88,6 +146,11 @@ export default function AskPanel({ runId, graph, plain, onClose, onSelectSource,
     <aside className="ask" aria-label="Ask this repo">
       <div className="ask-head">
         <h2>Ask this repo</h2>
+        {voiceSupported && (
+          <label className="map-check ask-voice-check" title="Speak answers aloud and fly the map to their first source">
+            <input type="checkbox" checked={voiceOn} onChange={(e) => { setVoiceOn(e.target.checked); if (!e.target.checked) cancelSpeech(); }} /> Voice
+          </label>
+        )}
         <button type="button" onClick={onClose} aria-label="Close the assistant">
           ✕
         </button>
@@ -137,10 +200,18 @@ export default function AskPanel({ runId, graph, plain, onClose, onSelectSource,
         <label className="ask-label" htmlFor="ask-input">
           Your question
         </label>
-        <textarea id="ask-input" value={input} maxLength={500} rows={2} placeholder="Ask anything about how this app works" onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }} />
-        <button type="submit" className="btn-primary" style={{ width: "auto" }} disabled={busy || !input.trim()}>
-          Ask
-        </button>
+        <textarea id="ask-input" value={input} maxLength={500} rows={2} placeholder={listening ? "Listening…" : "Ask anything about how this app works"} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }} />
+        <div className="ask-form-buttons">
+          {micSupported && (
+            <button type="button" className={`ask-mic ${listening ? "ask-mic-active" : ""}`} onClick={toggleMic} disabled={busy} aria-pressed={listening} aria-label={listening ? "Stop listening" : "Speak your question"} title={listening ? "Stop listening" : "Speak your question"}>
+              {listening ? "● Listening" : "🎤"}
+            </button>
+          )}
+          <button type="submit" className="btn-primary" style={{ width: "auto" }} disabled={busy || !input.trim()}>
+            Ask
+          </button>
+        </div>
+        {micError && <p className="ask-warn">{micError}</p>}
       </form>
     </aside>
   );
