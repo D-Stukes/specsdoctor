@@ -4,6 +4,28 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-08 — Flow graph: understandable function and data flow for non-technical readers
+
+**Why:** the map showed which part touches which, but not how a request flows through functions and data, and it used developer names. The goal set by the user: someone who has just seen the codebase, and is not very technical, should follow the flow of functions and data easily.
+
+**Done**
+- **Scanner (new `extract-flow-facts.js`):** function-to-function calls resolved through real imports (named, default and namespace imports, `require`, destructured requires, same-file calls, `new Thing()` instances, `this.method()`); what data comes in (`req.body`, `req.params`, `req.query`, headers); what goes back (status, error message, reply keys). SQL is now classified as a read or a write, with column names when a statement touches one table (columns are left out for joins, since they can't be attributed safely). New optional `graph_facts.calls / inputs / outputs`, and `operation` and `columns` on table facts.
+- **Graph:** new `calls` edges (function calls function, with the line); table edges say read or write; every endpoint carries `data` (what it takes in, looks up, saves with which columns, and answers), reached through the functions its handler calls (up to three hops); every node has a plain label and, where known, a plain sentence. Plain names are built from the code (`createHabit` becomes "Create habit", `POST /api/habits` becomes "Add a habit", a table becomes "Habits (saved data)") and the Analyst's sentence is used for functions.
+- **Translator stage (new, Haiku, one call):** rewrites labels and sentences for about 60 key nodes into everyday words for readers who have never programmed. Output is validated: unknown ids, jargon (API, endpoint, JWT, query...), code-looking text, over-long labels and duplicates are dropped, and those nodes keep the code-built plain label. Stub mode and any failure leave the code-built labels. Real run on `pern-stack-auth`: 18 nodes translated (for example "Create an account", "Check you are signed in", "Your saved todos"), run total $0.053, 46 s.
+- **Map UI:** opens on **Follow the data**: pick an action, read numbered steps (a screen asks, the request arrives with what comes in, checks, the work in order of calls, what is looked up or saved, the answer and the problems it can report), each with plain wording, data chips and optional code names and file lines. New **Functions** view (who calls whom). **Plain English** toggle (default on) switches every node, edge and drawer between everyday words and code names. The node drawer shows a "Takes in / Looks up / Saves to / Sends back / If it goes wrong" block. "Request trace" and "Files" (formerly Dependencies) remain.
+- Tests: 180/180 (flow facts, call resolution, SQL operations, plain names and sentences, step building, translator validation, fixture graph).
+
+**Checked in the browser** on a real run: Follow the data for "Create an account" (6 steps, chips for email, name and password coming in, saves to users, "User already exist!" problem), Functions view, drawer with the data block, Plain English off (code names, edge text "calls endpoint").
+
+**Known limits**
+- Call edges need a resolvable name: calls through callbacks, dynamic property access, passed-in functions and library calls are not followed. A repo whose handlers are written inline (like `pern-stack-auth`) shows each screen asking the action and the action's data, but no function-to-function chains.
+- Request inputs and replies come from literal patterns (`req.body.x`, `res.status(n).json({...})`); anything built dynamically is not seen.
+- Column names are attributed only for single-table statements.
+- The plain-language rewrite is model-written, validated for form and jargon, not for truth: the model sees only parser facts and the Analyst's sentences, so a wrong Analyst sentence can reappear in plain words.
+- Tour narration does not yet use the plain labels; the live chat agent ("ask this repo") is not built.
+
+---
+
 ## 2026-11-08 — T25: demo assets (script, stale-README repo, defect demo) — recording NOT done
 
 **Done**

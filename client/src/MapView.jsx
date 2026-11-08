@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { ReactFlow, MiniMap, Controls, Background, MarkerType } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { LAYER_ORDER, COLLAPSE_ABOVE, subgraphFor, collapseByGroup } from "./map-model.js";
+import { LAYER_ORDER, COLLAPSE_ABOVE, subgraphFor, collapseByGroup, edgeLabel, nodeTitle, functionsSubgraph, endpointChoices } from "./map-model.js";
+import FollowTheData from "./FollowTheData.jsx";
 import { NODE_W, NODE_H, LAYER_COLOR, layout } from "./map-shared.js";
 import TourPlayer from "./TourPlayer.jsx";
 
 const VIEWS = [
+  { id: "flow", label: "Follow the data" },
   { id: "architecture", label: "Architecture" },
+  { id: "functions", label: "Functions" },
   { id: "trace", label: "Request trace" },
-  { id: "dependencies", label: "Dependencies" },
+  { id: "dependencies", label: "Files" },
 ];
 
 function pageSlugFor(node) {
@@ -18,7 +21,8 @@ function pageSlugFor(node) {
 }
 
 export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }) {
-  const [view, setView] = useState("architecture");
+  const [view, setView] = useState(() => (graph.nodes.some((n) => n.kind === "endpoint") ? "flow" : "architecture"));
+  const [plain, setPlain] = useState(true); // plain-English names by default; off shows the code names
   const [traceEndpoint, setTraceEndpoint] = useState(null);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(null);
@@ -30,19 +34,20 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
 
   const endpoints = useMemo(() => graph.nodes.filter((n) => n.kind === "endpoint"), [graph]);
   useEffect(() => {
-    if (!traceEndpoint && endpoints.length > 0) setTraceEndpoint(endpoints[0].id);
-  }, [endpoints, traceEndpoint]);
+    if (!traceEndpoint && endpoints.length > 0) setTraceEndpoint(endpointChoices(graph)[0].id);
+  }, [endpoints, traceEndpoint, graph]);
 
-  const base = useMemo(() => subgraphFor(graph, view, traceEndpoint), [graph, view, traceEndpoint]);
+  const base = useMemo(() => (view === "functions" ? functionsSubgraph(graph) : subgraphFor(graph, view, traceEndpoint)), [graph, view, traceEndpoint]);
   const hasAreas = graph.groups.length > 0;
-  const collapsed = hasAreas && view !== "trace" && (collapseChoice ?? base.nodes.length > COLLAPSE_ABOVE);
+  const collapsed = hasAreas && view !== "trace" && view !== "flow" && view !== "functions" && (collapseChoice ?? base.nodes.length > COLLAPSE_ABOVE);
   const sub = useMemo(() => (collapsed ? collapseByGroup(base, graph.groups, expanded) : base), [base, collapsed, graph.groups, expanded]);
   const groupNameOf = useCallback((id) => graph.groups.find((g) => g.id === id)?.name ?? null, [graph.groups]);
 
   useEffect(() => {
+    if (view === "flow") return undefined;
     let cancelled = false;
     setPositions(null);
-    layout(sub.nodes, sub.edges, view).then((p) => {
+    layout(sub.nodes, sub.edges, view === "functions" ? "architecture" : view).then((p) => {
       if (!cancelled) setPositions(p);
     });
     return () => {
@@ -54,12 +59,19 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
   const flowNodes = useMemo(() => {
     if (!positions) return [];
     return sub.nodes.map((n) => {
-      const textMatch = needle === "" || n.label.toLowerCase().includes(needle) || n.id.toLowerCase().includes(needle);
+      const textMatch = needle === "" || n.label.toLowerCase().includes(needle) || n.id.toLowerCase().includes(needle) || (n.plain_label ?? "").toLowerCase().includes(needle) || (n.plain_summary ?? "").toLowerCase().includes(needle);
       const match = textMatch && (areaFilter === "" || n.group === areaFilter);
       return {
         id: n.id,
         position: positions.get(n.id) ?? { x: 0, y: 0 },
-        data: { label: <span className="map-node-label" title={n.label}>{n.label}</span> },
+        data: {
+          label: (
+            <span className="map-node-text" title={n.plain_summary ?? n.label}>
+              <span className="map-node-label">{nodeTitle(n, plain)}</span>
+              {plain && n.plain_label && n.plain_label !== n.label && <span className="map-node-tech">{n.label}</span>}
+            </span>
+          ),
+        },
         sourcePosition: "right",
         targetPosition: "left",
         width: NODE_W,
@@ -71,8 +83,8 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
           color: "var(--text)",
           border: `1.5px solid ${LAYER_COLOR[n.layer] ?? "var(--hairline)"}`,
           borderRadius: 10,
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
+          fontFamily: plain ? "var(--font-sans)" : "var(--font-mono)",
+          fontSize: 13,
           padding: "0 8px",
           display: "flex",
           alignItems: "center",
@@ -82,7 +94,7 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
         },
       };
     });
-  }, [positions, sub, needle, selectedId, areaFilter]);
+  }, [positions, sub, needle, selectedId, areaFilter, plain]);
 
   const flowEdges = useMemo(
     () =>
@@ -90,21 +102,24 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
         id: `e${i}`,
         source: e.from,
         target: e.to,
-        label: e.label ?? e.kind.replace(/_/g, " "),
+        label: edgeLabel(e, plain),
         animated: false,
         markerEnd: { type: MarkerType.ArrowClosed, color: "#8b96a0" },
         style: { stroke: "#8b96a0", strokeWidth: 1.4, strokeDasharray: e.inferred ? "6 4" : undefined },
         labelStyle: { fill: "#a3adb6", fontSize: 10 },
         labelBgStyle: { fill: "#151a1f" },
       })),
-    [sub]
+    [sub, plain]
   );
 
   const selected = sub.nodes.find((n) => n.id === selectedId) ?? graph.nodes.find((n) => n.id === selectedId) ?? null;
   const selectedGroup = selected?.kind === "group" ? graph.groups.find((g) => g.id === selected.group) : null;
   const groupMembers = selectedGroup ? base.nodes.filter((n) => n.group === selectedGroup.id) : [];
   const selectedEdges = selected && !selectedGroup ? graph.edges.filter((e) => e.from === selected.id || e.to === selected.id) : [];
-  const labelOf = useCallback((id) => graph.nodes.find((n) => n.id === id)?.label ?? id, [graph]);
+  const labelOf = useCallback((id) => {
+    const n = graph.nodes.find((x) => x.id === id);
+    return n ? nodeTitle(n, plain) : id;
+  }, [graph, plain]);
   const slug = selected && !selectedGroup ? pageSlugFor(selected) : null;
 
   const activeTour = tourId ? tours.find((t) => t.tour_id === tourId) : null;
@@ -129,17 +144,20 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
           <select className="map-input" value={traceEndpoint ?? ""} onChange={(e) => setTraceEndpoint(e.target.value)} aria-label="Endpoint to trace">
             {endpoints.map((n) => (
               <option key={n.id} value={n.id}>
-                {n.label}
+                {nodeTitle(n, plain)}
               </option>
             ))}
           </select>
         )}
+        <label className="map-check" title="Show everyday words instead of code names">
+          <input type="checkbox" checked={plain} onChange={(e) => setPlain(e.target.checked)} /> Plain English
+        </label>
         {tours.length > 0 && (
           <button className="btn-primary" style={{ width: "auto", background: "var(--amber)", color: "var(--mint-ink)" }} onClick={() => setTourId(tours[0].tour_id)}>
             Guided tour
           </button>
         )}
-        {hasAreas && (
+        {hasAreas && view !== "flow" && (
           <select className="map-input" value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)} aria-label="Highlight an area">
             <option value="">All areas</option>
             {graph.groups.map((g) => (
@@ -149,7 +167,7 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
             ))}
           </select>
         )}
-        {hasAreas && view !== "trace" && (
+        {hasAreas && view !== "trace" && view !== "flow" && view !== "functions" && (
           <label className="map-check">
             <input type="checkbox" checked={collapsed} onChange={(e) => { setCollapseChoice(e.target.checked); setExpanded(new Set()); setSelectedId(null); }} /> Collapse areas
           </label>
@@ -163,7 +181,9 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
 
       <div className="map-body">
         <div className="map-canvas">
-          {!positions ? (
+          {view === "flow" ? (
+            <FollowTheData graph={graph} plain={plain} endpointId={traceEndpoint} onEndpoint={setTraceEndpoint} selectedId={selectedId} onSelect={setSelectedId} />
+          ) : !positions ? (
             <p className="lede map-empty">Laying out the map…</p>
           ) : flowNodes.length === 0 ? (
             <p className="lede map-empty">
@@ -192,7 +212,10 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
 
         {selected && (
           <aside className="map-drawer" aria-label="Node details">
-            <h2 style={{ fontFamily: "var(--font-mono)", fontSize: 15, wordBreak: "break-all" }}>{selectedGroup ? selectedGroup.name : selected.label}</h2>
+            <h2 style={{ fontFamily: plain ? "var(--font-sans)" : "var(--font-mono)", fontSize: 16, wordBreak: "break-word" }}>{selectedGroup ? selectedGroup.name : nodeTitle(selected, plain)}</h2>
+            {!selectedGroup && plain && selected.plain_label && selected.plain_label !== selected.label && <p className="stage-status map-case" style={{ wordBreak: "break-all" }}>{selected.label}</p>}
+            {!selectedGroup && selected.plain_summary && <p>{selected.plain_summary}</p>}
+            {!selectedGroup && selected.data && <DataBlock data={selected.data} />}
             <p className="stage-status">
               {selectedGroup ? `area · ${groupMembers.length} nodes in this view` : `${selected.kind} · ${selected.layer}`}
             </p>
@@ -221,7 +244,7 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
             {selectedEdges.map((e, i) => (
               <div key={i} className="map-edge-row">
                 <div>
-                  {e.from === selected.id ? "→" : "←"} {e.kind.replace(/_/g, " ")} {labelOf(e.from === selected.id ? e.to : e.from)}
+                  {e.from === selected.id ? "→" : "←"} {edgeLabel(e, plain)} {labelOf(e.from === selected.id ? e.to : e.from)}
                 </div>
                 <div className="stage-status map-case">
                   {e.inferred && <strong style={{ color: "var(--amber)" }}>inferred · </strong>}
@@ -233,5 +256,26 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
         )}
       </div>
     </div>
+  );
+}
+
+function DataBlock({ data }) {
+  const rows = [
+    ["Takes in", data.inputs.map((i) => i.name)],
+    ["Looks up", data.reads.map((r) => `${r.table}${r.columns.length && !r.columns.includes("*") ? ` (${r.columns.join(", ")})` : ""}`)],
+    ["Saves to", data.writes.map((w) => `${w.table}${w.columns.length ? ` (${w.columns.join(", ")})` : ""}`)],
+    ["Sends back", data.outputs.filter((o) => o.status === null || o.status < 400).map((o) => (o.keys?.length ? o.keys.join(", ") : "the result"))],
+    ["If it goes wrong", data.outputs.filter((o) => o.status !== null && o.status >= 400).map((o) => o.message ?? `error ${o.status}`)],
+  ].filter(([, items]) => items.length > 0);
+  if (rows.length === 0) return null;
+  return (
+    <dl className="data-block">
+      {rows.map(([label, items]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd>{[...new Set(items)].join("; ")}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

@@ -1,3 +1,5 @@
+import { humanizeName, endpointPlainLabel, tablePlainLabel, endpointPlainSummary } from "./plain.js";
+
 // T27 (deterministic half): the repo map's graph, built only from Scanner
 // facts so it cannot show a connection that is not in the code (§4f).
 // Area grouping and labels by AI come later; every node here is real.
@@ -19,7 +21,7 @@ function pathsMatch(url, endpointPath) {
 }
 
 /** index: { items, imports, project } - the persisted shape (see load-index.js). */
-export function buildGraph(index) {
+export function buildGraph(index, { summaries = new Map() } = {}) {
   const itemsById = new Map(index.items.map((i) => [i.id, i]));
   const nodes = new Map();
   const edges = new Map();
@@ -107,7 +109,7 @@ export function buildGraph(index) {
       const d = ep.declaration;
       if (d.path === q.path && d.start_line <= q.line && q.line <= d.end_line && (!owner || d.end_line - d.start_line < owner.declaration.end_line - owner.declaration.start_line)) owner = ep;
     }
-    addEdge({ from: owner ? owner.id : callerNode(q.path, q.line, "handler"), to: tableId, kind: "queries_table", inferred: true, evidence: [{ path: q.path, start_line: q.line, end_line: q.line }] });
+    addEdge({ from: owner ? owner.id : callerNode(q.path, q.line, "handler"), to: tableId, kind: "queries_table", inferred: true, operation: q.operation, columns: q.columns, evidence: [{ path: q.path, start_line: q.line, end_line: q.line }] });
   }
 
   const endpoints = index.items.filter((i) => i.kind === "endpoint" && i.resolved);
@@ -118,5 +120,98 @@ export function buildGraph(index) {
     }
   }
 
+  // Function-to-function calls, resolved through real imports by the Scanner.
+  const frontendDirs = index.project.workspaces.filter((w) => w.frontend).map((w) => (w.dir === "" ? "" : `${w.dir}/`));
+  const isFrontendPath = (p) => frontendDirs.some((d) => p.startsWith(d));
+  for (const c of index.graph_facts?.calls ?? []) {
+    const fromItem = itemsById.get(c.from);
+    const toItem = itemsById.get(c.to);
+    if (!fromItem || !toItem) continue;
+    const from = symbolNode(c.from, isFrontendPath(fromItem.path) ? "frontend" : "handler");
+    const to = symbolNode(c.to, isFrontendPath(toItem.path) ? "frontend" : "handler");
+    if (from && to) addEdge({ from, to, kind: "calls", inferred: false, evidence: [{ path: c.path, start_line: c.line, end_line: c.line }] });
+  }
+
+  attachEndpointData(index, [...nodes.values()], [...edges.values()], itemsById);
+  addPlainLanguage([...nodes.values()], index, itemsById, summaries);
+
   return { schema_version: "graph/1", nodes: [...nodes.values()], edges: [...edges.values()], groups: [] };
+}
+
+/** Code ranges whose data belongs to an endpoint: its inline handler or named handler, plus what that handler calls (two hops). */
+function rangesForEndpoint(ep, edges, itemsById) {
+  const ranges = [];
+  if ("inline" in ep.handler) ranges.push({ path: ep.declaration.path, start: ep.declaration.start_line, end: ep.declaration.end_line });
+  const frontier = [];
+  if (ep.handler.symbol_id) frontier.push(ep.handler.symbol_id);
+  const seen = new Set(frontier);
+  for (let depth = 0; depth < 3 && frontier.length; depth += 1) {
+    const next = [];
+    for (const id of frontier) {
+      const it = itemsById.get(id);
+      if (it) ranges.push({ path: it.path, start: it.start_line, end: it.end_line });
+      for (const e of edges) if (e.kind === "calls" && e.from === id && !seen.has(e.to)) { seen.add(e.to); next.push(e.to); }
+    }
+    frontier.splice(0, frontier.length, ...next);
+  }
+  return ranges;
+}
+
+/** What goes into an endpoint, what comes out, and which tables it reads and writes. */
+function attachEndpointData(index, nodeList, edges, itemsById) {
+  const facts = index.graph_facts ?? {};
+  const inRange = (ranges, f) => ranges.some((r) => r.path === f.path && r.start <= f.line && f.line <= r.end);
+  const tableNames = new Map((index.project.tables ?? []).map((t) => [t.id.replace(/^tbl:/, "").toLowerCase(), t.id.replace(/^tbl:/, "")]));
+  for (const node of nodeList) {
+    if (node.kind !== "endpoint") continue;
+    const ep = itemsById.get(node.id);
+    const ranges = rangesForEndpoint(ep, edges, itemsById);
+    const merge = (ops) => {
+      const byTable = new Map();
+      for (const q of ops) {
+        const t = tableNames.get(q.table) ?? q.table;
+        const cur = byTable.get(t) ?? new Set();
+        for (const c of q.columns ?? []) cur.add(c);
+        byTable.set(t, cur);
+      }
+      return [...byTable].map(([table, cols]) => ({ table, columns: [...cols] }));
+    };
+    const queries = (facts.queries_table ?? []).filter((q) => inRange(ranges, q));
+    node.data = {
+      inputs: dedupe((facts.inputs ?? []).filter((f) => inRange(ranges, f)).map((f) => ({ source: f.source, name: f.name }))),
+      outputs: dedupe((facts.outputs ?? []).filter((f) => inRange(ranges, f)).map((f) => ({ status: f.status, message: f.message, keys: f.keys }))),
+      reads: merge(queries.filter((q) => q.operation === "read")),
+      writes: merge(queries.filter((q) => q.operation === "write")),
+    };
+  }
+}
+
+function dedupe(list) {
+  const seen = new Set();
+  return list.filter((x) => (seen.has(JSON.stringify(x)) ? false : (seen.add(JSON.stringify(x)), true)));
+}
+
+/** Plain-English label and sentence for every node, from names and parser facts (and the Analyst's sentence for functions). */
+function addPlainLanguage(nodeList, index, itemsById, summaries) {
+  const tableById = new Map((index.project.tables ?? []).map((t) => [t.id, t]));
+  for (const node of nodeList) {
+    if (node.kind === "endpoint") {
+      const ep = itemsById.get(node.id);
+      node.plain_label = endpointPlainLabel(ep.method, ep.path);
+      const sentence = endpointPlainSummary(node.data);
+      if (sentence) node.plain_summary = sentence;
+    } else if (node.kind === "table") {
+      node.plain_label = tablePlainLabel(node.label);
+      const t = tableById.get(node.id);
+      if (t?.columns?.length) node.plain_summary = `Where the app keeps its ${node.label} records. Each one has: ${t.columns.map((c) => c.name).join(", ")}.`;
+    } else if (node.kind === "module") {
+      node.plain_label = `${humanizeName(node.label)} file`;
+    } else {
+      const item = itemsById.get(node.id);
+      const name = item?.name === "default" ? item.path.split("/").pop() : (item?.name ?? node.label).replace(/\(\)$/, "");
+      node.plain_label = item?.kind === "method" && name.includes(".") ? `${humanizeName(name.split(".").pop())} (${humanizeName(name.split(".")[0]).toLowerCase()})` : humanizeName(name);
+      const said = summaries.get(node.id) ?? item?.doc ?? null;
+      if (said) node.plain_summary = said;
+    }
+  }
 }

@@ -110,7 +110,46 @@
             "type": "object",
             "required": ["path", "line", "table"],
             "additionalProperties": false,
-            "properties": { "path": { "type": "string" }, "line": { "type": "integer", "minimum": 1 }, "table": { "type": "string" } }
+            "properties": {
+              "path": { "type": "string" },
+              "line": { "type": "integer", "minimum": 1 },
+              "table": { "type": "string" },
+              "operation": { "enum": ["read", "write"] },
+              "columns": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "calls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["from", "to", "path", "line"],
+            "additionalProperties": false,
+            "properties": { "from": { "type": "string" }, "to": { "type": "string" }, "path": { "type": "string" }, "line": { "type": "integer", "minimum": 1 } }
+          }
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "line", "source", "name"],
+            "additionalProperties": false,
+            "properties": { "path": { "type": "string" }, "line": { "type": "integer", "minimum": 1 }, "source": { "enum": ["body", "params", "query", "header"] }, "name": { "type": "string" } }
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "line", "status", "message", "keys"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string" },
+              "line": { "type": "integer", "minimum": 1 },
+              "status": { "type": ["integer", "null"] },
+              "message": { "type": ["string", "null"] },
+              "keys": { "type": ["array", "null"], "items": { "type": "string" } }
+            }
           }
         },
         "calls_endpoint": {
