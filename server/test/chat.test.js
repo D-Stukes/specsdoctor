@@ -177,3 +177,9 @@ test("stub mode: no model call, closest matches from the facts, sources attached
   assert.ok(r.sources.some((s) => s.id === postHabit.id));
   assert.match(answerWithoutModel("zzzz qqqq", toolbox).answer, /no part of the app matched/);
 });
+
+test("internal ids the model writes into the prose are removed; the sentence still reads", () => {
+  const { answer } = parseAnswer("Read **Overview** (`page:overview`) first, then the sign-up step (ep:POST /x@a.js:1) and `tbl:users`.\nSOURCES: none", toolbox);
+  assert.equal(answer, "Read **Overview** first, then the sign-up step and.");
+  assert.ok(!/page:|ep:|tbl:/.test(answer));
+});
