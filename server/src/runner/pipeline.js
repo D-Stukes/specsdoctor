@@ -1,3 +1,4 @@
+import { forEachConcurrent, AI_CONCURRENCY } from "./concurrency.js";
 import { getPool } from "../db/pool.js";
 import { fetchRepo } from "../reader/fetch-repo.js";
 import { scan } from "../scanner/index.js";
@@ -76,11 +77,11 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
   const summaries = new Map();
   let analystFailed = 0;
   let budgetExhausted = false;
-  for (const mod of modules) {
+  await forEachConcurrent(modules, AI_CONCURRENCY, async (mod) => {
     if (budgetExhausted) {
       await recordEvent(runId, "analyst", "warn", "budget_skipped", { modulePath: mod.path });
       analystFailed += 1;
-      continue;
+      return;
     }
     try {
       const summary = await analyzeModule({ runId, modulePath: mod.path, items: mod.items, source: contentByPath[mod.path] ?? "", budgetManager, stub: aiStub });
@@ -95,7 +96,7 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
       }
       analystFailed += 1;
     }
-  }
+  });
   await finishStage(runId, "analyst", analystFailed === 0 ? "done" : analystFailed === modules.length ? "failed" : "partial", { itemsDone: summaries.size, itemsFailed: analystFailed });
 
   // T15 Architect: tech-stack/data-model/architecture are always built (no
@@ -138,7 +139,7 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
     totalFindings += result.findings.length;
     if (result.hasFailedClaim) pagesWithFailedClaims += 1;
   }
-  for (const mod of modules) {
+  await forEachConcurrent(modules, AI_CONCURRENCY, async (mod) => {
     try {
       const summary = summaries.get(mod.path);
       const page = summary
@@ -152,7 +153,7 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
       writerFailed += 1;
       await recordEvent(runId, "writer", "error", "page_generation_failed", { modulePath: mod.path, message: err.message });
     }
-  }
+  });
   const pagesSaved = architectPages.length + modulePagesSaved;
   await finishStage(runId, "writer", writerFailed === 0 ? "done" : writerFailed === modules.length ? "failed" : "partial", { itemsDone: modulePagesSaved, itemsFailed: writerFailed });
   await finishStage(runId, "render", "done", { itemsDone: pagesSaved });
