@@ -4,10 +4,11 @@ import "@xyflow/react/dist/style.css";
 import GuideCharacter from "./GuideCharacter.jsx";
 import { NODE_W, NODE_H, LAYER_COLOR, layout } from "./map-shared.js";
 import { tourSubgraph, walkedEdgeKeys, readingMs, layoutKindFor, stepIndex } from "./tour-model.js";
-import { speak, cancelSpeech, speechAvailable } from "./speech.js";
+import { speak, cancelSpeech, speechAvailable, prefetch } from "./speech.js";
 
 const SPEEDS = [0.75, 1, 1.25, 1.5];
 const prefersReducedMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+const spokenTextFor = (s) => (s.thought ? `${s.thought} ${s.title}. ${s.narration}` : `${s.title}. ${s.narration}`);
 
 function Player({ graph, tour, tours, onSelectTour, onBack }) {
   const { setCenter } = useReactFlow();
@@ -24,13 +25,15 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
   const [positions, setPositions] = useState(null);
   const [dot, setDot] = useState(null);
   const [moving, setMoving] = useState(false);
+  const [synthesizing, setSynthesizing] = useState(false); // true only for the gap speak()'s onStart didn't manage to hide
 
   const sub = useMemo(() => tourSubgraph(graph, tour), [graph, tour]);
   const walked = useMemo(() => walkedEdgeKeys(tour), [tour]);
   const stop = tour.stops[index];
   const labelOf = useMemo(() => new Map(graph.nodes.map((n) => [n.id, n.label])), [graph]);
 
-  // New tour: back to the first stop, paused.
+  // New tour: back to the first stop, paused. Get its line synthesizing now, before Play is even
+  // pressed, so the first stop doesn't carry the full wait too.
   useEffect(() => {
     setIndex(0);
     setArrived(-1);
@@ -38,7 +41,8 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
     setFinished(false);
     setDot(null);
     cancelSpeech();
-  }, [tour]);
+    if (voiceSupported && tour.stops[0]) prefetch(spokenTextFor(tour.stops[0]));
+  }, [tour, voiceSupported]);
 
   useEffect(() => {
     let cancelled = false;
@@ -110,15 +114,30 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
         setTimeout(() => !cancelled && setIndex((i) => i + 1), 350 / speed);
       }
     };
-    const spoken = stop.thought ? `${stop.thought} ${stop.title}. ${stop.narration}` : `${stop.title}. ${stop.narration}`;
+    const spoken = spokenTextFor(stop);
     let cancelNarration;
-    if (voice && voiceSupported) cancelNarration = speak(spoken, { rate: speed, onEnd: advance });
-    else {
+    if (voice && voiceSupported) {
+      setSynthesizing(true);
+      cancelNarration = speak(spoken, {
+        rate: speed,
+        onStart: () => {
+          if (cancelled) return;
+          setSynthesizing(false);
+          // Only once this line is actually playing (its own synthesis is done) start the next
+          // one, so the two never contend for the same local engine at once - concurrent
+          // requests to it were failing outright (502s) rather than just queueing.
+          const next = tour.stops[index + 1];
+          if (next) prefetch(spokenTextFor(next));
+        },
+        onEnd: advance,
+      });
+    } else {
       const timer = setTimeout(advance, readingMs(spoken, speed));
       cancelNarration = () => clearTimeout(timer);
     }
     return () => {
       cancelled = true;
+      setSynthesizing(false);
       cancelNarration?.();
     };
   }, [playing, arrived, index, voice, speed, stop, tour, voiceSupported]);
@@ -156,7 +175,7 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [togglePlay, go]);
 
-  const guideState = finished ? "celebrating" : !positions ? "thinking" : moving ? "pointing" : playing ? "talking" : "idle";
+  const guideState = finished ? "celebrating" : !positions ? "thinking" : moving ? "pointing" : synthesizing ? "composing" : playing ? "talking" : "idle";
 
   const flowNodes = useMemo(() => {
     if (!positions) return [];
@@ -283,6 +302,16 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
         </p>
         {captions && stop?.thought && <p className="tour-thought">{stop.thought}</p>}
         {captions && <p className="tour-narration">{stop?.narration}</p>}
+        {synthesizing && (
+          <p className="tour-synth-status">
+            <span className="tour-eq" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+            Finding the words…
+          </p>
+        )}
         {evidence && (
           <span className="tour-evidence">
             {evidence.path}:{evidence.start_line}

@@ -415,10 +415,14 @@ button:disabled {
 .guide-idle .guide-eye, .guide-talking .guide-eye { animation: guide-blink 4.5s infinite; transform-box: fill-box; transform-origin: center; }
 .guide-talking .guide-mouth { animation: guide-talk 0.38s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 .guide-pointing .guide-body { transform: translateX(-2px); }
+.guide-composing .guide-glow { transform-box: fill-box; transform-origin: center; animation: guide-compose-pulse 1.3s ease-in-out infinite; }
+.guide-composing .guide-dots { opacity: 1; transform-box: fill-box; transform-origin: center; animation: guide-compose-dots 1.3s ease-in-out infinite; }
 @keyframes guide-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
 @keyframes guide-talk { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(2.6) scaleX(0.85); } }
 @keyframes guide-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 @keyframes guide-twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+@keyframes guide-compose-pulse { 0%, 100% { opacity: 0.18; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.15); } }
+@keyframes guide-compose-dots { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
 @media (prefers-reduced-motion: reduce) {
   .guide *, .guide { animation: none !important; transition: none !important; }
 }
@@ -444,6 +448,14 @@ button:disabled {
 .tour-title { margin: 0 0 0.25rem; font-size: 15px; color: var(--amber); }
 .tour-thought { margin: 0 0 0.35rem; font-size: 13px; font-style: italic; color: var(--text-muted); }
 .tour-narration { margin: 0 0 0.5rem; font-size: 15px; line-height: 1.55; max-width: 70ch; min-height: 3.1em; }
+.tour-synth-status { display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.5rem; font-size: 13px; color: var(--text-muted); }
+.tour-eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
+.tour-eq span { width: 3px; background: var(--amber); border-radius: 1px; animation: tour-eq-bounce 0.9s ease-in-out infinite; }
+.tour-eq span:nth-child(1) { height: 40%; animation-delay: 0s; }
+.tour-eq span:nth-child(2) { height: 100%; animation-delay: 0.15s; }
+.tour-eq span:nth-child(3) { height: 65%; animation-delay: 0.3s; }
+@keyframes tour-eq-bounce { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .tour-eq span { animation: none; transform: scaleY(0.7); } }
 .tour-evidence { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); text-transform: none; letter-spacing: normal; }
 .tour-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 0.6rem; }
 .tour-controls button { min-width: 44px; min-height: 36px; }
