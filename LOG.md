@@ -4,6 +4,22 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-07 — First real-API run (AI_STUB_MODE=false)
+
+**Done**
+- Added `server/.env` (gitignored) and made `npm run dev` / `npm start` load it via `--env-file-if-exists=.env`; the server had no env-file loading before.
+- Confirmed model IDs and prices in `ai/models.js` against Anthropic's model reference: `claude-haiku-5-5` ($0.10/$0.50 per MTok, rising to $0.50/$2.50 above 100K-token prompts, which our module-sized prompts don't reach) and `claude-sonnet-5-5` ($2/$10).
+- **Bug found by the first real call:** every Analyst call returned 400 "Schema is too complex." Stub mode had never sent a schema to the API. Structured outputs accepts only a subset of JSON Schema and our contract schemas carry `$schema`, `$id`, `minLength`, `pattern`, etc. for Ajv. Fixed with `ai/model-schema.js` (`toModelSchema`), applied in `callStructured`: strips unsupported keywords and turns `oneOf` into `anyOf`. Ajv still validates every response against the original schema. Test `model-schema.test.js` checks every file in `contracts/schemas/` converts cleanly.
+- `callStructured` now logs status code and message (never the prompt) when a model call fails. Before, the Analyst failure was invisible: `model_calls` has no error column and the stage message was empty.
+- Result on `jonschlinkert/is-number`: run `complete`, **$0.0132** total, 5 model calls (Analyst x2 and Writer x2 on Haiku, Architect overview on Sonnet), all pages generated, sensible prose, commit-pinned source links.
+
+**Observed, not fixed**
+- Verifier false positive: the `getting-started` page gets a warning "Unmatched mention: `package.json`" for a real file name in backticks. File paths in the snapshot should count as known mentions.
+- Stage failures still carry no message in `run_stages`, only the console log.
+- Only one tiny repo run so far; quality, cost and the budget cap on a larger repo are untested (that is T24).
+
+---
+
 ## 2026-11-07 — Task 6 (part): Retention cleanup (T23)
 
 **Done**
