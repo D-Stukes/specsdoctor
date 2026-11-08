@@ -4,6 +4,48 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-08 — Session handoff: where things stand, and the "wow factor" brainstorm (nothing built from the brainstorm yet)
+
+**Where things stand (all committed and pushed; nothing running in the background)**
+- Branch `dikshyant-ask-agent` (PR #21) sits on top of an unmerged stack: PRs #2 to #21, each based on the one before it (see the PR workflow memory: check the base before stacking). None are merged into `main`.
+- Built and tested (200 automated tests passing): Repo Reader, Scanner (JS/TS, routes, SQL, calls, data in/out), Analyst, Writer, Architect, Renderer, Verifier, editing and review with a findings panel, export ZIP, security (secret redaction), retention cleanup, queue and limits, repo map (Follow the data, Architecture, Functions, Request trace, Files, Plain English toggle, areas and collapse), guided tours (planner, Tour Agent, player, guide character, browser voice), plain-language Translator, "Ask this repo" chat agent with sources, demo repo and script, evaluation runner and scripts.
+- Real-API runs so far cost $0.03 to $0.07 each and take 30 to 70 s; total evaluation spend is roughly $1 of the $4 cap (estimate).
+- **Not built:** AI claim check (Task 7), Python support (Task 8), frontend page (Task 9), plain-language user guides (Task 12), the demo recording and publishing the demo repo to GitHub (needs a person; public action), the people-only evaluation parts (EV-1 rating, EV-3 newcomer test, EV-4 stopwatch, AT-1 inventories), and anything from the brainstorm below.
+- Dev setup: `server/.env` (gitignored; holds the API key; `AI_STUB_MODE=true` by default), `.claude/launch.json` (untracked, a local preview on port 4100 with access code `local-test`), tests run on their own database `docsync_test` (`npm test` in `server/`), a deployed server needs `GITHUB_TOKEN` (GitHub allows 60 unauthenticated requests an hour).
+- Clarification the user asked for: DocSync has no accounts. It uses one shared access code and a signed session cookie. The "create an account" example in the explainer visual comes from `AndrewJBateman/pern-stack-auth`, the sample repo used for testing (a PERN to-do app with JWT sign-up and login).
+
+**What the user asked for next (their words, cleaned up)**
+- They do not want "just a chat box, that's old school". They want a **wow factor**: a hiring manager or reviewer opens the project and thinks "I haven't seen this." The project should stand out, "not a needle in a haystack, but a steel box in a haystack."
+- An **animated AI agent that talks and explains**, which goes through the repo on its own and tells you, not a Q&A box. The earlier "Ask this repo" panel is the old-style version and should be seen as the fallback/follow-up, not the headline.
+- They want to brainstorm and go back and forth before building.
+
+**The five ideas offered (the user strongly prefers 1, 3 and 4)**
+1. **Guide explores on its own, and you watch it think.** One button; the amber guide flies across the map by itself, thought bubbles show what it is checking, the path it took stays lit, and it ends with a spoken story. Reuses: the Ask toolbox and agent loop, the map, the tour player and guide.
+2. **Watch your code turn into a map.** The map builds live while the pipeline runs (nodes pop in, edges draw). Cheapest to add; striking in a recording. Needs live stage events (the client polls today).
+3. **Data in motion.** For one action (for example "Create an account") glowing tags labeled with the real fields travel the real path (form, server, check, database table), a row appears in the table, the error path lights red. Every element comes from parser facts. Reuses: Follow the data steps, the `data` on endpoints, the tour player's dot animation.
+4. **Talk to the guide.** Speak a question; the guide answers aloud while the camera flies to the parts it mentions and source lines slide in. It is the Ask agent with voice and no text box. Needs speech input (browser speech recognition varies and sends audio to a third party; keep a typed fallback).
+5. **The résumé link.** A public, read-only share link that autoplays a 60-second guided tour with a short intro animation, for a hiring manager with no login. Needs a sharing design (privacy: who may see a run).
+- My suggestion: build 1 and 3 together as the signature demo, then 4, then 5 so it can be shared; 2 is a cheap extra.
+
+**Voice ideas the user raised, and the honest status**
+- "Willow Voice has an open API" (dictation): unverified whether it has a public API; would be the ears only. Ask the user to check.
+- "Claude has its own voice agent": no voice API known for embedding in DocSync; do not promise it. Claude stays the brain; voice in and out comes from separate speech services.
+- "Voice Studio" (the user's own app with custom or preset voices): open question: does it offer an API or audio export we can call from code? If it only works inside the app, it cannot be connected.
+- Plan agreed in principle: build the ears and mouth as swappable pieces. Start with the free browser voices; plug in a custom voice service later. Any paid voice service is called from the server so its key never sits in the browser; note cost and that speech goes to a third party.
+
+**Open questions for the next session**
+1. Does Voice Studio have an API or audio export? Does Willow Voice have a public API?
+2. Who is the main audience (hiring managers, classmates, an instructor)? Polished product feel or more playful?
+3. Confirm the build order: ideas 1 and 3 with the browser voice first, then 4, then 5?
+4. Merge the PR stack (in order, merge commits not squash, retarget each next PR to `main`), or keep building on top? Tell Diane before merging (it is her repo, `D-Stukes/specsdoctor`).
+
+**Starting point for the next session**
+- Read this entry, the PRD and Technical Design in `docs/`, and `CLAUDE.md`.
+- Work from `dikshyant-ask-agent` (or a fresh branch cut from it); open new PRs with the previous branch as the base.
+- Suggested first build: "the guide explores on its own": a new explorer mode that reuses `server/src/chat/tools.js` and the agent loop in `server/src/chat/agent.js`, streams its steps to the client, and drives the camera and highlights in `client/src/MapView.jsx` and `client/src/TourPlayer.jsx`. Keep the rules: code supplies facts, AI explains, every claim cites a source, never call output "verified".
+
+---
+
 ## 2026-11-08 — "Ask this repo": a grounded chat agent
 
 **Why:** the user asked for a live AI agent that helps someone new understand the codebase, alongside the plain-English map.
