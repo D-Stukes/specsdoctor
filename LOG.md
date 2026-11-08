@@ -4,6 +4,25 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-07 — Task 10: inferred edges (T26) and an endpoint-path bug found with them
+
+**Done**
+- **`queries_table` and `calls_endpoint` edges.** New `scanner/extract-graph-facts.js` pulls two raw facts out of every scanned JS file: SQL-looking strings (matched to known table names after `FROM`/`INTO`/`UPDATE`/`JOIN`) and `fetch`/`axios` calls with literal or template URLs (origin and query stripped, `${x}` becomes `:param`; `fetch(url)` with no options is GET). They are stored in a new optional `graph_facts` field of `index/1` and in `run_artifacts.import_graph`. Only frontend-workspace files count for HTTP calls. `buildGraph` turns them into edges from the enclosing function (or the file when there isn't one): table edges to a real table, call edges to every endpoint whose path matches (`:param` segments match anything; method must agree unless unknown). Both kinds are always `inferred: true` and cite the line.
+- **Scanner bug found while checking the new edges on real repos, fixed:** `app.use("/dashboard", require("./routes/dashboard"))` (router loaded inline, no variable) was not treated as a mount, so those endpoints lost their prefix. On `pern-stack-auth` the API page listed `POST /todos` where the real route is `POST /dashboard/todos`, i.e. the "wrong endpoint path" class the accuracy target says must be zero. Inline `require()` mounts now resolve, with or without a prefix. Before: 0 of 7 frontend calls matched; after: 7 of 7, and all 7 endpoint paths are correct. Tests in `inline-require-mount.test.js`.
+- Tests: `extract-graph-facts.test.js` plus edge tests in `graph.test.js`; full suite 107/107. The fixture now yields 3 table-query edges and 1 call edge.
+
+**Checked on the real evaluation repos (local scan, no API spend)**
+- `pern-stack-auth`: 3 `queries_table` edges, 7 `calls_endpoint` edges, none unmatched.
+- `Amazon-Clone-PERN-stack`: no such edges. Its repo has no SQL schema file for table names to match, and its client builds URLs from variables, which the extractor deliberately skips. Not a bug, a known limit of literal string matching.
+
+**Consequence for the evaluation**
+- Earlier `pern-stack-auth` runs (including everything in `docs/evaluation/` for it) documented wrong endpoint paths. EV-1's accuracy sample must be drawn from a run made after this fix.
+
+**Not done (rest of Task 10)**
+- AI area grouping and labels, ELK layout, `graph.json` in the export, and the React Flow UI.
+
+---
+
 ## 2026-11-07 — Task 10 started: repo map graph backend (T27, deterministic half)
 
 **Done**

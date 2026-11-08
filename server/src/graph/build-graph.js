@@ -11,6 +11,13 @@ function layerForModule(path, workspaces) {
   return best?.frontend ? "frontend" : "module";
 }
 
+/** Same segment count; a ":param" segment on either side matches anything. */
+function pathsMatch(url, endpointPath) {
+  const a = url.split("/").filter(Boolean);
+  const b = endpointPath.split("/").filter(Boolean);
+  return a.length === b.length && a.every((seg, i) => seg === b[i] || seg.startsWith(":") || b[i].startsWith(":"));
+}
+
 /** index: { items, imports, project } - the persisted shape (see load-index.js). */
 export function buildGraph(index) {
   const itemsById = new Map(index.items.map((i) => [i.id, i]));
@@ -73,6 +80,33 @@ export function buildGraph(index) {
 
   for (const table of index.project.tables ?? []) {
     addNode({ id: table.id, kind: "table", layer: "database", label: table.id.replace(/^tbl:/, "") });
+  }
+
+  // T26 inferred edges (string matches, so always marked inferred).
+  const tableIdByName = new Map((index.project.tables ?? []).map((t) => [t.id.replace(/^tbl:/, "").toLowerCase(), t.id]));
+  const codeItems = index.items.filter((i) => i.kind !== "endpoint");
+  function callerNode(path, line, layer) {
+    let enclosing = null;
+    for (const item of codeItems) {
+      if (item.path === path && item.start_line <= line && line <= item.end_line && (item.kind === "function" || item.kind === "method" || item.kind === "class")) {
+        if (!enclosing || item.end_line - item.start_line < enclosing.end_line - enclosing.start_line) enclosing = item;
+      }
+    }
+    return enclosing ? symbolNode(enclosing.id, layer) : moduleNode(path);
+  }
+
+  for (const q of index.graph_facts?.queries_table ?? []) {
+    const tableId = tableIdByName.get(q.table);
+    if (!tableId) continue;
+    addEdge({ from: callerNode(q.path, q.line, "handler"), to: tableId, kind: "queries_table", inferred: true, evidence: [{ path: q.path, start_line: q.line, end_line: q.line }] });
+  }
+
+  const endpoints = index.items.filter((i) => i.kind === "endpoint" && i.resolved);
+  for (const call of index.graph_facts?.calls_endpoint ?? []) {
+    for (const ep of endpoints) {
+      if (!pathsMatch(call.url, ep.path) || (call.method !== null && call.method !== ep.method && ep.method !== "ALL")) continue;
+      addEdge({ from: callerNode(call.path, call.line, "frontend"), to: ep.id, kind: "calls_endpoint", inferred: true, evidence: [{ path: call.path, start_line: call.line, end_line: call.line }] });
+    }
   }
 
   return { schema_version: "graph/1", nodes: [...nodes.values()], edges: [...edges.values()], groups: [] };

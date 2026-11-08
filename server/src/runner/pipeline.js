@@ -227,7 +227,7 @@ async function saveIndex(runId, index) {
   await pool.query(
     `INSERT INTO run_artifacts (run_id, coverage, project_facts, import_graph) VALUES ($1, $2, $3, $4)
      ON CONFLICT (run_id) DO UPDATE SET coverage = EXCLUDED.coverage, project_facts = EXCLUDED.project_facts, import_graph = EXCLUDED.import_graph`,
-    [runId, index.coverage, index.project, { imports: index.imports, unresolved_imports: index.unresolved_imports }]
+    [runId, index.coverage, index.project, { imports: index.imports, unresolved_imports: index.unresolved_imports, graph_facts: index.graph_facts }]
   );
   for (const item of index.items) {
     await pool.query(
