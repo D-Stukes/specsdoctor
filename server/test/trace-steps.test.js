@@ -21,7 +21,8 @@ test("follow the data: a request reads as numbered steps from the entry to the a
 test("follow the data: data chips say what comes in, what is saved with which columns, and what goes back", () => {
   const steps = traceSteps(graph, post.id);
   assert.deepEqual(steps.find((s) => s.kind === "entry").chips.map((c) => c.text), ["in: title"]);
-  assert.deepEqual(steps.find((s) => s.kind === "write").chips.map((c) => c.text), ["saves: habits (user_id, title)"]);
+  assert.deepEqual(steps.find((s) => s.kind === "write").chips.map((c) => c.text), ["saves: habits (user id, title)"]);
+  assert.deepEqual(traceSteps(graph, post.id, false).find((s) => s.kind === "write").chips.map((c) => c.text), ["saves: habits (user_id, title)"], "code names stay when plain is off");
   assert.ok(steps.find((s) => s.kind === "reply").chips.some((c) => c.text === "back: id (201)"));
 });
 

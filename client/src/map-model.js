@@ -120,6 +120,9 @@ export function functionsSubgraph(graph) {
   return { nodes: graph.nodes.filter((n) => ids.has(n.id)), edges };
 }
 
+/** user_email / jwtToken -> "user email" / "jwt token" */
+export const words = (s) => s.replace(/[_-]+/g, " ").replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
+const lcFirst = (s) => (s ? s[0].toLowerCase() + s.slice(1) : s);
 const listText = (xs) => (xs.length <= 2 ? xs.join(" and ") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
 
 /**
@@ -136,6 +139,7 @@ export function traceSteps(graph, endpointId, plain = true) {
   const seen = new Set();
   const ev = (e) => (e?.evidence?.[0] ? `${e.evidence[0].path}:${e.evidence[0].start_line}` : null);
   const technical = (n) => (plain ? n.label : null);
+  const w = (x) => (plain ? words(x) : x);
   const push = (step) => steps.push({ ...step, n: steps.length + 1 });
   const data = ep.data ?? { inputs: [], outputs: [], reads: [], writes: [] };
 
@@ -161,7 +165,7 @@ export function traceSteps(graph, endpointId, plain = true) {
     text: askEdge ? "The request arrives at the app's server." : "A request like this arrives at the app's server.",
     technical: technical(ep),
     evidence: ep.id.includes("@") ? ep.id.slice(ep.id.lastIndexOf("@") + 1) : null,
-    chips: inputNames.map((name) => ({ kind: "in", text: `in: ${name}` })),
+    chips: inputNames.map((name) => ({ kind: "in", text: `in: ${w(name)}` })),
   });
 
   // 3. Checks before the work.
@@ -186,14 +190,14 @@ export function traceSteps(graph, endpointId, plain = true) {
   walk(ep.id, 0);
 
   // 5. What is read from or saved to the database.
-  const columnsOf = (cols) => (cols.length && !cols.includes("*") ? ` (${cols.join(", ")})` : "");
+  const columnsOf = (cols) => (cols.length && !cols.includes("*") ? ` (${cols.map(w).join(", ")})` : "");
   for (const r of data.reads) {
     const table = graph.nodes.find((n) => n.kind === "table" && n.label === r.table);
-    push({ kind: "read", nodeId: table?.id ?? null, title: `Look up ${table ? nodeTitle(table, plain).replace(/ \(saved data\)$/, "") : r.table}`, text: `Reads what is already saved in ${r.table}.`, technical: plain ? r.table : null, evidence: null, chips: [{ kind: "read", text: `reads: ${r.table}${columnsOf(r.columns)}` }] });
+    push({ kind: "read", nodeId: table?.id ?? null, title: `Look up ${lcFirst(table ? nodeTitle(table, plain).replace(/ \(saved data\)$/, "") : r.table)}`, text: `Reads what is already saved in ${r.table}.`, technical: plain ? r.table : null, evidence: null, chips: [{ kind: "read", text: `reads: ${r.table}${columnsOf(r.columns)}` }] });
   }
   for (const w of data.writes) {
     const table = graph.nodes.find((n) => n.kind === "table" && n.label === w.table);
-    push({ kind: "write", nodeId: table?.id ?? null, title: `Save to ${table ? nodeTitle(table, plain).replace(/ \(saved data\)$/, "") : w.table}`, text: `Stores new information in ${w.table}.`, technical: plain ? w.table : null, evidence: null, chips: [{ kind: "write", text: `saves: ${w.table}${columnsOf(w.columns)}` }] });
+    push({ kind: "write", nodeId: table?.id ?? null, title: `Save to ${lcFirst(table ? nodeTitle(table, plain).replace(/ \(saved data\)$/, "") : w.table)}`, text: `Stores new information in ${w.table}.`, technical: plain ? w.table : null, evidence: null, chips: [{ kind: "write", text: `saves: ${w.table}${columnsOf(w.columns)}` }] });
   }
 
   // 6. What comes back.
@@ -201,7 +205,7 @@ export function traceSteps(graph, endpointId, plain = true) {
     const good = data.outputs.filter((o) => o.status === null || (o.status >= 200 && o.status < 300));
     const bad = data.outputs.filter((o) => o.status !== null && o.status >= 400);
     const chips = [
-      ...good.map((o) => ({ kind: "out", text: `back: ${o.keys?.length ? listText(o.keys) : "the result"}${o.status ? ` (${o.status})` : ""}` })),
+      ...good.map((o) => ({ kind: "out", text: `back: ${o.keys?.length ? listText(o.keys.map(w)) : "the result"}${o.status ? ` (${o.status})` : ""}` })),
       ...bad.map((o) => ({ kind: "bad", text: `problem${o.status ? ` (${o.status})` : ""}: ${o.message ?? "an error"}` })),
     ];
     push({ kind: "reply", nodeId: ep.id, title: "The answer goes back", text: good.length ? "The app's server sends the result back to where the request came from." : "The app's server answers.", technical: null, evidence: null, chips });

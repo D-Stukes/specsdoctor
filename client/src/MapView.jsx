@@ -157,7 +157,7 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
             Guided tour
           </button>
         )}
-        {hasAreas && (
+        {hasAreas && view !== "flow" && (
           <select className="map-input" value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)} aria-label="Highlight an area">
             <option value="">All areas</option>
             {graph.groups.map((g) => (
