@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { ReactFlow, MiniMap, Controls, Background, MarkerType } from "@xyflow/react";
+import { ReactFlow, ReactFlowProvider, MiniMap, Controls, Background, MarkerType, useReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { LAYER_ORDER, COLLAPSE_ABOVE, subgraphFor, collapseByGroup, edgeLabel, nodeTitle, functionsSubgraph, endpointChoices } from "./map-model.js";
 import FollowTheData from "./FollowTheData.jsx";
@@ -30,7 +30,8 @@ function pageSlugFor(node) {
   return path ? path.replace(/\.[^./]+$/, "").replace(/\//g, "-") : null;
 }
 
-export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }) {
+function MapViewInner({ runId, graph, tours = [], onBack, onOpenPage }) {
+  const { setCenter } = useReactFlow();
   const [view, setView] = useState(() => (graph.nodes.some((n) => n.kind === "endpoint") ? "flow" : "architecture"));
   const [plain, setPlain] = useState(true); // plain-English names by default; off shows the code names
   const [traceEndpoint, setTraceEndpoint] = useState(null);
@@ -133,6 +134,20 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
     return n ? nodeTitle(n, plain) : id;
   }, [graph, plain]);
   const slug = selected && !selectedGroup ? pageSlugFor(selected) : null;
+
+  // Idea 4, "talk to the guide" (LOG.md): when Ask names a source, select it everywhere (it already
+  // highlights the matching Follow-the-data step) and, on a canvas view where that node is actually
+  // laid out, glide the camera to it - the same centering TourPlayer uses for its own stops.
+  const flyToId = useCallback(
+    (id) => {
+      setSelectedId(id);
+      if (view !== "flow" && positions?.has(id)) {
+        const p = positions.get(id);
+        setCenter(p.x + NODE_W / 2, p.y + NODE_H / 2, { zoom: 1, duration: 750 });
+      }
+    },
+    [view, positions, setCenter]
+  );
 
   const startExplore = useCallback(async () => {
     if (explorer.status === "ready") {
@@ -247,7 +262,7 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
         </div>
 
         {askOpen && (
-          <AskPanel runId={runId} graph={graph} plain={plain} onClose={() => setAskOpen(false)} onSelectSource={(id) => setSelectedId(id)} onOpenPage={onOpenPage} />
+          <AskPanel runId={runId} graph={graph} plain={plain} onClose={() => setAskOpen(false)} onSelectSource={flyToId} onOpenPage={onOpenPage} />
         )}
 
         {selected && (
@@ -296,6 +311,14 @@ export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }
         )}
       </div>
     </div>
+  );
+}
+
+export default function MapView(props) {
+  return (
+    <ReactFlowProvider>
+      <MapViewInner {...props} />
+    </ReactFlowProvider>
   );
 }
 
