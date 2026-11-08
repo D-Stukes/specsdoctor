@@ -4,6 +4,26 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-07 — Task 10 finished: AI areas, collapse, graph.json export
+
+**Done**
+- **Grouper stage** (`stages/grouper.js`, `graph-groups/1` contract): one Haiku call names 2 to 8 areas and assigns existing graph nodes to them, from node ids/labels plus each file's purpose. Code decides what is allowed (`graph/groups.js`): unknown ids are dropped, a node belongs to at most one area, ids made unique, empty areas removed. Nodes the model leaves out get a folder area. If the call fails, the budget is short, or nothing valid is left, the whole map falls back to one area per folder (and in stub mode it always does), so every map has areas. Failures never fail the run. Cost on a real run: $0.0011.
+- Wired into the pipeline after the Architect, saved in `run_artifacts.architect_output.graph_groups` (no migration). `GET /api/runs/:id/graph` and the export both use `loadGraphForRun`, so areas appear in both.
+- **`graph.json` is now in the export ZIP** (root of the archive, a valid `graph/1` with areas).
+- **Map UI:** area filter (highlight one area), "Collapse areas" toggle (automatic above 300 nodes) that merges each area into one node with "N links" edges (dashed only if every merged edge is inferred), click an area for its summary and members, "Expand this area" to open one area while others stay collapsed. Pure shaping logic is in `client/src/map-model.js` and unit tested.
+- **Real-API check** on `pern-stack-auth` ($0.027 total, 32 s): the model produced Authentication, Todos API, Database, Client Shell and Auth Screens, Client Dashboard, each with an accurate one-sentence summary; a leftover node got a "server" folder area. Checked in the browser: collapse, area drawer, expand.
+- Tests: 123/123. A test caught a bug in the folder fallback (the Database area kept only its last table), fixed.
+
+**Deliberately not done / still open**
+- **Saved layout positions:** the spec says positions are saved per run. ELK is deterministic and lays out 320 nodes in about 165 ms, so layout is recomputed in the browser each time instead of stored. Easy to add if a saved layout is wanted later.
+- **AI one-line node labels:** not done. Node labels stay the code's own names so nothing on the map is model-written except area names and summaries.
+- The 300-node pan smoothness has still not been tried in a real browser (collapse is the mitigation above 300 nodes).
+- The API-endpoints page still prints raw ids for middleware (`sym:...#default`).
+- The Grouper's prompt only lists the first 400 nodes; the rest get folder areas.
+- Task 10's "done when": every edge has evidence or is marked inferred (true by test); 300-node fixture pans without visible lag (not verified).
+
+---
+
 ## 2026-11-07 — Task 10: the repo map UI (T28) + two Scanner/graph bugs it exposed
 
 **Done**

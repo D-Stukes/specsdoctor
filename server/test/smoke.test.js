@@ -233,3 +233,22 @@ test("GET /api/runs/:id/graph returns a valid graph/1 for a finished run", async
   const missing = await fetch(`${baseUrl}/api/runs/00000000-0000-0000-0000-000000000000/graph`, { headers: { cookie: sessionCookie } });
   assert.equal(missing.status, 404);
 });
+
+test("the graph endpoint and the export both carry the run's areas", async () => {
+  const { validateDoc } = await import("@docsync/contracts");
+  const { execFileSync } = await import("node:child_process");
+  const { mkdtempSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+
+  const graph = await (await fetch(`${baseUrl}/api/runs/${m3RunId}/graph`, { headers: { cookie: sessionCookie } })).json();
+  assert.ok(graph.groups.length > 0, "a finished run should have areas (folder areas in stub mode)");
+  assert.ok(graph.nodes.some((n) => n.group));
+
+  const res = await fetch(`${baseUrl}/api/runs/${m3RunId}/export.zip`, { headers: { cookie: sessionCookie } });
+  const file = join(mkdtempSync(join(tmpdir(), "docsync-graph-")), "e.zip");
+  writeFileSync(file, Buffer.from(await res.arrayBuffer()));
+  const exported = JSON.parse(execFileSync("unzip", ["-p", file, "graph.json"]).toString());
+  assert.equal(validateDoc(exported).valid, true);
+  assert.deepEqual(exported.groups, graph.groups);
+});

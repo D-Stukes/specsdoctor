@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { ReactFlow, MiniMap, Controls, Background, MarkerType } from "@xyflow/react";
 import ELK from "elkjs/lib/elk.bundled.js";
 import "@xyflow/react/dist/style.css";
+import { LAYER_ORDER, COLLAPSE_ABOVE, subgraphFor, collapseByGroup } from "./map-model.js";
 
 const elk = new ELK();
 
 const NODE_W = 260;
 const NODE_H = 42;
 
-const LAYER_ORDER = ["frontend", "route", "middleware", "handler", "database"];
 const LAYER_COLOR = {
   frontend: "var(--periwinkle)",
   route: "var(--mint)",
@@ -16,55 +16,13 @@ const LAYER_COLOR = {
   handler: "var(--text)",
   database: "var(--status-ok)",
   module: "var(--text-secondary)",
+  group: "var(--text-secondary)",
 };
-const ARCH_KINDS = new Set(["routes_to", "uses_middleware", "calls_endpoint", "queries_table"]);
-const DEP_KINDS = new Set(["imports", "mounts"]);
-
 const VIEWS = [
   { id: "architecture", label: "Architecture" },
   { id: "trace", label: "Request trace" },
   { id: "dependencies", label: "Dependencies" },
 ];
-
-function subgraphFor(graph, view, traceEndpoint) {
-  const byId = new Map(graph.nodes.map((n) => [n.id, n]));
-  let kinds;
-  let keepIds;
-
-  if (view === "dependencies") {
-    kinds = DEP_KINDS;
-    keepIds = new Set(graph.nodes.filter((n) => n.kind === "module").map((n) => n.id));
-  } else if (view === "trace") {
-    kinds = ARCH_KINDS;
-    keepIds = new Set();
-    if (traceEndpoint) {
-      keepIds.add(traceEndpoint);
-      const queue = [];
-      for (const e of graph.edges) {
-        if (!kinds.has(e.kind)) continue;
-        if (e.kind === "calls_endpoint" && e.to === traceEndpoint) keepIds.add(e.from);
-        if ((e.kind === "routes_to" || e.kind === "uses_middleware") && e.from === traceEndpoint) {
-          keepIds.add(e.to);
-          queue.push(e.to);
-        }
-      }
-      for (const e of graph.edges) {
-        if (e.kind === "queries_table" && (e.from === traceEndpoint || queue.includes(e.from))) keepIds.add(e.to);
-      }
-    }
-  } else {
-    kinds = ARCH_KINDS;
-    keepIds = new Set(graph.nodes.filter((n) => n.kind !== "module" && LAYER_ORDER.includes(n.layer)).map((n) => n.id));
-    for (const e of graph.edges) {
-      if (!kinds.has(e.kind)) continue;
-      if (byId.get(e.from)?.kind === "module") keepIds.add(e.from);
-      if (byId.get(e.to)?.kind === "module") keepIds.add(e.to);
-    }
-  }
-
-  const edges = graph.edges.filter((e) => kinds.has(e.kind) && keepIds.has(e.from) && keepIds.has(e.to));
-  return { nodes: [...keepIds].map((id) => byId.get(id)).filter(Boolean), edges };
-}
 
 async function layout(nodes, edges, view) {
   const layered = view !== "dependencies";
@@ -101,13 +59,20 @@ export default function MapView({ runId, graph, onBack, onOpenPage }) {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(null);
   const [positions, setPositions] = useState(null);
+  const [collapseChoice, setCollapseChoice] = useState(null); // null = automatic (collapse above COLLAPSE_ABOVE nodes)
+  const [expanded, setExpanded] = useState(() => new Set());
+  const [areaFilter, setAreaFilter] = useState("");
 
   const endpoints = useMemo(() => graph.nodes.filter((n) => n.kind === "endpoint"), [graph]);
   useEffect(() => {
     if (!traceEndpoint && endpoints.length > 0) setTraceEndpoint(endpoints[0].id);
   }, [endpoints, traceEndpoint]);
 
-  const sub = useMemo(() => subgraphFor(graph, view, traceEndpoint), [graph, view, traceEndpoint]);
+  const base = useMemo(() => subgraphFor(graph, view, traceEndpoint), [graph, view, traceEndpoint]);
+  const hasAreas = graph.groups.length > 0;
+  const collapsed = hasAreas && view !== "trace" && (collapseChoice ?? base.nodes.length > COLLAPSE_ABOVE);
+  const sub = useMemo(() => (collapsed ? collapseByGroup(base, graph.groups, expanded) : base), [base, collapsed, graph.groups, expanded]);
+  const groupNameOf = useCallback((id) => graph.groups.find((g) => g.id === id)?.name ?? null, [graph.groups]);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,7 +89,8 @@ export default function MapView({ runId, graph, onBack, onOpenPage }) {
   const flowNodes = useMemo(() => {
     if (!positions) return [];
     return sub.nodes.map((n) => {
-      const match = needle === "" || n.label.toLowerCase().includes(needle) || n.id.toLowerCase().includes(needle);
+      const textMatch = needle === "" || n.label.toLowerCase().includes(needle) || n.id.toLowerCase().includes(needle);
+      const match = textMatch && (areaFilter === "" || n.group === areaFilter);
       return {
         id: n.id,
         position: positions.get(n.id) ?? { x: 0, y: 0 },
@@ -151,7 +117,7 @@ export default function MapView({ runId, graph, onBack, onOpenPage }) {
         },
       };
     });
-  }, [positions, sub, needle, selectedId]);
+  }, [positions, sub, needle, selectedId, areaFilter]);
 
   const flowEdges = useMemo(
     () =>
@@ -159,7 +125,7 @@ export default function MapView({ runId, graph, onBack, onOpenPage }) {
         id: `e${i}`,
         source: e.from,
         target: e.to,
-        label: e.kind.replace(/_/g, " "),
+        label: e.label ?? e.kind.replace(/_/g, " "),
         animated: false,
         markerEnd: { type: MarkerType.ArrowClosed, color: "#8b96a0" },
         style: { stroke: "#8b96a0", strokeWidth: 1.4, strokeDasharray: e.inferred ? "6 4" : undefined },
@@ -169,10 +135,12 @@ export default function MapView({ runId, graph, onBack, onOpenPage }) {
     [sub]
   );
 
-  const selected = graph.nodes.find((n) => n.id === selectedId) ?? null;
-  const selectedEdges = selected ? graph.edges.filter((e) => e.from === selected.id || e.to === selected.id) : [];
+  const selected = sub.nodes.find((n) => n.id === selectedId) ?? graph.nodes.find((n) => n.id === selectedId) ?? null;
+  const selectedGroup = selected?.kind === "group" ? graph.groups.find((g) => g.id === selected.group) : null;
+  const groupMembers = selectedGroup ? base.nodes.filter((n) => n.group === selectedGroup.id) : [];
+  const selectedEdges = selected && !selectedGroup ? graph.edges.filter((e) => e.from === selected.id || e.to === selected.id) : [];
   const labelOf = useCallback((id) => graph.nodes.find((n) => n.id === id)?.label ?? id, [graph]);
-  const slug = selected ? pageSlugFor(selected) : null;
+  const slug = selected && !selectedGroup ? pageSlugFor(selected) : null;
 
   return (
     <div className="map-shell">
@@ -195,6 +163,21 @@ export default function MapView({ runId, graph, onBack, onOpenPage }) {
               </option>
             ))}
           </select>
+        )}
+        {hasAreas && (
+          <select className="map-input" value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)} aria-label="Highlight an area">
+            <option value="">All areas</option>
+            {graph.groups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+        )}
+        {hasAreas && view !== "trace" && (
+          <label className="map-check">
+            <input type="checkbox" checked={collapsed} onChange={(e) => { setCollapseChoice(e.target.checked); setExpanded(new Set()); setSelectedId(null); }} /> Collapse areas
+          </label>
         )}
         <input className="map-input" type="search" placeholder="Search nodes" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search nodes" />
         <span className="map-legend">
@@ -234,18 +217,32 @@ export default function MapView({ runId, graph, onBack, onOpenPage }) {
 
         {selected && (
           <aside className="map-drawer" aria-label="Node details">
-            <h2 style={{ fontFamily: "var(--font-mono)", fontSize: 15, wordBreak: "break-all" }}>{selected.label}</h2>
+            <h2 style={{ fontFamily: "var(--font-mono)", fontSize: 15, wordBreak: "break-all" }}>{selectedGroup ? selectedGroup.name : selected.label}</h2>
             <p className="stage-status">
-              {selected.kind} · {selected.layer}
+              {selectedGroup ? `area · ${groupMembers.length} nodes in this view` : `${selected.kind} · ${selected.layer}`}
             </p>
-            <p className="stage-status map-case" style={{ wordBreak: "break-all" }}>{selected.id}</p>
+            {!selectedGroup && selected.group && groupNameOf(selected.group) && <p className="stage-status">Area: {groupNameOf(selected.group)}</p>}
+            {selectedGroup && (
+              <>
+                <p>{selectedGroup.summary}</p>
+                <button className="btn-primary" style={{ width: "auto" }} onClick={() => { setExpanded(new Set([...expanded, selectedGroup.id])); setSelectedId(null); }}>
+                  Expand this area
+                </button>
+                <h3 style={{ fontSize: 13, marginTop: 16 }}>Nodes in this area</h3>
+                {groupMembers.slice(0, 60).map((m) => (
+                  <div key={m.id} className="map-edge-row">{m.label}</div>
+                ))}
+                {groupMembers.length > 60 && <p className="stage-status">and {groupMembers.length - 60} more</p>}
+              </>
+            )}
+            {!selectedGroup && <p className="stage-status map-case" style={{ wordBreak: "break-all" }}>{selected.id}</p>}
             {slug && (
               <a className="page-link" href="#" onClick={(e) => { e.preventDefault(); onOpenPage(slug); }}>
                 Open doc page
               </a>
             )}
-            <h3 style={{ fontSize: 13, marginTop: 16 }}>Connections</h3>
-            {selectedEdges.length === 0 && <p className="stage-status">None found in the code.</p>}
+            {!selectedGroup && <h3 style={{ fontSize: 13, marginTop: 16 }}>Connections</h3>}
+            {!selectedGroup && selectedEdges.length === 0 && <p className="stage-status">None found in the code.</p>}
             {selectedEdges.map((e, i) => (
               <div key={i} className="map-edge-row">
                 <div>

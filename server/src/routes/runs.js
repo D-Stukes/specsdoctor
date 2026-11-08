@@ -8,7 +8,7 @@ import { loadIndexForRun } from "../db/load-index.js";
 import { scanRenderedPageForUnknownMentions } from "../stages/verifier.js";
 import { buildMkdocsYml, buildExportReadme } from "../export/mkdocs-config.js";
 import { buildProvenanceMarkdown } from "../export/provenance.js";
-import { buildGraph } from "../graph/build-graph.js";
+import { loadGraphForRun } from "../db/load-graph.js";
 import { buildExportZip } from "../export/build-zip.js";
 import { appendInlineFindings, buildReviewMarkdown } from "../export/review.js";
 import crypto from "node:crypto";
@@ -256,6 +256,7 @@ runsRouter.get("/runs/:id/export.zip", async (req, res) => {
     provenanceMd: buildProvenanceMarkdown({ run, pages, openFindingsBySeverity: bySeverity }),
     pages: pages.map((p) => ({ slug: p.slug, markdown: appendInlineFindings(p.markdown, byPageId.get(p.id) ?? []) })),
     reviewMd: req.query.include_review === "true" ? buildReviewMarkdown(findings) : null,
+    graphJson: JSON.stringify(await loadGraphForRun(req.params.id), null, 2),
   });
 
   res.set({
@@ -274,7 +275,7 @@ runsRouter.get("/runs/:id/graph", async (req, res) => {
   if (rows[0].status !== "complete" && rows[0].status !== "complete_with_errors") {
     return res.status(409).json({ error: { code: "run_not_ready", message: `Run is ${rows[0].status}; the map needs a finished run` } });
   }
-  res.json(buildGraph(await loadIndexForRun(req.params.id)));
+  res.json(await loadGraphForRun(req.params.id));
 });
 
 // GET /api/runs/:id - progress, polled every 2s by the client.

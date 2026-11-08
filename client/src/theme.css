@@ -386,3 +386,5 @@ button:disabled {
 @media (max-width: 720px) { .map-body { flex-direction: column; } .map-drawer { width: 100%; max-height: 40%; border-left: none; border-top: 1px solid var(--hairline); } }
 .map-node-label { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .map-case { text-transform: none !important; letter-spacing: normal !important; }
+.map-check { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--text-secondary); font-size: 13px; cursor: pointer; }
+.map-check { text-transform: none; letter-spacing: normal; }
