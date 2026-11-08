@@ -4,6 +4,23 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-07 — Task 6 (part): Security hardening (T22, SEC-T)
+
+**Done**
+- Audited SEC-1 to SEC-9 against the code. Already in place from earlier tasks: URL allowlist (SEC-2), tar path/symlink/hardlink/device rejection and in-memory extraction (SEC-3), sensitive-file skipping (SEC-5 file half), session cookie on every non-health route with signed/HTTP-only/SameSite=Lax/Secure-in-prod (SEC-8), login limiter (SEC-9), repo text delimited as data in prompts (SEC-1).
+- **The one real gap: key redaction (SEC-5 second half).** Added `server/src/ai/redact.js` (private-key blocks, AWS, GitHub, Stripe, Anthropic, Slack keys, quoted 32+ char mixed letter/digit literals) and applied it inside `callStructured`, the single choke point every AI stage goes through, so no stage can forget it. `setPromptCapture` is a test hook that sees the post-redaction prompt, including in stub mode.
+- `server/test/security.test.js` (8 tests): redaction patterns and false-positive check, prompt capture, `.env`/`.pem`/`credentials.json` never reach `contentByPath` while `.env.example` does, hardlinks and device files rejected, look-alike/non-GitHub URLs rejected, and every saved-content route (including export) returns 401 without a cookie. Full suite 76/76.
+
+**Not done / caveats**
+- "`<script>` in README renders as text" is true by construction, not tested: the viewer shows page text as a React text child inside `<pre>` (escaped). If Task 10/11 swaps in `react-markdown`, raw HTML must stay disabled and that needs a real test then.
+- Redaction is pattern-based and will miss unusual secret formats; env var values are never extracted anyway.
+- SEC-6 (no prompt bodies in logs) was checked by reading: `model_calls` stores token counts only. No automated test.
+
+**Next**
+- T23 retention cleanup, then T24 evaluation and T25 demo assets.
+
+---
+
 ## 2026-11-07 — Task 6 (part): Export ZIP (T18)
 
 **Done**
