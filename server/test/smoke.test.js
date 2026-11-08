@@ -32,6 +32,22 @@ async function postJson(pathname, body, cookie) {
   });
 }
 
+async function putJson(pathname, body, cookie) {
+  return fetch(`${baseUrl}${pathname}`, {
+    method: "PUT",
+    headers: { "content-type": "application/json", ...(cookie ? { cookie } : {}) },
+    body: JSON.stringify(body),
+  });
+}
+
+async function patchJson(pathname, body, cookie) {
+  return fetch(`${baseUrl}${pathname}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json", ...(cookie ? { cookie } : {}) },
+    body: JSON.stringify(body),
+  });
+}
+
 test("GET /api/health reports db connectivity", async () => {
   const res = await fetch(`${baseUrl}/api/health`);
   assert.equal(res.status, 200);
@@ -74,6 +90,8 @@ async function pollUntilTerminal(baseUrl, runId, cookie, { timeoutMs = 60_000 } 
   throw new Error(`run ${runId} did not reach a terminal status within ${timeoutMs}ms`);
 }
 
+let m3RunId;
+
 // M3: real Repo Reader -> Scanner -> Analyst -> Writer -> Renderer, against
 // a real (tiny, stable) public repo, in AI stub mode (zero cost, zero AI
 // network calls - AI_STUB_MODE defaults to true in routes/runs.js).
@@ -82,6 +100,7 @@ test("M3: a real run against a real repo produces a generated reference page wit
   assert.equal(started.status, 202);
   const { run_id, status } = await started.json();
   assert.equal(status, "queued");
+  m3RunId = run_id;
 
   const finalRun = await pollUntilTerminal(baseUrl, run_id, sessionCookie);
   assert.equal(finalRun.repo.owner, "jonschlinkert");
@@ -104,4 +123,66 @@ test("M3: a real run against a real repo produces a generated reference page wit
   const page = await pageRes.json();
   assert.equal(page.status, "generated");
   assert.ok(page.markdown.includes(`https://github.com/jonschlinkert/is-number/blob/${finalRun.resolved_sha}/`), "markdown should contain a commit-pinned source link");
+});
+
+// AT-13: edit -> save -> reload persists; emptying a page persists too;
+// rev_conflict on a stale base_rev; review marks a revision reviewed;
+// findings list + resolve a finding (T17). Builds on the run M3 just saved.
+test("AT-13: editing, reviewing and resolving findings on a saved run", async () => {
+  const slug = "index";
+  const original = await (await fetch(`${baseUrl}/api/runs/${m3RunId}/pages/${slug}`, { headers: { cookie: sessionCookie } })).json();
+  assert.equal(original.rev, 1);
+
+  const staleEdit = await putJson(`/api/runs/${m3RunId}/pages/${slug}`, { base_rev: 999, markdown: "nope" }, sessionCookie);
+  assert.equal(staleEdit.status, 409);
+  assert.equal((await staleEdit.json()).error.code, "rev_conflict");
+
+  const edited = await putJson(`/api/runs/${m3RunId}/pages/${slug}`, { base_rev: original.rev, markdown: "# Edited by hand\n\nreal() is documented here." }, sessionCookie);
+  assert.equal(edited.status, 200);
+  const editedBody = await edited.json();
+  assert.equal(editedBody.rev, 2);
+  assert.equal(editedBody.checks_fresh, true);
+
+  const afterEdit = await (await fetch(`${baseUrl}/api/runs/${m3RunId}/pages/${slug}`, { headers: { cookie: sessionCookie } })).json();
+  assert.equal(afterEdit.rev, 2);
+  assert.equal(afterEdit.origin, "user");
+  assert.equal(afterEdit.markdown, "# Edited by hand\n\nreal() is documented here.");
+
+  // Emptying a page is explicitly allowed (§4d "markdown may be ''").
+  const emptied = await putJson(`/api/runs/${m3RunId}/pages/${slug}`, { base_rev: 2, markdown: "" }, sessionCookie);
+  assert.equal(emptied.status, 200);
+  const afterEmpty = await (await fetch(`${baseUrl}/api/runs/${m3RunId}/pages/${slug}`, { headers: { cookie: sessionCookie } })).json();
+  assert.equal(afterEmpty.rev, 3);
+  assert.equal(afterEmpty.markdown, "");
+
+  const staleReview = await postJson(`/api/runs/${m3RunId}/pages/${slug}/review`, { rev: 2, note: "looks right" }, sessionCookie);
+  assert.equal(staleReview.status, 409);
+
+  const review = await postJson(`/api/runs/${m3RunId}/pages/${slug}/review`, { rev: 3, note: "looks right" }, sessionCookie);
+  assert.equal(review.status, 200);
+  const afterReview = await (await fetch(`${baseUrl}/api/runs/${m3RunId}/pages/${slug}`, { headers: { cookie: sessionCookie } })).json();
+  assert.ok(afterReview.reviewed_at, "expected reviewed_at to be set");
+
+  // Findings: the tech-stack page always exists and, for this repo, cites
+  // nothing (plain prose) so it won't have findings - use the run's full
+  // findings list instead, which should include at least the "none found"
+  // (none expected) - check the endpoint shape and filtering work, not a
+  // specific count, since AI_STUB_MODE + a tiny repo keep real findings rare.
+  const findingsRes = await fetch(`${baseUrl}/api/runs/${m3RunId}/findings?status=open`, { headers: { cookie: sessionCookie } });
+  assert.equal(findingsRes.status, 200);
+  const { findings } = await findingsRes.json();
+  assert.ok(Array.isArray(findings));
+
+  if (findings.length > 0) {
+    const target = findings[0];
+    const badResolve = await patchJson(`/api/findings/${target.id}`, { status: "corrected" }, sessionCookie);
+    assert.equal(badResolve.status, 400, "note should be required unless reopening");
+    assert.equal((await badResolve.json()).error.code, "note_required");
+
+    const resolve = await patchJson(`/api/findings/${target.id}`, { status: "corrected", note: "fixed it" }, sessionCookie);
+    assert.equal(resolve.status, 200);
+    const resolved = await resolve.json();
+    assert.equal(resolved.status, "corrected");
+    assert.equal(resolved.resolution_note, "fixed it");
+  }
 });

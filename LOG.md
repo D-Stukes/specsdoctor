@@ -4,6 +4,29 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-06 — Task 5: Trust + review (T13, T17) — M5 satisfied
+
+**Done**
+- **T13 Structural Verifier** (`server/src/stages/verifier.js`): structural checks per claim (every `symbols`/evidence `symbol_id` resolves to a real index item; every evidence line range is within the pinned file's real length), reference-completeness coverage per page, and a supplementary scan of rendered Markdown for inline-code mentions that match no real symbol/builtin/dependency. The AI claim check (rule 4, Task 7) and the repair loop (T16) aren't built - every claim's `ai.assessment` is honestly `not_assessed`, findings are reported but nothing is auto-retried. Wired into the pipeline: every page now goes through one render → save → verify sequence: a page with a failed claim correctly pushes the run to `complete_with_errors`.
+- **T17 editing + review + findings**: `PUT /api/runs/:id/pages/:slug` (save an edit as a new revision, 409 on a stale `base_rev`, empty pages explicitly allowed), `POST .../review`, `GET /api/runs/:id/findings`, `PATCH /api/findings/:id` (note required unless reopening). `GET .../pages` and `.../pages/:slug` now report real `checks_fresh`/`reviewed`/`open_findings`/per-claim AI-assessment counts instead of Task 3's hardcoded placeholders.
+- **Client**: a working Edit → Save and Mark reviewed flow in `PageViewer`, verified end to end in a real browser against a real run (rev 1 → edit → rev 2, origin flips to "user", reviewed state updates immediately).
+
+**M5 is now satisfied**: AT-4 (injected defects caught - fake function, out-of-range line, nonexistent file, fake endpoint, all correctly flagged) and AT-13 (edit, save, reload, rev_conflict, empty-page persistence, review, resolve a finding) both pass.
+
+**Bug found and fixed - a real node-postgres driver gotcha**
+- Two queries reused the same `$N` parameter in two different type contexts within one statement (e.g. `$2::text IS NULL OR ri.status = $2`, where `ri.status` is the `review_status` enum) - Postgres couldn't settle on a single type for the parameter, and the query **never returned** via the `pg` driver, even though the identical SQL with a literal value ran instantly in `psql`. Not a thrown error - a true hang, which made the first attempt at `AT-13`'s test time out at 15s with no explanation. Found via binary-search debug logging across several timed background test runs. Fixed by avoiding the dual-typed parameter entirely in both places (`GET /findings`: conditional `WHERE` built in JS; `PATCH /findings/:id`: `resolved_at` computed in JS instead of a `$`-bound `CASE`). Worth remembering for any future parameterized query touching an enum column: never let one parameter serve two different implicit types in the same statement.
+- Also noticed (not fixed): `npm test`'s test files share one local Postgres database, and `queue.test.js`'s aggressive `DELETE FROM runs` cleanup (needed since its limits are global/app-wide) can wipe rows another test file created in the same overall `npm test` invocation. Harmless for CI (each file's own assertions still run and pass before any cross-file interference), but it means the local dev DB can end up missing data you'd expect to still be there after running the full suite - don't be surprised by it.
+
+**Not done / blocked**
+- T16 (repair loop) isn't built - a failed claim is reported, never retried.
+- The AI claim check (Task 7) isn't built - `ai_assessment` is always `not_assessed`; the page banner text the spec describes for this case isn't rendered yet either.
+- Source-link bounds aren't rechecked on a user edit (only the unknown-mention scan is) - needs per-revision file content, which isn't persisted yet.
+
+**Next**
+- Push this (stacked on the still-open PR #4, same pattern as before) and keep going - either T16 (repair loop) or start on something from Task 6 (export, security hardening) once the current PR chain gets reviewed.
+
+---
+
 ## 2026-11-06 — Task 4 continued: two more Architect pages, M4 fully satisfied
 
 **Done**

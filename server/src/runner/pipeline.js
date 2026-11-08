@@ -14,8 +14,10 @@ import {
   buildConfigurationPage,
 } from "../stages/architect-deterministic.js";
 import { renderPage } from "../renderer/render-page.js";
+import { verifyPage, scanRenderedPageForUnknownMentions } from "../stages/verifier.js";
 import { savePageRevision } from "../db/pages.js";
-import { initStages, startStage, finishStage, skipStage, recordEvent } from "./stage-tracking.js";
+import { saveClaimChecks, saveFindings } from "../db/verification.js";
+import { initStages, startStage, finishStage, recordEvent } from "./stage-tracking.js";
 
 const STAGES = ["reader", "scanner", "analyst", "architect", "writer", "verifier", "render"];
 const MODULE_LIMIT = 100; // §4a
@@ -66,8 +68,6 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
     await failRun(runId, "scanner_failed", err.message);
     return;
   }
-
-  await skipStage(runId, "verifier", "Task 5 (not built yet)");
 
   const modules = groupItemsByModule(index.items).slice(0, MODULE_LIMIT);
   const repo = { owner, name, sha: resolvedSha };
@@ -127,12 +127,16 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
 
   await startStage(runId, "writer", modules.length);
   await startStage(runId, "render", modules.length + architectPages.length);
+  await startStage(runId, "verifier", modules.length + architectPages.length);
   let modulePagesSaved = 0;
   let writerFailed = 0;
+  let totalFindings = 0;
+  let pagesWithFailedClaims = 0;
 
   for (const page of architectPages) {
-    const { markdown } = renderPage(page, index, repo);
-    await savePageRevision({ runId, page, markdown, ownerStage: page.slug === "overview" ? "architect" : "renderer" });
+    const result = await saveAndVerifyPage({ runId, page, index, contentByPath, repo, ownerStage: page.slug === "overview" ? "architect" : "renderer" });
+    totalFindings += result.findings.length;
+    if (result.hasFailedClaim) pagesWithFailedClaims += 1;
   }
   for (const mod of modules) {
     try {
@@ -140,8 +144,9 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
       const page = summary
         ? await writeReferencePage({ runId, modulePath: mod.path, items: mod.items, summary, budgetManager, stub: aiStub })
         : deterministicOnlyPage(mod);
-      const { markdown } = renderPage(page, index, repo);
-      await savePageRevision({ runId, page, markdown });
+      const result = await saveAndVerifyPage({ runId, page, index, contentByPath, repo });
+      totalFindings += result.findings.length;
+      if (result.hasFailedClaim) pagesWithFailedClaims += 1;
       modulePagesSaved += 1;
     } catch (err) {
       writerFailed += 1;
@@ -151,15 +156,39 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
   const pagesSaved = architectPages.length + modulePagesSaved;
   await finishStage(runId, "writer", writerFailed === 0 ? "done" : writerFailed === modules.length ? "failed" : "partial", { itemsDone: modulePagesSaved, itemsFailed: writerFailed });
   await finishStage(runId, "render", "done", { itemsDone: pagesSaved });
+  await finishStage(runId, "verifier", pagesWithFailedClaims === 0 ? "done" : "partial", { itemsDone: pagesSaved, itemsFailed: pagesWithFailedClaims, message: `${totalFindings} finding(s)` });
 
   const hasDocumentedSubject = index.items.some((i) => i.kind === "endpoint" || i.documented);
   const usable = hasDocumentedSubject && pagesSaved > 0;
-  const status = !usable ? "failed" : writerFailed > 0 || analystFailed > 0 || architectFailed > 0 ? "complete_with_errors" : "complete";
+  const status = !usable
+    ? "failed"
+    : writerFailed > 0 || analystFailed > 0 || architectFailed > 0 || pagesWithFailedClaims > 0
+      ? "complete_with_errors"
+      : "complete";
 
   await pool.query(`UPDATE runs SET status = $2, cost_usd = $3, finished_at = now() WHERE id = $1`, [runId, status, budgetManager.spentUsd]);
   if (!usable) {
     await pool.query(`UPDATE runs SET failure_code = 'no_usable_output' WHERE id = $1`, [runId]);
   }
+}
+
+/**
+ * Renders, saves, and verifies one page in one place - every page in this
+ * pipeline goes through the same render -> save -> verify sequence, so this
+ * is the single definition of what "a saved page" means here (T13/T17).
+ */
+async function saveAndVerifyPage({ runId, page, index, contentByPath, repo, ownerStage }) {
+  const { markdown, warnings } = renderPage(page, index, repo);
+  const { pageId, rev } = await savePageRevision({ runId, page, markdown, ownerStage });
+
+  const unknownMentions = scanRenderedPageForUnknownMentions(markdown, index);
+  const { verifyResult, findings } = verifyPage({ page, rev, index, contentByPath, renderWarnings: warnings, unknownMentions });
+
+  await saveClaimChecks({ pageId, rev, verifyResult });
+  await saveFindings({ runId, pageId, findings });
+  await getPool().query(`UPDATE page_revisions SET checks_fresh = true WHERE page_id = $1 AND rev = $2`, [pageId, rev]);
+
+  return { findings, hasFailedClaim: verifyResult.claims.some((c) => c.structural.status === "fail") };
 }
 
 function groupItemsByModule(items) {
