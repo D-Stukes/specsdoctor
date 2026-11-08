@@ -168,6 +168,18 @@ function formatDuration(ms) {
   return s < 60 ? `${s.toFixed(1)}s` : `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`;
 }
 
+/** The shape of the codebase, straight from the graph's own facts - what the landing dashboard leads with. */
+function graphStats(graph) {
+  const count = (f) => graph.nodes.filter(f).length;
+  return {
+    actions: count((n) => n.kind === "endpoint"),
+    tables: count((n) => n.kind === "table"),
+    screens: count((n) => n.layer === "frontend" && n.kind !== "module"),
+    files: count((n) => n.kind === "module"),
+    areas: graph.groups ?? [],
+  };
+}
+
 function RunList({ onOpenRun }) {
   const [runs, setRuns] = useState(null);
   const [error, setError] = useState(null);
@@ -338,6 +350,9 @@ function RunProgress({ runId, onBackToList }) {
         if (!["queued", "running"].includes(data.status)) {
           const pageData = await api(`/runs/${runId}/pages`);
           setPages(pageData.pages);
+          if (data.status === "complete" || data.status === "complete_with_errors") {
+            api(`/runs/${runId}/graph`).then(setGraph).catch(() => {}); // the dashboard's stats; failure just leaves them unshown
+          }
         } else {
           timerRef.current = setTimeout(poll, 2000);
         }
@@ -365,7 +380,7 @@ function RunProgress({ runId, onBackToList }) {
   async function openMap() {
     setError(null);
     try {
-      setGraph(await api(`/runs/${runId}/graph`));
+      if (!graph) setGraph(await api(`/runs/${runId}/graph`));
       setTours((await api(`/runs/${runId}/tours`).catch(() => ({ tours: [] }))).tours);
       setShowMap(true);
     } catch (err) {
@@ -377,6 +392,10 @@ function RunProgress({ runId, onBackToList }) {
   if (showMap && graph) {
     return <MapView runId={runId} graph={graph} tours={tours} onBack={() => setShowMap(false)} onOpenPage={(slug) => { setShowMap(false); setOpenSlug(slug); }} />;
   }
+
+  const isDone = run && (run.status === "complete" || run.status === "complete_with_errors");
+  const stats = graph ? graphStats(graph) : null;
+  const overviewPage = pages.find((p) => p.slug === "overview");
 
   return (
     <div className="shell">
@@ -403,34 +422,115 @@ function RunProgress({ runId, onBackToList }) {
               {run.status.replace(/_/g, " ")}
             </div>
 
-            <div className="stage-list">
-              {run.stages.map((s) => (
-                <div className="stage-row" key={s.stage}>
-                  <span className={`dot dot-${s.status}`} />
-                  <span className="stage-name">{s.stage}</span>
-                  <span className="stage-status">{STATUS_LABEL[s.status] ?? s.status}</span>
-                  <span className="stage-count">
-                    {s.items_done}
-                    {s.items_total != null ? `/${s.items_total}` : ""}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {run.failure && <p className="error-text">{run.failure.code}: {run.failure.detail}</p>}
 
-            <div className="cost-row">
-              <span>Cost</span>
-              <span>
-                ${run.cost_usd.toFixed(2)} / ${run.budget_cap_usd.toFixed(2)} budget
-              </span>
-            </div>
-            {run.duration_ms != null && (
-              <div className="cost-row">
-                <span>Time</span>
-                <span>{formatDuration(run.duration_ms)}</span>
+            {isDone && (
+              <div className="dashboard">
+                <h2>The codebase, at a glance</h2>
+                {!stats ? (
+                  <p className="lede">Putting the overview together…</p>
+                ) : (
+                  <>
+                    <div className="dash-stats">
+                      <div className="dash-stat">
+                        <strong>{stats.actions}</strong>
+                        <span>actions</span>
+                      </div>
+                      <div className="dash-stat">
+                        <strong>{stats.tables}</strong>
+                        <span>saved data</span>
+                      </div>
+                      <div className="dash-stat">
+                        <strong>{stats.screens}</strong>
+                        <span>screens</span>
+                      </div>
+                      <div className="dash-stat">
+                        <strong>{stats.files}</strong>
+                        <span>files mapped</span>
+                      </div>
+                    </div>
+                    {stats.areas.length > 0 && (
+                      <div className="dash-areas">
+                        {stats.areas.map((a) => (
+                          <span key={a.id} className="dash-area-chip" title={a.summary}>
+                            {a.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+                <div className="dash-actions">
+                  <button type="button" className="btn-primary" style={{ width: "auto" }} onClick={openMap}>
+                    Open the map →
+                  </button>
+                  {overviewPage && (
+                    <a className="page-link-inline" href="#" onClick={(e) => { e.preventDefault(); setOpenSlug(overviewPage.slug); }}>
+                      Read the full overview
+                    </a>
+                  )}
+                </div>
               </div>
             )}
 
-            {run.failure && <p className="error-text">{run.failure.code}: {run.failure.detail}</p>}
+            {isDone ? (
+              <details className="build-details">
+                <summary>Build details</summary>
+                <div className="stage-list">
+                  {run.stages.map((s) => (
+                    <div className="stage-row" key={s.stage}>
+                      <span className={`dot dot-${s.status}`} />
+                      <span className="stage-name">{s.stage}</span>
+                      <span className="stage-status">{STATUS_LABEL[s.status] ?? s.status}</span>
+                      <span className="stage-count">
+                        {s.items_done}
+                        {s.items_total != null ? `/${s.items_total}` : ""}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="cost-row">
+                  <span>Cost</span>
+                  <span>
+                    ${run.cost_usd.toFixed(2)} / ${run.budget_cap_usd.toFixed(2)} budget
+                  </span>
+                </div>
+                {run.duration_ms != null && (
+                  <div className="cost-row">
+                    <span>Time</span>
+                    <span>{formatDuration(run.duration_ms)}</span>
+                  </div>
+                )}
+              </details>
+            ) : (
+              <>
+                <div className="stage-list">
+                  {run.stages.map((s) => (
+                    <div className="stage-row" key={s.stage}>
+                      <span className={`dot dot-${s.status}`} />
+                      <span className="stage-name">{s.stage}</span>
+                      <span className="stage-status">{STATUS_LABEL[s.status] ?? s.status}</span>
+                      <span className="stage-count">
+                        {s.items_done}
+                        {s.items_total != null ? `/${s.items_total}` : ""}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="cost-row">
+                  <span>Cost</span>
+                  <span>
+                    ${run.cost_usd.toFixed(2)} / ${run.budget_cap_usd.toFixed(2)} budget
+                  </span>
+                </div>
+                {run.duration_ms != null && (
+                  <div className="cost-row">
+                    <span>Time</span>
+                    <span>{formatDuration(run.duration_ms)}</span>
+                  </div>
+                )}
+              </>
+            )}
 
             <FindingsList runId={runId} onOpenPage={setOpenSlug} onChanged={refreshPages} refreshKey={pages.map((p) => p.open_findings).join(",")} />
 
@@ -448,16 +548,7 @@ function RunProgress({ runId, onBackToList }) {
               </div>
             )}
 
-            {(run.status === "complete" || run.status === "complete_with_errors") && (
-              <div className="page-list">
-                <h2>Repo map</h2>
-                <a className="page-link" href="#" onClick={(e) => { e.preventDefault(); openMap(); }}>
-                  Open the interactive map
-                </a>
-              </div>
-            )}
-
-            {(run.status === "complete" || run.status === "complete_with_errors") && pages.length > 0 && (
+            {isDone && pages.length > 0 && (
               <div className="page-list">
                 <h2>Export</h2>
                 <a className="page-link" href={`/api/runs/${runId}/export.zip`} download>
