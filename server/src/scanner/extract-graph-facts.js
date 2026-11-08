@@ -72,3 +72,51 @@ export function tablesInSql(text, knownTableNames) {
   }
   return [...found];
 }
+
+function splitTopLevel(list) {
+  const parts = [];
+  let depth = 0;
+  let cur = "";
+  for (const ch of list) {
+    if (ch === "(") depth += 1;
+    if (ch === ")") depth -= 1;
+    if (ch === "," && depth === 0) {
+      parts.push(cur);
+      cur = "";
+    } else cur += ch;
+  }
+  if (cur.trim()) parts.push(cur);
+  return parts.map((p) => p.trim()).filter(Boolean);
+}
+
+const bareColumn = (expr) => {
+  const noAlias = expr.replace(/\s+as\s+\w+$/i, "").trim();
+  const last = noAlias.split(".").pop().replace(/"/g, "");
+  return /^\w+$/.test(last) || last === "*" ? last : null;
+};
+
+/**
+ * What one SQL string does to the known tables: read (SELECT) or write (INSERT, UPDATE, DELETE), and
+ * which columns, when the statement touches a single table so the columns can be attributed safely.
+ */
+export function sqlOperations(text, knownTableNames) {
+  const sql = text.replace(/\s+/g, " ").trim();
+  const verb = /^(?:\(?\s*)?(select|insert|update|delete|with)\b/i.exec(sql)?.[1]?.toLowerCase();
+  if (!verb) return [];
+  const tables = tablesInSql(text, knownTableNames);
+  const operation = verb === "select" || verb === "with" ? "read" : "write";
+  let columns = [];
+  if (tables.length === 1) {
+    if (verb === "select") {
+      const m = /select\s+(.+?)\s+from\b/i.exec(sql);
+      if (m) columns = splitTopLevel(m[1]).map(bareColumn).filter(Boolean);
+    } else if (verb === "insert") {
+      const m = /insert\s+into\s+\S+\s*\(([^)]*)\)/i.exec(sql);
+      if (m) columns = m[1].split(",").map((c) => c.trim().replace(/"/g, "")).filter((c) => /^\w+$/.test(c));
+    } else if (verb === "update") {
+      const m = /\bset\s+(.+?)(?:\bwhere\b|\breturning\b|$)/i.exec(sql);
+      if (m) columns = splitTopLevel(m[1]).map((a) => a.split("=")[0].trim().replace(/"/g, "")).filter((c) => /^\w+$/.test(c));
+    }
+  }
+  return tables.map((table) => ({ table, operation, columns: [...new Set(columns)] }));
+}

@@ -136,7 +136,9 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
 
   // Repo map areas, then the guided tours that play on that map. Neither can fail the run.
   const summaryList = [...summaries.entries()].map(([modulePath, summary]) => ({ module_path: modulePath, summary }));
-  let groupedGraph = buildGraph(index);
+  const itemSummaries = new Map();
+  for (const sm of summaries.values()) for (const it of sm.items ?? []) if (it.symbol_id && it.what_it_does) itemSummaries.set(it.symbol_id, it.what_it_does);
+  let groupedGraph = buildGraph(index, { summaries: itemSummaries });
   try {
     const grouping = await makeGraphGroups({ runId, graph: groupedGraph, summaries: summaryList, budgetManager, stub: aiStub });
     await saveGraphGroups(runId, grouping);
