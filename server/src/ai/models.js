@@ -27,6 +27,7 @@ export const MAX_OUTPUT_TOKENS = {
   tour: 2500,
   translator: 4000,
   chat: 1500,
+  explorer: 3000,
 };
 
 export function estimateCostUsd(model, inputTokens, outputTokens) {

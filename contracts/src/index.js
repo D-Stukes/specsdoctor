@@ -18,6 +18,7 @@ const SCHEMA_FILES = {
   "tour/1": "tour.schema.json",
   "plain-language/1": "plain-language.schema.json",
   "tour-narration/1": "tour-narration.schema.json",
+  "explorer/1": "explorer.schema.json",
 };
 
 function loadSchema(file) {

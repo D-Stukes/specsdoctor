@@ -16,7 +16,7 @@ function degree(graph) {
   return d;
 }
 
-function makeHelpers(graph, index) {
+export function makeHelpers(graph, index) {
   const nodeById = new Map(graph.nodes.map((n) => [n.id, n]));
   const itemById = new Map(index.items.map((i) => [i.id, i]));
   const tableById = new Map((index.project.tables ?? []).map((t) => [t.id, t]));

@@ -11,7 +11,9 @@ import { buildProvenanceMarkdown } from "../export/provenance.js";
 import { loadGraphForRun } from "../db/load-graph.js";
 import { loadTours } from "../db/tours.js";
 import { askRepo, ChatLimitError } from "../chat/agent.js";
+import { exploreRepo, ExplorerLimitError } from "../chat/explorer.js";
 import { makeToolbox } from "../chat/tools.js";
+import { loadExplorer, saveExplorer } from "../db/explorer.js";
 import { buildExportZip } from "../export/build-zip.js";
 import { appendInlineFindings, buildReviewMarkdown } from "../export/review.js";
 import crypto from "node:crypto";
@@ -305,7 +307,7 @@ async function toolboxFor(runId) {
     loadIndexForRun(runId),
     getPool().query(`SELECT p.slug, p.title, pr.markdown FROM pages p JOIN page_revisions pr ON pr.page_id = p.id AND pr.rev = p.current_rev WHERE p.run_id = $1 AND p.status = 'generated'`, [runId]),
   ]);
-  const entry = { at: Date.now(), index, toolbox: makeToolbox({ graph, index, pages: pages.rows }) };
+  const entry = { at: Date.now(), index, graph, toolbox: makeToolbox({ graph, index, pages: pages.rows }) };
   toolboxCache.set(runId, entry);
   return entry;
 }
@@ -331,6 +333,31 @@ runsRouter.post("/runs/:id/ask", async (req, res) => {
     }
     console.error("ask failed:", err?.status ?? "", String(err?.message ?? err).slice(0, 200));
     res.status(502).json({ error: { code: "ask_failed", message: "The assistant could not answer right now. Try again in a moment." } });
+  }
+});
+
+// POST /api/runs/:id/explore - the Explorer: the guide picks its own walk through the run's parsed
+// facts with the same read-only tools Ask uses, and the result is cached so one run only pays for
+// this once. AI_STUB_MODE gives the deterministic "big picture" walk instead of a model call.
+runsRouter.post("/runs/:id/explore", async (req, res) => {
+  const { rows } = await getPool().query(`SELECT status FROM runs WHERE id = $1`, [req.params.id]);
+  if (rows.length === 0) return res.status(404).json({ error: { code: "run_not_found", message: "No such run" } });
+  if (rows[0].status !== "complete" && rows[0].status !== "complete_with_errors") {
+    return res.status(409).json({ error: { code: "run_not_ready", message: `Run is ${rows[0].status}; exploring needs a finished run` } });
+  }
+  try {
+    const cached = await loadExplorer(req.params.id);
+    if (cached) return res.json({ explorer: cached });
+    const { toolbox, index, graph } = await toolboxFor(req.params.id);
+    const { explorer, cost_usd } = await exploreRepo({ runId: req.params.id, graph, index, toolbox, stub: process.env.AI_STUB_MODE !== "false" });
+    await saveExplorer(req.params.id, explorer, cost_usd);
+    res.json({ explorer });
+  } catch (err) {
+    if (err instanceof ExplorerLimitError) {
+      return res.status(429).json({ error: { code: err.code, message: err.message } });
+    }
+    console.error("explore failed:", err?.status ?? "", String(err?.message ?? err).slice(0, 200));
+    res.status(502).json({ error: { code: "explore_failed", message: "The guide could not start exploring right now. Try again in a moment." } });
   }
 });
 

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docsync.dev/schemas/explorer/1",
+  "title": "Self-guided exploration",
+  "description": "One walk the guide planned for itself, using the same read-only tools as Ask to decide what is worth showing a newcomer and in what order. node_id and evidence are checked against the run's graph and index by code; thought and narration are text only, never a source of truth.",
+  "type": "object",
+  "required": ["schema_version", "title", "source", "closing", "stops"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "explorer/1" },
+    "title": { "type": "string", "minLength": 1 },
+    "source": { "enum": ["ai", "template"] },
+    "closing": { "type": "string", "minLength": 1 },
+    "stops": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 9,
+      "items": {
+        "type": "object",
+        "required": ["node_id", "thought", "title", "narration", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "node_id": { "type": "string", "minLength": 1 },
+          "via_edge": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "string" } },
+          "thought": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "narration": { "type": "string", "minLength": 1 },
+          "narrated_by": { "enum": ["ai", "template"] },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["path", "start_line", "end_line"],
+              "additionalProperties": false,
+              "properties": {
+                "path": { "type": "string" },
+                "start_line": { "type": "integer", "minimum": 1 },
+                "end_line": { "type": "integer", "minimum": 1 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
