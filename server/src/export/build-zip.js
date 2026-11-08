@@ -4,7 +4,7 @@ import { ZipArchive } from "archiver";
 // docs/provenance.md, optionally docs/review.md). archiver 8.x's ZipArchive
 // is a Transform stream - collecting its 'data' chunks and resolving on
 // 'end' gives us the whole archive as one Buffer, with no temp files.
-export async function buildExportZip({ mkdocsYml, readme, provenanceMd, pages, reviewMd, graphJson }) {
+export async function buildExportZip({ mkdocsYml, readme, provenanceMd, pages, reviewMd, graphJson, toursJson }) {
   const archive = new ZipArchive({ zlib: { level: 9 } });
   const chunks = [];
   archive.on("data", (chunk) => chunks.push(chunk));
@@ -25,6 +25,10 @@ export async function buildExportZip({ mkdocsYml, readme, provenanceMd, pages, r
 
   if (graphJson) {
     archive.append(graphJson, { name: "graph.json" });
+  }
+
+  if (toursJson) {
+    archive.append(toursJson, { name: "tours.json" });
   }
 
   archive.finalize();

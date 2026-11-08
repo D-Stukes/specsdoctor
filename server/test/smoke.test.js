@@ -265,3 +265,27 @@ test("the graph endpoint and the export both carry the run's areas", async (t) =
   assert.equal(validateDoc(exported).valid, true);
   assert.deepEqual(exported.groups, graph.groups);
 });
+
+test("the tours endpoint returns valid tour/1 documents and the export carries them", async (t) => {
+  if (githubSkip) return t.skip(githubSkip);
+  const { validateDoc } = await import("@docsync/contracts");
+  const { execFileSync } = await import("node:child_process");
+  const { mkdtempSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+
+  const res = await fetch(`${baseUrl}/api/runs/${m3RunId}/tours`, { headers: { cookie: sessionCookie } });
+  assert.equal(res.status, 200);
+  const { tours } = await res.json();
+  assert.ok(Array.isArray(tours));
+  for (const { status, ...tour } of tours) assert.equal(validateDoc(tour).valid, true, tour.tour_id);
+
+  const zip = await fetch(`${baseUrl}/api/runs/${m3RunId}/export.zip`, { headers: { cookie: sessionCookie } });
+  const file = join(mkdtempSync(join(tmpdir(), "docsync-tours-")), "e.zip");
+  writeFileSync(file, Buffer.from(await zip.arrayBuffer()));
+  const exported = JSON.parse(execFileSync("unzip", ["-p", file, "tours.json"]).toString());
+  assert.equal(exported.tours.length, tours.length);
+
+  const missing = await fetch(`${baseUrl}/api/runs/00000000-0000-0000-0000-000000000000/tours`, { headers: { cookie: sessionCookie } });
+  assert.equal(missing.status, 404);
+});

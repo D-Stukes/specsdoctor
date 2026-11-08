@@ -1,0 +1,120 @@
+{
+  "date": "2026-11-08T03:20:15.132Z",
+  "total_cap_usd": 4,
+  "spent_usd": 0.0701,
+  "models": "see src/ai/models.js",
+  "results": [
+    {
+      "url": "https://github.com/wasim15185/Amazon-Clone-PERN-stack",
+      "run_id": "cf3a7983-7024-44cc-8fb1-3f41641b871c",
+      "status": "complete",
+      "resolved_sha": "aa386ec8880831bc13ae6b413c14946046ae5e40",
+      "duration_s": 72.6,
+      "cost_usd": 0.0701,
+      "budget_cap_usd": 0.75,
+      "coverage": {
+        "files": {
+          "failed": 0,
+          "scanned": 44,
+          "skipped": 2,
+          "unsupported": 34
+        },
+        "flagged_patterns": [
+          {
+            "line": 1,
+            "path": "server/database/migrations/1611409687633_user-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/database/migrations/1611413364673_products-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/database/migrations/1611855706197_cart-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/migrations/1611409687633_user-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/migrations/1611413364673_products-migration.js",
+            "pattern": "knex_migration"
+          },
+          {
+            "line": 1,
+            "path": "server/migrations/1611855706197_cart-migration.js",
+            "pattern": "knex_migration"
+          }
+        ]
+      },
+      "failed_stages": [],
+      "pages": [
+        "api-endpoints:generated",
+        "architecture:generated",
+        "configuration:generated",
+        "data-model:generated",
+        "getting-started:generated",
+        "overview:generated",
+        "server-app:generated",
+        "server-database-db-details:generated",
+        "server-database-migrations-1611409687633_user-migration:generated",
+        "server-database-migrations-1611413364673_products-migration:generated",
+        "server-database-migrations-1611855706197_cart-migration:generated",
+        "server-database-pool:generated",
+        "server-middleware-authMiddleware:generated",
+        "server-migrations-1611409687633_user-migration:generated",
+        "server-migrations-1611413364673_products-migration:generated",
+        "server-migrations-1611855706197_cart-migration:generated",
+        "server-utils-jwt-generator:generated",
+        "src-App:generated",
+        "src-components-AmazonCart:generated",
+        "src-components-Card:generated",
+        "src-components-Card_for_cart:generated",
+        "src-components-Carousel:generated",
+        "src-components-custom_hooks-activeUser:generated",
+        "src-components-custom_hooks-CustomHook:generated",
+        "src-components-custom_hooks-formHook:generated",
+        "src-components-custom_hooks-GetJwtToken:generated",
+        "src-components-custom_hooks-navDisplay:generated",
+        "src-components-Footer:generated",
+        "src-components-Homepage:generated",
+        "src-components-Loading:generated",
+        "src-components-Login:generated",
+        "src-components-Navbar:generated",
+        "src-components-OneItemPage:generated",
+        "src-components-RequestUser-ForLogIn:generated",
+        "src-components-RequestUser-ForSignUp:generated",
+        "src-components-Signup:generated",
+        "src-redux-actionCreator:generated",
+        "src-redux-reducer:generated",
+        "src-redux-store:generated",
+        "src-reportWebVitals:generated",
+        "src-urls:generated",
+        "tech-stack:generated"
+      ],
+      "page_count": 42,
+      "findings": [],
+      "model_calls": [
+        {
+          "model": "claude-sonnet-5-5",
+          "calls": 3,
+          "input_tokens": 9066,
+          "output_tokens": 1719,
+          "failed": 0
+        },
+        {
+          "model": "claude-haiku-5-5",
+          "calls": 71,
+          "input_tokens": 158704,
+          "output_tokens": 37914,
+          "failed": 0
+        }
+      ]
+    }
+  ]
+}

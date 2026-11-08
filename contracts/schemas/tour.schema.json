@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docsync.dev/schemas/tour/1",
+  "title": "Guided tour",
+  "description": "One narrated walkthrough of the pasted repository (Technical Design SS4f). Every stop points at a node that exists in the run's graph; evidence lines come from the graph, never from the model.",
+  "type": "object",
+  "required": ["schema_version", "tour_id", "title", "stops"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "tour/1" },
+    "tour_id": { "enum": ["big-picture", "follow-request", "data-storage", "start-here"] },
+    "title": { "type": "string", "minLength": 1 },
+    "source": { "enum": ["ai", "template"] },
+    "stops": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": ["node_id", "title", "narration", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "node_id": { "type": "string", "minLength": 1 },
+          "via_edge": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "string" } },
+          "title": { "type": "string", "minLength": 1 },
+          "narration": { "type": "string", "minLength": 1 },
+          "narrated_by": { "enum": ["ai", "template"] },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["path", "start_line", "end_line"],
+              "additionalProperties": false,
+              "properties": {
+                "path": { "type": "string" },
+                "start_line": { "type": "integer", "minimum": 1 },
+                "end_line": { "type": "integer", "minimum": 1 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

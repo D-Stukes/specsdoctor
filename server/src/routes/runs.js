@@ -9,6 +9,7 @@ import { scanRenderedPageForUnknownMentions } from "../stages/verifier.js";
 import { buildMkdocsYml, buildExportReadme } from "../export/mkdocs-config.js";
 import { buildProvenanceMarkdown } from "../export/provenance.js";
 import { loadGraphForRun } from "../db/load-graph.js";
+import { loadTours } from "../db/tours.js";
 import { buildExportZip } from "../export/build-zip.js";
 import { appendInlineFindings, buildReviewMarkdown } from "../export/review.js";
 import crypto from "node:crypto";
@@ -257,6 +258,7 @@ runsRouter.get("/runs/:id/export.zip", async (req, res) => {
     pages: pages.map((p) => ({ slug: p.slug, markdown: appendInlineFindings(p.markdown, byPageId.get(p.id) ?? []) })),
     reviewMd: req.query.include_review === "true" ? buildReviewMarkdown(findings) : null,
     graphJson: JSON.stringify(await loadGraphForRun(req.params.id), null, 2),
+    toursJson: JSON.stringify({ tours: await loadTours(req.params.id) }, null, 2),
   });
 
   res.set({
@@ -276,6 +278,18 @@ runsRouter.get("/runs/:id/graph", async (req, res) => {
     return res.status(409).json({ error: { code: "run_not_ready", message: `Run is ${rows[0].status}; the map needs a finished run` } });
   }
   res.json(await loadGraphForRun(req.params.id));
+});
+
+// GET /api/runs/:id/tours - the guided tours (tour/1) for a finished run.
+runsRouter.get("/runs/:id/tours", async (req, res) => {
+  const { rows } = await getPool().query(`SELECT status FROM runs WHERE id = $1`, [req.params.id]);
+  if (rows.length === 0) {
+    return res.status(404).json({ error: { code: "run_not_found", message: "No such run" } });
+  }
+  if (rows[0].status !== "complete" && rows[0].status !== "complete_with_errors") {
+    return res.status(409).json({ error: { code: "run_not_ready", message: `Run is ${rows[0].status}; tours need a finished run` } });
+  }
+  res.json({ tours: await loadTours(req.params.id) });
 });
 
 // GET /api/runs/:id - progress, polled every 2s by the client.

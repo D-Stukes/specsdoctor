@@ -156,6 +156,7 @@ test("every saved-content route returns 401 without a cookie", async () => {
     ["PATCH", `/api/findings/${id}`],
     ["GET", `/api/runs/${id}/export.zip`],
     ["GET", `/api/runs/${id}/graph`],
+    ["GET", `/api/runs/${id}/tours`],
   ];
   for (const [method, path] of routes) {
     const res = await fetch(`${baseUrl}${path}`, {
