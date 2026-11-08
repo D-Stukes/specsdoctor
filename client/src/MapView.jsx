@@ -1,51 +1,15 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { ReactFlow, MiniMap, Controls, Background, MarkerType } from "@xyflow/react";
-import ELK from "elkjs/lib/elk.bundled.js";
 import "@xyflow/react/dist/style.css";
 import { LAYER_ORDER, COLLAPSE_ABOVE, subgraphFor, collapseByGroup } from "./map-model.js";
+import { NODE_W, NODE_H, LAYER_COLOR, layout } from "./map-shared.js";
+import TourPlayer from "./TourPlayer.jsx";
 
-const elk = new ELK();
-
-const NODE_W = 260;
-const NODE_H = 42;
-
-const LAYER_COLOR = {
-  frontend: "var(--periwinkle)",
-  route: "var(--mint)",
-  middleware: "var(--amber)",
-  handler: "var(--text)",
-  database: "var(--status-ok)",
-  module: "var(--text-secondary)",
-  group: "var(--text-secondary)",
-};
 const VIEWS = [
   { id: "architecture", label: "Architecture" },
   { id: "trace", label: "Request trace" },
   { id: "dependencies", label: "Dependencies" },
 ];
-
-async function layout(nodes, edges, view) {
-  const layered = view !== "dependencies";
-  const graph = {
-    id: "root",
-    layoutOptions: {
-      "elk.algorithm": "layered",
-      "elk.direction": "RIGHT",
-      "elk.spacing.nodeNode": "22",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "70",
-      ...(layered ? { "elk.partitioning.activate": "true" } : {}),
-    },
-    children: nodes.map((n) => ({
-      id: n.id,
-      width: NODE_W,
-      height: NODE_H,
-      ...(layered ? { layoutOptions: { "elk.partitioning.partition": String(Math.max(0, LAYER_ORDER.indexOf(n.layer))) } } : {}),
-    })),
-    edges: edges.map((e, i) => ({ id: `e${i}`, sources: [e.from], targets: [e.to] })),
-  };
-  const out = await elk.layout(graph);
-  return new Map(out.children.map((c) => [c.id, { x: c.x, y: c.y }]));
-}
 
 function pageSlugFor(node) {
   if (node.id.startsWith("ep:")) return "api-endpoints";
@@ -53,7 +17,7 @@ function pageSlugFor(node) {
   return path ? path.replace(/\.[^./]+$/, "").replace(/\//g, "-") : null;
 }
 
-export default function MapView({ runId, graph, onBack, onOpenPage }) {
+export default function MapView({ runId, graph, tours = [], onBack, onOpenPage }) {
   const [view, setView] = useState("architecture");
   const [traceEndpoint, setTraceEndpoint] = useState(null);
   const [query, setQuery] = useState("");
@@ -62,6 +26,7 @@ export default function MapView({ runId, graph, onBack, onOpenPage }) {
   const [collapseChoice, setCollapseChoice] = useState(null); // null = automatic (collapse above COLLAPSE_ABOVE nodes)
   const [expanded, setExpanded] = useState(() => new Set());
   const [areaFilter, setAreaFilter] = useState("");
+  const [tourId, setTourId] = useState(null); // set while a guided tour is playing
 
   const endpoints = useMemo(() => graph.nodes.filter((n) => n.kind === "endpoint"), [graph]);
   useEffect(() => {
@@ -142,6 +107,11 @@ export default function MapView({ runId, graph, onBack, onOpenPage }) {
   const labelOf = useCallback((id) => graph.nodes.find((n) => n.id === id)?.label ?? id, [graph]);
   const slug = selected && !selectedGroup ? pageSlugFor(selected) : null;
 
+  const activeTour = tourId ? tours.find((t) => t.tour_id === tourId) : null;
+  if (activeTour) {
+    return <TourPlayer graph={graph} tour={activeTour} tours={tours} onSelectTour={setTourId} onBack={() => setTourId(null)} />;
+  }
+
   return (
     <div className="map-shell">
       <div className="map-toolbar">
@@ -163,6 +133,11 @@ export default function MapView({ runId, graph, onBack, onOpenPage }) {
               </option>
             ))}
           </select>
+        )}
+        {tours.length > 0 && (
+          <button className="btn-primary" style={{ width: "auto", background: "var(--amber)", color: "var(--mint-ink)" }} onClick={() => setTourId(tours[0].tour_id)}>
+            Guided tour
+          </button>
         )}
         {hasAreas && (
           <select className="map-input" value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)} aria-label="Highlight an area">

@@ -106,7 +106,8 @@ function bigPicture(graph, h) {
   if (byGroup.size >= 2) {
     const reps = [...byGroup.entries()].map(([gid, nodes]) => {
       const rep = [...nodes].sort((a, b) => (deg.get(b.id) ?? 0) - (deg.get(a.id) ?? 0) || a.id.localeCompare(b.id))[0];
-      const layerRank = Math.min(...nodes.map((n) => LAYER_RANK[n.layer] ?? 5));
+      // Order areas front to back by their representative node's layer, so the walk reads client, server, data.
+      const layerRank = LAYER_RANK[rep.layer] ?? 5;
       return { gid, rep, layerRank, group: graph.groups.find((g) => g.id === gid) };
     });
     reps.sort((a, b) => a.layerRank - b.layerRank || a.group.name.localeCompare(b.group.name));

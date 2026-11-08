@@ -326,6 +326,7 @@ function RunProgress({ runId, onBackToList }) {
   const [error, setError] = useState(null);
   const [openSlug, setOpenSlug] = useState(null);
   const [graph, setGraph] = useState(null);
+  const [tours, setTours] = useState([]);
   const [showMap, setShowMap] = useState(false);
   const timerRef = useRef(null);
 
@@ -365,6 +366,7 @@ function RunProgress({ runId, onBackToList }) {
     setError(null);
     try {
       setGraph(await api(`/runs/${runId}/graph`));
+      setTours((await api(`/runs/${runId}/tours`).catch(() => ({ tours: [] }))).tours);
       setShowMap(true);
     } catch (err) {
       setError(err.message);
@@ -373,7 +375,7 @@ function RunProgress({ runId, onBackToList }) {
 
   if (openSlug) return <PageViewer runId={runId} slug={openSlug} onBack={() => setOpenSlug(null)} />;
   if (showMap && graph) {
-    return <MapView runId={runId} graph={graph} onBack={() => setShowMap(false)} onOpenPage={(slug) => { setShowMap(false); setOpenSlug(slug); }} />;
+    return <MapView runId={runId} graph={graph} tours={tours} onBack={() => setShowMap(false)} onOpenPage={(slug) => { setShowMap(false); setOpenSlug(slug); }} />;
   }
 
   return (

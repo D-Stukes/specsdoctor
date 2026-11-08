@@ -115,3 +115,11 @@ test("model path: stops the model skips or numbers out of range are filled by th
     assert.ok(tour.stops.slice(1).every((s) => s.narrated_by === "template"));
   }
 });
+
+test("planner: the big-picture tour walks front to back (layer order never goes backwards)", () => {
+  const rank = { frontend: 0, route: 1, middleware: 2, handler: 3, database: 4, module: 5 };
+  const nodeById = new Map(graph.nodes.map((n) => [n.id, n]));
+  const plan = planTours(graph, index).find((p) => p.tour_id === "big-picture");
+  const ranks = plan.stops.map((s) => rank[nodeById.get(s.node_id).layer] ?? 5);
+  assert.deepEqual(ranks, [...ranks].sort((a, b) => a - b));
+});
