@@ -504,3 +504,48 @@ button:disabled {
 .ask-form textarea { width: 100%; resize: none; background: var(--canvas); color: var(--text); border: 1px solid var(--hairline-hover); border-radius: var(--radius-control); padding: 0.5rem 0.7rem; font: inherit; }
 .ask-form textarea:focus { outline: 2px solid var(--mint); outline-offset: 1px; }
 @media (max-width: 720px) { .ask { width: 100%; max-height: 55%; border-left: none; border-top: 1px solid var(--hairline); } }
+
+
+/* ---- Lady D's glass & sky theme ----
+   Applies to the card screens (access code, repo form, run list, progress,
+   page viewer). The map and tour views keep the dark Precision Instrument
+   styling, because their diagram colors are set in MapView/TourPlayer. */
+body:has(.shell) {
+  background: #0d2533 url("/assets/specsdoctor-background.jpg") center / cover no-repeat fixed;
+}
+body:has(.shell-results) {
+  background-image: url("/assets/specsdoctor-results-background.jpg");
+}
+.shell {
+  --canvas: rgba(255, 255, 255, 0.55);
+  --surface: rgba(255, 255, 255, 0.42);
+  --surface-raised: rgba(255, 255, 255, 0.4);
+  --hairline: rgba(255, 255, 255, 0.55);
+  --hairline-hover: rgba(255, 255, 255, 0.8);
+  --text: #0b2230;
+  --text-secondary: #1f3d4e;
+  --text-muted: #2f4f61;
+  --mint: #1e6a86;
+  --mint-hover: #154e64;
+  --mint-ink: #ffffff;
+  --periwinkle: #3f55c9;
+  --amber: #9a5a12;
+  --status-ok: #1d7a46;
+  --status-review: #9a5a12;
+  --status-bad: #b4380a;
+  --status-idle: #4f6a79;
+  color: var(--text);
+}
+.shell .card {
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: 0 20px 50px rgba(5, 20, 30, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.shell input,
+.shell textarea {
+  background: rgba(255, 255, 255, 0.6) !important;
+  color: var(--text) !important;
+}
+.shell input::placeholder,
+.shell textarea::placeholder { color: #4f6a79 !important; }
+.shell .dot-running { box-shadow: 0 0 0 3px rgba(30, 106, 134, 0.22); }

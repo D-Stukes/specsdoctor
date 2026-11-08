@@ -262,7 +262,7 @@ function PageViewer({ runId, slug, onBack }) {
   }
 
   return (
-    <div className="shell">
+    <div className="shell shell-results">
       <div className="card" style={{ maxWidth: 720 }}>
         <div className="card-header">
           <Brand />
