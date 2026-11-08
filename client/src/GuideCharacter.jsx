@@ -1,5 +1,5 @@
-// The tour guide: an original amber orb with two rounded eyes. Five states:
-// idle, talking, pointing, thinking, celebrating. Plain SVG, a few hundred bytes.
+// The tour guide: an original amber orb with two rounded eyes. States:
+// idle, talking, pointing, thinking, composing, celebrating. Plain SVG, a few hundred bytes.
 export default function GuideCharacter({ state = "idle", size = 64 }) {
   return (
     <svg className={`guide guide-${state}`} width={size} height={size} viewBox="0 0 64 64" role="img" aria-label={`Tour guide, ${state}`}>

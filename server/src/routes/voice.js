@@ -13,7 +13,7 @@ export const voiceRouter = express.Router();
 
 const VOICESTUDIO_BASE = process.env.VOICESTUDIO_URL || "http://127.0.0.1:3900";
 const CHECK_TIMEOUT_MS = 1500;
-const SPEECH_TIMEOUT_MS = 15000;
+const SPEECH_TIMEOUT_MS = 30000; // measured up to ~17.5s for a two-sentence line on this engine; leave real headroom
 const TRANSCRIBE_TIMEOUT_MS = 20000;
 
 voiceRouter.get("/voice/capabilities", async (req, res) => {
@@ -34,10 +34,14 @@ voiceRouter.post("/voice/speech", async (req, res) => {
       body: JSON.stringify(req.body ?? {}),
       signal: AbortSignal.timeout(SPEECH_TIMEOUT_MS),
     });
-    if (!upstream.ok) return res.status(502).json({ error: { code: "voicestudio_speech_failed", message: "VoiceStudio could not generate speech." } });
+    if (!upstream.ok) {
+      console.error("voicestudio speech failed:", upstream.status, (await upstream.text().catch(() => "")).slice(0, 300));
+      return res.status(502).json({ error: { code: "voicestudio_speech_failed", message: "VoiceStudio could not generate speech." } });
+    }
     res.set("content-type", upstream.headers.get("content-type") ?? "audio/mpeg");
     res.send(Buffer.from(await upstream.arrayBuffer()));
-  } catch {
+  } catch (err) {
+    console.error("voicestudio speech unreachable:", String(err?.message ?? err).slice(0, 300));
     res.status(502).json({ error: { code: "voicestudio_unreachable", message: "Could not reach the local voice service." } });
   }
 });
@@ -51,9 +55,13 @@ voiceRouter.post("/voice/transcriptions", async (req, res) => {
       duplex: "half",
       signal: AbortSignal.timeout(TRANSCRIBE_TIMEOUT_MS),
     });
-    if (!upstream.ok) return res.status(502).json({ error: { code: "voicestudio_transcription_failed", message: "VoiceStudio could not transcribe that." } });
+    if (!upstream.ok) {
+      console.error("voicestudio transcription failed:", upstream.status, (await upstream.text().catch(() => "")).slice(0, 300));
+      return res.status(502).json({ error: { code: "voicestudio_transcription_failed", message: "VoiceStudio could not transcribe that." } });
+    }
     res.json(await upstream.json());
-  } catch {
+  } catch (err) {
+    console.error("voicestudio transcription unreachable:", String(err?.message ?? err).slice(0, 300));
     res.status(502).json({ error: { code: "voicestudio_unreachable", message: "Could not reach the local voice service." } });
   }
 });
