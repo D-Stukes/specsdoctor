@@ -4,7 +4,7 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
-## 2026-11-08 — Three wow-factor builds shipped as stacked PRs; paused mid-pivot to VoiceStudio
+## 2026-11-08 — Explorer, data-in-motion, voice (VoiceStudio) and the run dashboard; whole stack merged to main
 
 **Why:** picking up the "wow factor" brainstorm from the earlier 2026-11-08 handoff entry below. The user chose to build ideas 1, 3 and 4, in that order, then asked for voice specifically to use a self-hosted VoiceStudio instead of the browser's built-in speech.
 
@@ -34,10 +34,14 @@ Plus six lower-severity ones: a double-click/two-tab race on `/explore` that can
 - Built a "composing" state instead of silence: the guide now visibly pulses and a small equalizer + "Finding the words…" status shows during any wait that prefetching didn't manage to hide; the narration text itself was already shown instantly, before audio arrives.
 - Verified live over a full 5-stop guided tour: stop 1 showed the composing wait (~18s, nothing prefetched yet for it), stops 2 and 3 started with **no** wait at all (prefetched during the previous stop's own playback), no console errors, no more 502s.
 
+**The whole stack merged, same session:** the user asked to merge everything - "mine" first (in order), then check Diane's mergeability and merge hers too. Retargeted and merged #22 → #23 → #24 → #25 → #27 into `main` as merge commits (all CLEAN/MERGEABLE, no conflicts), then confirmed #26 ("LadyD ui") was still CLEAN against its own base and merged it into `develop` (not retargeted to `main` - that wasn't this session's call to make on Diane's behalf). Zero PRs open afterward; local `main` fast-forwarded; 214/214 tests still pass against the merged result. The two known Explorer bugs (crash on tiny repos, walk rewind) went in unfixed, as a conscious tradeoff the user chose, flagged once before merging.
+
+**Run dashboard redesign, same session ([PR #28](https://github.com/D-Stukes/specsdoctor/pull/28), based on fresh `main`):** feedback on the completed-run page - it opened straight onto the pipeline checklist (Analyst, Architect, Reader...) with "Open the interactive map" buried as a small link at the bottom; should instead be a dashboard for understanding the codebase. Now a finished run leads with "The codebase, at a glance" - graph-derived stats (actions/saved data/screens/files), area chips, a prominent "Open the map" button, and a link to the overview page - with the pipeline checklist and cost/time tucked into a collapsed "Build details" section (still fully shown while a run is queued/running, where it's the only useful info). The graph is now fetched proactively on completion rather than lazily on map-click. Verified live against a real run; 214/214 tests pass (no server changes).
+
 **Not done / open for next session:**
 1. The user should actually talk into the mic once and confirm VoiceStudio's transcription quality - not yet human-verified (TTS/the composing UX *was* verified live, including the voice actually speaking).
-2. Fix the two real bugs from the code review above (Explorer crash on tiny repos; Explorer-walk rewind) before merging #22-#24.
-3. Decide whether to merge #22-#24 (+ #25, #27) into `main` now or keep stacking (same "tell Diane first" rule as before) - note she has her own unmerged PR #26 in flight too.
+2. Fix the two known Explorer bugs (crash on tiny repos; walk rewind on re-render), now live on `main` unfixed.
+3. Merge [PR #28](https://github.com/D-Stukes/specsdoctor/pull/28) (the run dashboard) once reviewed.
 4. Idea 5 (the public résumé share link) is the only brainstormed idea not yet built or started.
 
 ---
