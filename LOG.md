@@ -4,6 +4,25 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-07 — Task 6 (part): Export ZIP (T18)
+
+**Done**
+- `GET /api/runs/:id/export.zip[?include_review=true]` (`server/src/routes/runs.js`, builders in `server/src/export/`): ZIP with `mkdocs.yml` (material theme, Mermaid superfences, admonition), `README.md`, `docs/provenance.md` (repo, SHA, date, models, page status/reviewed, open findings by severity), `docs/<slug>.md` for every page, and `docs/review.md` only when asked. 404 for unknown run, 409 `run_not_ready` unless the run is `complete`/`complete_with_errors`.
+- Open findings always stay inline on their page as `!!! warning` (or danger/info by severity) admonitions under "Open findings on this page".
+- ZIP assembled in memory with `archiver@8` (`new ZipArchive(...)`; the old `archiver('zip')` factory no longer exists). Accepted 5 audit warnings vs 7 on 7.0.1.
+- Client: "Export" section with two download links on finished runs.
+- AT-14 test added (skeleton files present, review.md only on request, provenance present). A sample export builds with `mkdocs build --strict`.
+
+**Not done**
+- T22 security hardening/SEC tests, T23 retention cleanup, T24 evaluation, T25 demo assets.
+- Export of a real (non-stub) run hasn't been strict-built end to end; only a sample ZIP with the same builders was.
+- Client download links not yet checked in a browser.
+
+**Next**
+- Remaining Task 6 items, starting with T22.
+
+---
+
 ## 2026-11-06 — Task 5: Trust + review (T13, T17) — M5 satisfied
 
 **Done**

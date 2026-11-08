@@ -6,6 +6,10 @@ import { tryStartNext } from "../runner/queue.js";
 import { QueueFullError, RateLimitedError } from "../runner/limits.js";
 import { loadIndexForRun } from "../db/load-index.js";
 import { scanRenderedPageForUnknownMentions } from "../stages/verifier.js";
+import { buildMkdocsYml, buildExportReadme } from "../export/mkdocs-config.js";
+import { buildProvenanceMarkdown } from "../export/provenance.js";
+import { buildExportZip } from "../export/build-zip.js";
+import { appendInlineFindings, buildReviewMarkdown } from "../export/review.js";
 import crypto from "node:crypto";
 
 export const runsRouter = express.Router();
@@ -203,6 +207,61 @@ runsRouter.get("/runs/:id/findings", async (req, res) => {
       resolved_at: r.resolved_at,
     })),
   });
+});
+
+// GET /api/runs/:id/export.zip?include_review=true - mkdocs-ready ZIP (T18).
+// Open findings always stay inline as admonitions; include_review adds the
+// standalone docs/review.md as well.
+runsRouter.get("/runs/:id/export.zip", async (req, res) => {
+  const pool = getPool();
+  const { rows: runRows } = await pool.query(
+    `SELECT r.status, r.resolved_sha, r.config, r.created_at, rp.owner, rp.name
+     FROM runs r JOIN repos rp ON rp.id = r.repo_id WHERE r.id = $1`,
+    [req.params.id]
+  );
+  if (runRows.length === 0) {
+    return res.status(404).json({ error: { code: "run_not_found", message: "No such run" } });
+  }
+  const run = runRows[0];
+  if (run.status !== "complete" && run.status !== "complete_with_errors") {
+    return res.status(409).json({ error: { code: "run_not_ready", message: `Run is ${run.status}; export needs a finished run` } });
+  }
+
+  const { rows: pages } = await pool.query(
+    `SELECT p.id, p.slug, p.title, p.status, pr.markdown, pr.reviewed_at
+     FROM pages p JOIN page_revisions pr ON pr.page_id = p.id AND pr.rev = p.current_rev
+     WHERE p.run_id = $1 ORDER BY p.slug`,
+    [req.params.id]
+  );
+  const { rows: findings } = await pool.query(
+    `SELECT ri.page_id, p.slug AS page_slug, ri.reason, ri.severity, ri.message
+     FROM review_items ri LEFT JOIN pages p ON p.id = ri.page_id
+     WHERE ri.run_id = $1 AND ri.status = 'open'::review_status
+     ORDER BY ri.created_at`,
+    [req.params.id]
+  );
+
+  const bySeverity = {};
+  const byPageId = new Map();
+  for (const f of findings) {
+    bySeverity[f.severity] = (bySeverity[f.severity] ?? 0) + 1;
+    if (!byPageId.has(f.page_id)) byPageId.set(f.page_id, []);
+    byPageId.get(f.page_id).push(f);
+  }
+
+  const zip = await buildExportZip({
+    mkdocsYml: buildMkdocsYml(run),
+    readme: buildExportReadme(),
+    provenanceMd: buildProvenanceMarkdown({ run, pages, openFindingsBySeverity: bySeverity }),
+    pages: pages.map((p) => ({ slug: p.slug, markdown: appendInlineFindings(p.markdown, byPageId.get(p.id) ?? []) })),
+    reviewMd: req.query.include_review === "true" ? buildReviewMarkdown(findings) : null,
+  });
+
+  res.set({
+    "Content-Type": "application/zip",
+    "Content-Disposition": `attachment; filename="${run.owner}-${run.name}-docs.zip"`,
+  });
+  res.send(zip);
 });
 
 // GET /api/runs/:id - progress, polled every 2s by the client.
