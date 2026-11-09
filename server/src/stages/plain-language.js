@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const TRANSLATOR_PROMPT_VERSION = "plain-language/1";
 const MAX_NODES = 60;
 
-const SYSTEM_PROMPT = `You are the Translator stage of DocSync. You rewrite what parts of a software project do so that someone who has never programmed can follow it.
+const SYSTEM_PROMPT = `You are the Translator stage of SpecsDoctor. You rewrite what parts of a software project do so that someone who has never programmed can follow it.
 
 You are given a list of parts of an app (screens, actions a person can take, saved data, and helpers), each with its id, its technical name, and the facts the parser found about it. For each, write:
 - label: 2 to 5 everyday words naming what it is or what a person does with it (for example "Add a habit", "Check you are signed in", "Saved habits").

@@ -1,4 +1,4 @@
-# DocSync — Design Notes
+# SpecsDoctor — Design Notes
 
 Last updated: 2026-11-05
 
@@ -51,4 +51,4 @@ Run in progress · Run finished with errors · Run failed · Docs viewer · Edit
 
 **Needed for the core (Tasks 1–6), in priority order:** Run in progress, Docs viewer, Review panel, Edit mode, Library, Export dialog, Run failed. The repo map, tour, character sheet and user-guide screens are for add-on Tasks 10–12.
 
-To generate them, give Stitch: "Continue the same DocSync design system as the previous screens (see DESIGN.md)", followed by 3–4 screen descriptions at a time.
+To generate them, give Stitch: "Continue the same SpecsDoctor design system as the previous screens (see DESIGN.md)", followed by 3–4 screen descriptions at a time.

@@ -1,6 +1,6 @@
-# DocSync — context for Claude Code
+# SpecsDoctor — context for Claude Code
 
-DocSync is a web app that turns a public GitHub repository into **source-linked documentation drafts**, and later an interactive **repo map** and an animated **guided tour**. Uncertain statements are flagged for human review. It's a Pursuit L2 project by Diane Stukes and Dikshyant Giri, built as a pair with AI coding tools.
+SpecsDoctor (formerly "DocSync" during development - see LOG.md) is a web app that turns a public GitHub repository into **source-linked documentation drafts**, and later an interactive **repo map** and an animated **guided tour**. Uncertain statements are flagged for human review. It's a Pursuit L2 project by Diane Stukes and Dikshyant Giri, built as a pair with AI coding tools.
 
 ## Read these first
 

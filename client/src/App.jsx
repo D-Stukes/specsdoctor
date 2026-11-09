@@ -25,7 +25,7 @@ function Brand() {
   return (
     <div className="brand">
       <span className="brand-mark">[ ]</span>
-      <span>DocSync</span>
+      <span>SpecsDoctor</span>
     </div>
   );
 }
@@ -58,7 +58,7 @@ function AccessCodeForm({ onSignedIn }) {
         <div className="eyebrow">Developer access · Private preview</div>
         <h1>Enter access code</h1>
         <p className="lede">
-          DocSync turns a public GitHub repository into source-linked documentation drafts, checks what it extracts against the
+          SpecsDoctor turns a public GitHub repository into source-linked documentation drafts, checks what it extracts against the
           code, and flags anything uncertain for human review.
         </p>
         <form onSubmit={handleSubmit}>
@@ -112,7 +112,7 @@ function RepoForm({ onRunStarted, onOpenRun }) {
         <div className="eyebrow">Source-linked developer docs</div>
         <h1>Make sense of any codebase.</h1>
         <p className="lede">
-          Paste a public GitHub repository. DocSync reads the code and writes documentation that cites the exact lines it relies
+          Paste a public GitHub repository. SpecsDoctor reads the code and writes documentation that cites the exact lines it relies
           on.
         </p>
         <form onSubmit={handleSubmit}>

@@ -15,7 +15,7 @@ export const WRITER_PROMPT_VERSION = "writer-reference/1";
 // links themselves) are assembled by this stage's own code from the index,
 // never by the model - matching §4c "AI stages never emit Markdown,
 // signatures or URLs."
-const SYSTEM_PROMPT = `You are the Writer stage of DocSync, generating one reference documentation page for a single source module.
+const SYSTEM_PROMPT = `You are the Writer stage of SpecsDoctor, generating one reference documentation page for a single source module.
 
 You will be given the module's purpose and per-item descriptions (already written by an earlier stage from the real code), plus the exact symbol IDs for every item in this module. Write ONLY short prose and claim blocks - one or two sentences of narrative framing for the module, plus, for each item whose behavior depends on another symbol (e.g. middleware, a called helper), a short "claim" block describing that relationship with evidence.
 

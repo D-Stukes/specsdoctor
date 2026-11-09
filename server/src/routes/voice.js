@@ -6,7 +6,7 @@ import express from "express";
 // mediates exactly the way the server already mediates every other third-party call. Loopback
 // only (SS4e has nothing to say here: no repository data passes through this router, and no key
 // is sent - VoiceStudio needs none for a loopback client). Local-only by design: a deployed
-// DocSync instance has no VoiceStudio of its own to reach, so these routes simply fail closed
+// SpecsDoctor instance has no VoiceStudio of its own to reach, so these routes simply fail closed
 // (502/503) and the client falls back to the browser's own speech APIs.
 
 export const voiceRouter = express.Router();

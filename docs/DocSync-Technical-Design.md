@@ -1,10 +1,10 @@
-# DocSync — Technical Design & Build Tasks
+# SpecsDoctor — Technical Design & Build Tasks
 
 > Markdown copy of the Claude doc: https://claude.ai/artifact/LfXhkY3hA2ESQrXrQKiP2F (exported 2026-11-05). The online doc is the source of truth until this file is edited directly.
 
 Nov 4, 2026 · @Dikshyant
 
-This plan answers the reviewer feedback on DocSync PRD Version 5: it keeps the parser-first product, tightens what "verified" means, and turns the PRD into contracts, a backlog, and 12 numbered build tasks: six core tasks first, then add-on tasks for the repo map, the guided tour and plain-language user guides.
+This plan answers the reviewer feedback on SpecsDoctor PRD Version 5: it keeps the parser-first product, tightens what "verified" means, and turns the PRD into contracts, a backlog, and 12 numbered build tasks: six core tasks first, then add-on tasks for the repo map, the guided tour and plain-language user guides.
 
 ## How to read this plan
 
@@ -16,7 +16,7 @@ Nothing here is approved yet. Every decision carries one of three labels so revi
 | **Default** | Claude's recommended choice; it stands unless an author overrides it |
 | **Authors decide** | Needs a decision from Diane and Dikshyant (collected in section 8) |
 
-**Product promise (Default, replaces "verified docs"):** DocSync generates source-linked developer documentation drafts, checks extracted names and signatures against the code, and flags unsupported or uncertain claims for human review.
+**Product promise (Default, replaces "verified docs"):** SpecsDoctor generates source-linked developer documentation drafts, checks extracted names and signatures against the code, and flags unsupported or uncertain claims for human review.
 
 **Development context:** two builders using AI coding tools. AI speeds up scaffolding, UI, parsers and tests; it does not make extraction accuracy or integration automatic. So the plan is built around seven working milestones, each proving a risky assumption before the next layer goes on.
 
@@ -28,7 +28,7 @@ This plan adopts nearly all of the feedback. It departs in five places, each for
 | --- | --- | --- |
 | Structured claims with evidence for all page content | Structured claims only for **technical** content; overview and narrative prose stay free text, cited to the README where possible | Forcing every sentence of an overview into a claim object doubles Writer cost and gives reviewers noise. The Verifier still scans all rendered text for unknown project symbols. |
 | Define remote link checking | No remote link checking in v1 | Source URLs are generated deterministically from the pinned SHA and an in-bounds line range, so a remote check adds network calls without catching new errors. |
-| Track human approval as a product state | A lightweight **reviewed** flag per page revision; not a publish gate | DocSync never publishes. A per-revision flag gives export an honest status without building an approval workflow. |
+| Track human approval as a product state | A lightweight **reviewed** flag per page revision; not a publish gate | SpecsDoctor never publishes. A per-revision flag gives export an honest status without building an approval workflow. |
 | Keep Python, frontend, AI claim check as Should (no pruning) | Agree, but as add-on tasks after the core ships (section 6). P1 (AI-only fallback) and P2 (PR creation) stay pruned | Both pruned items add a second trust model or GitHub write auth; neither serves the parser-first promise. |
 | Measure reviewer time to a usable draft | Measure it, but with a simple stopwatch protocol on 2 runs, not instrumentation | Adds the value metric without building telemetry. |
 
@@ -93,7 +93,7 @@ UI and export wording: "Source-checked" (structural pass), "AI-assessed: support
 | `generated` | Page produced from evidence | Normal page |
 | `not_applicable` | Detection ran fully and found no subject (no Express dependency, no routes) | "Not applicable to this repository" |
 | `not_detected` | Extraction was partial (unsupported patterns or skipped files could hide the subject) | "Not detected by this run" + link to the coverage report |
-| `unsupported` | Subject is in a language or format DocSync does not parse | "Not supported in this version" |
+| `unsupported` | Subject is in a language or format SpecsDoctor does not parse | "Not supported in this version" |
 | `generation_failed` | A stage failed or the budget ran out | "Generation failed" + reason |
 
 ### Scanner support matrix (JS/TS Must)
@@ -588,7 +588,7 @@ Edge kinds: `imports`, `mounts`, `routes_to`, `uses_middleware`, `calls_endpoint
 
 ### Animated guided tour, Level 2 (Task 11, needs Task 10)
 
-A narrated walkthrough of **the pasted repository** (not of DocSync), played on the repo map by an original animated guide character with voice and captions.
+A narrated walkthrough of **the pasted repository** (not of SpecsDoctor), played on the repo map by an original animated guide character with voice and captions.
 
 - **Tour Agent (new AI stage, Sonnet):** reads the graph, module summaries and checked page claims, and plans four standard tours: Big picture, Follow a request, How data is stored, Where to start as a new developer. Each has 4–8 stops. "Follow a request" picks the endpoint with the most handler-to-table edges (a deterministic choice, not the model's).
 - **Checks:** every stop's node and edge must exist in the graph; narration is treated as claims (structural check always, AI check once Task 7 ships). A failing stop is repaired once or dropped, with a note in the review list.
@@ -624,7 +624,7 @@ Guides for everyday users of the pasted app ("How do I add a habit?"), selected 
 - **Readability:** plain words at about an eighth-grade reading level; the Verifier flags developer jargon (API, endpoint, JSON, null) in user-guide pages.
 - **Honest banner on every page:** "Written from the app's code, not from using the app. No screenshots. Check with the product team before sharing."
 
-**Limits:** DocSync cannot see layout, images or text built at runtime; translated text is read only from JSON locale files. Expect more review items than in developer docs.
+**Limits:** SpecsDoctor cannot see layout, images or text built at runtime; translated text is read only from JSON locale files. Expect more review items than in developer docs.
 
 ## 5. Dependency-ordered backlog
 

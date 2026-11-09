@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const GROUPER_PROMPT_VERSION = "graph-groups/1";
 const MAX_LISTED_NODES = 400;
 
-const SYSTEM_PROMPT = `You are the Grouper stage of DocSync. You name the areas of a repository's map.
+const SYSTEM_PROMPT = `You are the Grouper stage of SpecsDoctor. You name the areas of a repository's map.
 
 You are given a numbered list of graph nodes (modules, functions, API endpoints, database tables), each with its id and a short description taken from the code. Partition the nodes into 2 to 8 named areas a newcomer would recognise (for example "Authentication", "Todos", "Database").
 

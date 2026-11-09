@@ -52,7 +52,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     .catch((err) => console.error("startup recovery failed:", err));
 
   createApp().listen(port, () => {
-    console.log(`DocSync server listening on ${port}`);
+    console.log(`SpecsDoctor server listening on ${port}`);
     startRetentionJob();
   });
 }
