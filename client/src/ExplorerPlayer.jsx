@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import TourPlayer from "./TourPlayer.jsx";
 
 // Adapts an explorer/1 document into TourPlayer's tour/1 shape, so the guide
@@ -23,6 +24,12 @@ function asTour(explorer) {
 }
 
 export default function ExplorerPlayer({ graph, explorer, onBack }) {
-  const tour = asTour(explorer);
-  return <TourPlayer graph={graph} tour={tour} tours={[tour]} onSelectTour={() => {}} onBack={onBack} />;
+  // TourPlayer resets its walk back to stop 0 whenever the `tour` object it's handed changes
+  // identity (that's how it detects a genuinely new tour). Without this memo, `asTour(explorer)`
+  // built a fresh object - and `[tour]` a fresh array - on every render, so any unrelated
+  // re-render anywhere above this component (not just an actual new explorer walk) silently
+  // rewound the player back to the start.
+  const tour = useMemo(() => asTour(explorer), [explorer]);
+  const tours = useMemo(() => [tour], [tour]);
+  return <TourPlayer graph={graph} tour={tour} tours={tours} onSelectTour={() => {}} onBack={onBack} />;
 }

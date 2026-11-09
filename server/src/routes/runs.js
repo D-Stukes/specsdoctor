@@ -347,14 +347,17 @@ runsRouter.post("/runs/:id/explore", async (req, res) => {
   }
   try {
     const cached = await loadExplorer(req.params.id);
-    if (cached) return res.json({ explorer: cached });
+    // A doc saved before the zero-stops guard existed could still be sitting in the database;
+    // re-check it here too rather than trusting a cache hit never written by the current code.
+    if (cached && cached.stops?.length > 0) return res.json({ explorer: cached });
+    if (cached) return res.status(422).json({ error: { code: "explorer_no_tour", message: "This repository doesn't have enough parsed structure yet for a guided walk." } });
     const { toolbox, index, graph } = await toolboxFor(req.params.id);
     const { explorer, cost_usd } = await exploreRepo({ runId: req.params.id, graph, index, toolbox, stub: process.env.AI_STUB_MODE !== "false" });
     await saveExplorer(req.params.id, explorer, cost_usd);
     res.json({ explorer });
   } catch (err) {
     if (err instanceof ExplorerLimitError) {
-      return res.status(429).json({ error: { code: err.code, message: err.message } });
+      return res.status(err.status).json({ error: { code: err.code, message: err.message } });
     }
     console.error("explore failed:", err?.status ?? "", String(err?.message ?? err).slice(0, 200));
     res.status(502).json({ error: { code: "explore_failed", message: "The guide could not start exploring right now. Try again in a moment." } });
