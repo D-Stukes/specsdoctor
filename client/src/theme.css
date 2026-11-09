@@ -501,10 +501,10 @@ button:disabled {
 .data-block dt:first-child { margin-top: 0; }
 .data-block dd { margin: 0; font-size: 13px; }
 .flow { padding: 1.25rem 1.5rem 3rem; overflow-y: auto; height: 100%; max-width: 760px; }
-.flow-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.flow-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; background: var(--surface); border: 1px solid var(--hairline); border-radius: 14px; padding: 0.85rem 1rem; }
 .flow-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; text-transform: none; letter-spacing: normal; font-size: 14px; color: var(--text-secondary); }
 .flow-tech { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
-.flow-summary { margin: 0.6rem 0 1.1rem; color: var(--text-secondary); max-width: 60ch; }
+.flow-summary { margin: 0.6rem 0 1.1rem; color: var(--text-secondary); max-width: 60ch; background: var(--surface); border: 1px solid var(--hairline); border-radius: 14px; padding: 0.7rem 1rem; }
 .flow-steps { list-style: none; margin: 0; padding: 0; position: relative; }
 .flow-step { display: flex; gap: 0.9rem; padding-bottom: 0.9rem; position: relative; }
 .flow-step:not(:last-child)::before { content: ""; position: absolute; left: 15px; top: 34px; bottom: 0; border-left: 2px dashed var(--hairline-hover); }
@@ -662,7 +662,9 @@ body:has(.shell-results) {
 .map-drawer,
 .tour-panel,
 .ask,
-.flow-card {
+.flow-card,
+.flow-head,
+.flow-summary {
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   backdrop-filter: blur(16px) saturate(150%);
 }
