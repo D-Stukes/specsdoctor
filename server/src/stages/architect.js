@@ -11,7 +11,7 @@ export const ARCHITECT_PROMPT_VERSION = "architect-overview/1";
 
 // §2: narrative pages use Claude Sonnet 5.5 ("synthesis across modules").
 // Same discipline as the Writer: only prose and claims, only real symbol_ids.
-const SYSTEM_PROMPT = `You are the Architect stage of DocSync, writing the project overview page for a repository.
+const SYSTEM_PROMPT = `You are the Architect stage of SpecsDoctor, writing the project overview page for a repository.
 
 You will be given every module's purpose (written by an earlier stage from the real code) and basic project facts (workspaces, dependency counts, module count). Write a short overview: what the project is, its main pieces, and how they relate - grounded only in what you're given.
 

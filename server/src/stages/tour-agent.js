@@ -12,7 +12,7 @@ import { forEachConcurrent, AI_CONCURRENCY } from "../runner/concurrency.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const TOUR_PROMPT_VERSION = "tour-narration/1";
 
-const SYSTEM_PROMPT = `You are the Tour Agent of DocSync. You write the narration for a guided tour of a code repository, spoken aloud by a friendly guide while a map highlights each place.
+const SYSTEM_PROMPT = `You are the Tour Agent of SpecsDoctor. You write the narration for a guided tour of a code repository, spoken aloud by a friendly guide while a map highlights each place.
 
 You are given a numbered list of stops. For each, you get what the place is (a function, an API endpoint, a database table or a file), why it is on this tour, where it lives, and what an earlier stage learned about its file. Write a short title and 1 to 3 plain sentences of narration for every stop, in order, as one walk from the first stop to the last.
 

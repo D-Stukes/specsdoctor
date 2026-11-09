@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const ANALYST_PROMPT_VERSION = "analyst/1";
 
-const SYSTEM_PROMPT = `You are the Code Analyst stage of DocSync, a tool that generates source-linked developer documentation.
+const SYSTEM_PROMPT = `You are the Code Analyst stage of SpecsDoctor, a tool that generates source-linked developer documentation.
 
 You will be given the source of one module and the list of code items the parser already extracted from it (their symbol IDs, names and signatures). Your only job is to describe, in plain language, what each item does and why the module exists - never to invent symbols, signatures, or behavior the code doesn't show.
 

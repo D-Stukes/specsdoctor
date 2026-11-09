@@ -1,10 +1,10 @@
-# DocSync — Final PRD
+# SpecsDoctor — Final PRD
 
 > Markdown copy of the Claude doc: https://claude.ai/artifact/RMNfqfviMeb3ZKHxPU7aw3 (exported 2026-11-05).
 
 Nov 5, 2026 · Diane Stukes & Dikshyant Giri
 
-DocSync turns a public GitHub repository into source-linked documentation drafts, an interactive map of the code, and an animated guided tour, and flags anything uncertain for a person to review. This PRD consolidates Version 4, the Version 5 review, the reviewer's feedback, and the add-on features agreed afterward.
+SpecsDoctor turns a public GitHub repository into source-linked documentation drafts, an interactive map of the code, and an animated guided tour, and flags anything uncertain for a person to review. This PRD consolidates Version 4, the Version 5 review, the reviewer's feedback, and the add-on features agreed afterward.
 
 ## 1. Overview and problem
 
@@ -12,11 +12,11 @@ DocSync turns a public GitHub repository into source-linked documentation drafts
 
 Many software projects ship with little or no documentation, or a README that is out of date. Writing docs from scratch is slow: a technical writer reads the code, interviews engineers, maps how the parts connect, then writes overview, setup, architecture and API pages. Much of that is high-volume, rule-based work an agent team can draft.
 
-DocSync is a web app. The user pastes a public GitHub URL and clicks **Create docs**. Plain code reads the repository and extracts exact facts (functions, routes, environment variables, tables). AI agents explain those facts and write the pages. Plain code then fills in signatures and source links and checks the AI's work. The result is a documentation set inside the app, with every technical statement linked to the lines it came from, plus a review list of anything uncertain. The agents draft; a person approves.
+SpecsDoctor is a web app. The user pastes a public GitHub URL and clicks **Create docs**. Plain code reads the repository and extracts exact facts (functions, routes, environment variables, tables). AI agents explain those facts and write the pages. Plain code then fills in signatures and source links and checks the AI's work. The result is a documentation set inside the app, with every technical statement linked to the lines it came from, plus a review list of anything uncertain. The agents draft; a person approves.
 
 ## 2. Product promise and what each status means
 
-**Promise:** DocSync generates source-linked documentation drafts, checks extracted names and signatures against the code, and flags unsupported or uncertain claims for human review. DocSync never calls its output "verified."
+**Promise:** SpecsDoctor generates source-linked documentation drafts, checks extracted names and signatures against the code, and flags unsupported or uncertain claims for human review. SpecsDoctor never calls its output "verified."
 
 Each technical statement carries four separate statuses, because a real function name and a valid link do not prove that a description of behavior is correct.
 
@@ -24,7 +24,7 @@ Each technical statement carries four separate statuses, because a real function
 | --- | --- | --- |
 | Source check | Source-checked / Failed | The functions, routes and line ranges it mentions exist in the pinned commit, and signatures match the code |
 | AI assessment | AI-assessed: supported / contradicted / insufficient evidence / not assessed | A model compared the statement with the cited code; this is a judgment, not proof |
-| Execution | Not run | DocSync never runs the project or its examples |
+| Execution | Not run | SpecsDoctor never runs the project or its examples |
 | Human review | Reviewed / Unreviewed | A person read this revision of the page |
 
 The AI's own confidence never counts as a check. Setup steps copied from `package.json` are marked **known**; steps the AI inferred are marked **inferred** and always go to review.
@@ -42,8 +42,8 @@ The AI's own confidence never counts as a check. Setup steps copied from `packag
 
 ### Non-goals
 
-- **No publishing or merging.** DocSync shows and exports drafts; people decide what goes live.
-- **No running code.** DocSync never installs, builds or runs the repository or its examples.
+- **No publishing or merging.** SpecsDoctor shows and exports drafts; people decide what goes live.
+- **No running code.** SpecsDoctor never installs, builds or runs the repository or its examples.
 - **Public repositories only,** one repository per run, up to 100 code files.
 - **Languages:** JavaScript/TypeScript with Express in the core; Python as an add-on. Other languages are shown as "Not supported in this version."
 - **No screenshots or walkthroughs of a running app.** User guides (add-on) are written from the code only.
@@ -60,7 +60,7 @@ The AI's own confidence never counts as a check. Setup steps copied from `packag
 
 For the class build, the operators are the two authors. Test targets are two of their fellowship PERN repositories and one small open-source Python library (for the Python add-on).
 
-## 5. What DocSync produces
+## 5. What SpecsDoctor produces
 
 ### Core outputs (v1)
 
