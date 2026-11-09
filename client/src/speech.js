@@ -34,12 +34,33 @@ async function fetchSpeechBlob(text) {
   return res.blob();
 }
 
+// This local VoiceStudio instance fails outright (502s) on an overlapping request rather than
+// queueing it, so every call goes through this chain to keep at most one in flight at a time.
+let requestQueue = Promise.resolve();
+function queuedFetchSpeechBlob(text) {
+  const result = requestQueue.then(() => fetchSpeechBlob(text));
+  requestQueue = result.catch(() => {}); // one failure must not wedge the queue for later lines
+  return result;
+}
+
+const RETRY_DELAY_MS = 400;
+
+/** One retry, not a loop: enough to ride out a one-off hiccup without piling delay onto narration. */
+async function fetchSpeechBlobWithRetry(text) {
+  try {
+    return await queuedFetchSpeechBlob(text);
+  } catch {
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+    return queuedFetchSpeechBlob(text);
+  }
+}
+
 /** Starts synthesizing a line before it's needed, so speak() can skip straight to playback when it's actually called. Safe to call for a line that never gets spoken - it just goes unused. */
 export function prefetch(text) {
   if (!text || prefetchCache.has(text)) return;
   if (prefetchCache.size >= MAX_PREFETCH_ENTRIES) prefetchCache.delete(prefetchCache.keys().next().value);
   const promise = voiceStudioAvailable()
-    .then((ok) => (ok ? fetchSpeechBlob(text) : null))
+    .then((ok) => (ok ? queuedFetchSpeechBlob(text) : null))
     .catch(() => null);
   prefetchCache.set(text, promise);
 }
@@ -119,7 +140,7 @@ export function speak(text, { rate = 1, onStart, onEnd }) {
     if (cancelled) return;
     if (!useVoiceStudio) return fallback();
     try {
-      const blob = await fetchSpeechBlob(text);
+      const blob = await fetchSpeechBlobWithRetry(text);
       if (cancelled) return;
       onStart?.({ source: "voicestudio" });
       currentCancel = playBlob(blob, rate, finish, fallback);

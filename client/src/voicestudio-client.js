@@ -8,15 +8,22 @@
 
 export const VOICESTUDIO_BASE = "/api/voice";
 const CHECK_TIMEOUT_MS = 2000;
+const AVAILABILITY_TTL_MS = 10000; // re-probe this often rather than trusting one check for the whole page session
 
-let availability = null; // null = not yet checked; otherwise a cached Promise<boolean>
+let availability = null; // { promise: Promise<boolean>, expiresAt: number } | null
 
-/** Whether a local VoiceStudio server answers right now. Checked once per page load and cached. */
+/**
+ * Whether a local VoiceStudio server answers right now. Cached briefly, not for the whole page
+ * session - a single check landing while VoiceStudio is mid-restart shouldn't lock every line for
+ * the rest of the session onto the browser fallback once it's back up.
+ */
 export function voiceStudioAvailable() {
-  if (availability === null) {
-    availability = fetch(`${VOICESTUDIO_BASE}/capabilities`, { signal: AbortSignal.timeout(CHECK_TIMEOUT_MS) })
+  const now = Date.now();
+  if (!availability || now > availability.expiresAt) {
+    const promise = fetch(`${VOICESTUDIO_BASE}/capabilities`, { signal: AbortSignal.timeout(CHECK_TIMEOUT_MS) })
       .then((res) => res.ok)
       .catch(() => false);
+    availability = { promise, expiresAt: now + AVAILABILITY_TTL_MS };
   }
-  return availability;
+  return availability.promise;
 }
