@@ -579,16 +579,27 @@ button:disabled {
 
 
 /* ---- Lady D's glass & sky theme ----
-   Applies to the card screens (access code, repo form, run list, progress,
-   page viewer). The map and tour views keep the dark Precision Instrument
-   styling, because their diagram colors are set in MapView/TourPlayer. */
-body:has(.shell) {
+   Originally scoped to the card screens only (access code, repo form, run
+   list, progress, page viewer) - the map and tour views kept the dark
+   Precision Instrument styling because their diagram colors are set in
+   MapView/TourPlayer. Extended to .map-shell/.tour-shell too (2026-11-09,
+   "make the aesthetic uniform overall") so every screen shares the glass
+   chrome and sky backdrop. The diagram canvas itself stays visually
+   distinct on purpose: ReactFlow's own colorMode="dark" keeps the node/edge
+   rendering area dark regardless of these variables, so graph contrast and
+   the layer-color coding are unaffected - only the surrounding chrome
+   (toolbar, drawer, node cards, tour panel) and the page background change. */
+body:has(.shell),
+body:has(.map-shell),
+body:has(.tour-shell) {
   background: #0d2533 url("/assets/specsdoctor-background.jpg") center / cover no-repeat fixed;
 }
 body:has(.shell-results) {
   background-image: url("/assets/specsdoctor-results-background.jpg");
 }
-.shell {
+.shell,
+.map-shell,
+.tour-shell {
   --canvas: rgba(255, 255, 255, 0.55);
   --surface: rgba(255, 255, 255, 0.42);
   --surface-raised: rgba(255, 255, 255, 0.4);
@@ -613,14 +624,41 @@ body:has(.shell-results) {
   backdrop-filter: blur(16px) saturate(150%);
   box-shadow: 0 20px 50px rgba(5, 20, 30, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
+/* On the card screens, --surface-raised only ever sits in front of the blurred sky photo, so 40%
+   opacity reads as glass. On the map/tour canvas it also sits in front of OTHER diagram content
+   (edges, edge labels, other nodes) - at the same 40% those showed through node cards and tangled
+   with the node's own label. Node cards need to actually mask what's behind them, so they get a
+   near-solid fill here instead; the toolbar/drawer/panel (which only ever front the photo) keep
+   the lighter one from the shared block above. */
+.map-shell,
+.tour-shell {
+  --surface-raised: rgba(255, 255, 255, 0.94);
+}
 .shell input,
-.shell textarea {
+.shell textarea,
+.map-shell input,
+.tour-shell input {
   background: rgba(255, 255, 255, 0.6) !important;
   color: var(--text) !important;
 }
 .shell input::placeholder,
-.shell textarea::placeholder { color: #4f6a79 !important; }
-.shell .dot-running { box-shadow: 0 0 0 3px rgba(30, 106, 134, 0.22); }
+.shell textarea::placeholder,
+.map-shell input::placeholder { color: #4f6a79 !important; }
+.shell .dot-running,
+.map-shell .dot-running,
+.tour-shell .dot-running { box-shadow: 0 0 0 3px rgba(30, 106, 134, 0.22); }
+
+/* The map/tour toolbar, drawer and caption panel get the same frosted-glass
+   treatment .shell .card gets - the diagram canvas itself is left alone
+   (ReactFlow's own dark colorMode owns that area). */
+.map-toolbar,
+.map-drawer,
+.tour-panel,
+.ask,
+.flow-card {
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+}
 
 /* ---- Formatted doc pages (page viewer) ---- */
 .card.card-reading { max-width: 820px; }
