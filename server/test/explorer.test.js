@@ -5,7 +5,7 @@ import { validateDoc } from "@docsync/contracts";
 import { migrate } from "../src/db/migrate.js";
 import { closePool } from "../src/db/pool.js";
 import { makeToolbox } from "../src/chat/tools.js";
-import { exploreRepo } from "../src/chat/explorer.js";
+import { exploreRepo, ExplorerLimitError } from "../src/chat/explorer.js";
 import { buildGraph } from "../src/graph/build-graph.js";
 import { applyGroups, groupByFolder } from "../src/graph/groups.js";
 import { scanFixture } from "./helpers/fixture.js";
@@ -52,6 +52,34 @@ test("stub mode: no model call, a valid explorer/1 walk from the deterministic p
   assert.equal(validateDoc(r.explorer).valid, true, JSON.stringify(validateDoc(r.explorer).errors));
   assert.ok(r.explorer.stops.length >= 2);
   assert.ok(r.explorer.stops.every((s) => s.narrated_by === "template" && s.thought.length > 0));
+});
+
+// ---- a repo too small for any tour (even the deterministic fallback) must error, not crash TourPlayer ----
+
+const tinyGraph = { nodes: [], edges: [], groups: [] };
+const tinyIndex = { items: [], project: { tables: [] } };
+
+test("stub mode: a repo too small for any tour throws instead of returning a zero-stop doc", async () => {
+  await assert.rejects(
+    () => exploreRepo({ runId: crypto.randomUUID(), graph: tinyGraph, index: tinyIndex, toolbox, stub: true }),
+    (err) => {
+      assert.ok(err instanceof ExplorerLimitError);
+      assert.equal(err.code, "explorer_no_tour");
+      assert.equal(err.status, 422);
+      return true;
+    }
+  );
+});
+
+test("agent loop: when it also falls back to the deterministic walk, a repo too small for any tour still throws instead of returning a zero-stop doc", async () => {
+  await assert.rejects(
+    () => exploreRepo({ runId: crypto.randomUUID(), graph: tinyGraph, index: tinyIndex, toolbox, stub: false, callModel: async () => text("Nothing to explore here.") }),
+    (err) => {
+      assert.ok(err instanceof ExplorerLimitError);
+      assert.equal(err.code, "explorer_no_tour");
+      return true;
+    }
+  );
 });
 
 // ---- the agent loop, with a fake model ----

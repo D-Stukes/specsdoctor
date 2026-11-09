@@ -20,9 +20,10 @@ const MAX_AI_STOPS = 9;
 const PER_RUN_BUDGET_USD = Number(process.env.EXPLORER_RUN_BUDGET_USD) || 0.3;
 
 export class ExplorerLimitError extends Error {
-  constructor(code, message) {
+  constructor(code, message, status = 429) {
     super(message);
     this.code = code;
+    this.status = status;
   }
 }
 
@@ -155,8 +156,21 @@ function deterministicExplorer(graph, index) {
  * Runs the Explorer's tool loop and returns a validated explorer/1 document.
  * callModel is injectable for tests; by default it calls the Claude API and records the cost.
  */
+/**
+ * A run too small for even the deterministic "big picture" fallback (planTours finds nothing with
+ * >= 2 stops) must never reach the client as a zero-stop explorer/1 document - TourPlayer assumes
+ * at least one stop exists. Code enforces this (Rule 1: facts, including "is there a tour at all",
+ * come from code, not from trusting whatever the fallback happened to produce).
+ */
+function requireStops(explorer) {
+  if (explorer.stops.length === 0) {
+    throw new ExplorerLimitError("explorer_no_tour", "This repository doesn't have enough parsed structure yet for a guided walk.", 422);
+  }
+  return explorer;
+}
+
 export async function exploreRepo({ runId, graph, index, toolbox, stub, callModel }) {
-  if (stub) return { explorer: deterministicExplorer(graph, index), cost_usd: 0 };
+  if (stub) return { explorer: requireStops(deterministicExplorer(graph, index)), cost_usd: 0 };
 
   if ((await spentOnExplorer(runId)) >= PER_RUN_BUDGET_USD) {
     throw new ExplorerLimitError("explorer_budget_used", "The exploration budget for this run is used up.");
@@ -207,5 +221,5 @@ export async function exploreRepo({ runId, graph, index, toolbox, stub, callMode
     });
   }
 
-  return { explorer: deterministicExplorer(graph, index), cost_usd: Math.round(spent * 1e6) / 1e6 };
+  return { explorer: requireStops(deterministicExplorer(graph, index)), cost_usd: Math.round(spent * 1e6) / 1e6 };
 }
