@@ -79,10 +79,12 @@ function playBlob(blob, rate, finish, onFailed) {
 }
 
 /**
- * Speaks text. onStart fires right when audio actually begins (immediately for the browser
- * fallback or a prefetch hit; after however long synthesis took otherwise) - callers use the gap
- * between calling speak() and onStart firing to show the wait as the guide composing, not
- * silence. onEnd fires when finished or if speech fails. Returns a function that cancels it.
+ * Speaks text. onStart({ source }) fires right when audio actually begins (immediately for the
+ * browser fallback or a prefetch hit; after however long synthesis took otherwise) - callers use
+ * the gap between calling speak() and onStart firing to show the wait as the guide composing, not
+ * silence, and `source` ("voicestudio" | "browser") to tell them which engine is actually playing,
+ * since a mid-session VoiceStudio failure switches engines silently otherwise. onEnd fires when
+ * finished or if speech fails. Returns a function that cancels it.
  */
 export function speak(text, { rate = 1, onStart, onEnd }) {
   cancelSpeech();
@@ -95,7 +97,7 @@ export function speak(text, { rate = 1, onStart, onEnd }) {
   };
   const fallback = () => {
     if (cancelled) return;
-    onStart?.();
+    onStart?.({ source: "browser" });
     currentCancel = speakViaBrowser(text, rate, finish);
   };
 
@@ -106,7 +108,7 @@ export function speak(text, { rate = 1, onStart, onEnd }) {
       const blob = await pending;
       if (cancelled) return;
       if (blob) {
-        onStart?.();
+        onStart?.({ source: "voicestudio" });
         currentCancel = playBlob(blob, rate, finish, fallback);
         return;
       }
@@ -119,7 +121,7 @@ export function speak(text, { rate = 1, onStart, onEnd }) {
     try {
       const blob = await fetchSpeechBlob(text);
       if (cancelled) return;
-      onStart?.();
+      onStart?.({ source: "voicestudio" });
       currentCancel = playBlob(blob, rate, finish, fallback);
     } catch {
       fallback();
