@@ -4,6 +4,7 @@ import { extractImportsAndEnv } from "./extract-imports-env.js";
 import { extractGraphFacts, sqlOperations } from "./extract-graph-facts.js";
 import { extractFlowFacts } from "./extract-flow-facts.js";
 import { extractRoutes } from "./extract-routes.js";
+import { extractReactRoutes } from "./extract-react-routes.js";
 import { parseSqlTables, parsePrismaTables } from "./extract-schemas.js";
 import { resolveModuleSpecifier, looksLikeNonModuleAsset, isAliasedSpecifier } from "./resolve-module.js";
 import { buildRouteGraph } from "./route-graph.js";
@@ -35,6 +36,7 @@ export function scan(snapshot, contentByPath) {
   const workspaces = [];
   const envExampleNames = new Set();
   const routesByFile = new Map();
+  const reactRoutes = []; // Task 9 / T21: react-router routes, across every file
   const perFileItemsByName = new Map(); // path -> Map(localName -> item draft)
   const perFileRequireBindings = new Map(); // path -> Map(localName -> spec)
   const rawGraphFacts = new Map(); // path -> { sqlStrings, httpCalls }
@@ -88,6 +90,15 @@ export function scan(snapshot, contentByPath) {
     const { items, flaggedPatterns: fp1 } = extractItemsAndExports(ast, { language: "javascript" });
     const { staticSpecifiers, dynamicUnresolved, envRefs, flaggedPatterns: fp2 } = extractImportsAndEnv(ast);
     const routeFacts = extractRoutes(ast);
+    for (const r of extractReactRoutes(ast)) {
+      reactRoutes.push({
+        id: `route:${r.path}@${file.path}:${r.start_line}`,
+        path: r.path,
+        element_component: r.element_component,
+        source: { path: file.path, start_line: r.start_line, end_line: r.end_line },
+        via: r.via,
+      });
+    }
     rawGraphFacts.set(file.path, extractGraphFacts(ast));
     rawFlowFacts.set(file.path, extractFlowFacts(ast));
 
@@ -249,7 +260,7 @@ export function scan(snapshot, contentByPath) {
     schema_version: "index/1",
     parser_version: PARSER_VERSION,
     items: allItems,
-    project: { workspaces, env_vars: envVars, tables },
+    project: { workspaces, env_vars: envVars, tables, routes: reactRoutes },
     imports: importsEdges,
     unresolved_imports: unresolvedImports,
     graph_facts: { queries_table: queriesTable, calls_endpoint: callsEndpoint, calls: [...callEdges.values()], inputs: inputFacts, outputs: outputFacts },

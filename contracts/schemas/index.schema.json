@@ -15,9 +15,24 @@
     },
     "project": {
       "type": "object",
-      "required": ["workspaces", "env_vars", "tables"],
+      "required": ["workspaces", "env_vars", "tables", "routes"],
       "additionalProperties": false,
       "properties": {
+        "routes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "path", "element_component", "source", "via"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "pattern": "^route:" },
+              "path": { "type": "string" },
+              "element_component": { "type": ["string", "null"] },
+              "source": { "$ref": "#/$defs/sourceRange" },
+              "via": { "enum": ["createBrowserRouter", "<Route path element>"] }
+            }
+          }
+        },
         "workspaces": {
           "type": "array",
           "items": {

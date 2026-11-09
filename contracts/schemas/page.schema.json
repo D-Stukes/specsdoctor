@@ -26,6 +26,7 @@
                 { "$ref": "#/$defs/claimBlock" },
                 { "$ref": "#/$defs/symbolRefBlock" },
                 { "$ref": "#/$defs/endpointRefBlock" },
+                { "$ref": "#/$defs/routeRefBlock" },
                 { "$ref": "#/$defs/envRefBlock" },
                 { "$ref": "#/$defs/tableRefBlock" },
                 { "$ref": "#/$defs/codeBlock" },
@@ -93,6 +94,15 @@
       "properties": {
         "type": { "const": "endpoint_ref" },
         "endpoint_id": { "type": "string", "pattern": "^ep:" }
+      }
+    },
+    "routeRefBlock": {
+      "type": "object",
+      "required": ["type", "route_id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "route_ref" },
+        "route_id": { "type": "string", "pattern": "^route:" }
       }
     },
     "envRefBlock": {

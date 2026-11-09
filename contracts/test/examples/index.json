@@ -23,7 +23,8 @@
   "project": {
     "workspaces": [{ "dir": "server", "scripts": { "dev": "nodemon index.js" }, "dependencies": { "express": "^4.19.2", "pg": "^8.11.0" }, "engines": null, "frontend": false }],
     "env_vars": [{ "id": "env:DATABASE_URL", "refs": [{ "path": "server/db/index.js", "line": 3 }], "in_env_example": true }],
-    "tables": [{ "id": "tbl:users", "format": "sql", "source": { "path": "server/db/schema.sql", "start_line": 1, "end_line": 7 }, "columns": [{ "name": "email", "type": "text", "nullable": false }] }]
+    "tables": [{ "id": "tbl:users", "format": "sql", "source": { "path": "server/db/schema.sql", "start_line": 1, "end_line": 7 }, "columns": [{ "name": "email", "type": "text", "nullable": false }] }],
+    "routes": [{ "id": "route:/users@client/src/App.jsx:12", "path": "/users", "element_component": "UsersPage", "source": { "path": "client/src/App.jsx", "start_line": 12, "end_line": 12 }, "via": "createBrowserRouter" }]
   },
   "imports": [{ "from": "server/controllers/users.js", "to": "server/db/index.js", "kind": "require" }],
   "unresolved_imports": [{ "from": "client/src/App.jsx", "spec": "@/components/Nav" }],
