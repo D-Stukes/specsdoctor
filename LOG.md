@@ -4,6 +4,22 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-09 — PR #28 and #29 merged to main; extended the glass theme to the map and tour screens
+
+**Final merge of yesterday's stack:** [PR #28](https://github.com/D-Stukes/specsdoctor/pull/28) (run dashboard, bugs fixed) merged into `main`, then [PR #29](https://github.com/D-Stukes/specsdoctor/pull/29) (Diane's `develop` reconciliation) retargeted and merged right after - both clean, no conflicts at merge time. Zero PRs open afterward; local `main` fast-forwarded with everything (Explorer, data-in-motion, VoiceStudio voice, the run dashboard, and Diane's glass theme + Markdown doc pages all together); 214/214 tests pass.
+
+**Made the aesthetic uniform across the whole product ([PR #30](https://github.com/D-Stukes/specsdoctor/pull/30)):** the user asked for Diane's glass & sky theme everywhere, not just the card screens it already covered. Checked first: it already covered every screen in `App.jsx` (access code, repo form, run list, dashboard, doc pages) - the only two it deliberately left out were the interactive map (`MapView.jsx`) and the guided tour/Explorer player (`TourPlayer.jsx`), per Diane's own comment: "the map and tour views keep the dark Precision Instrument styling, because their diagram colors are set in MapView/TourPlayer." Flagged that tradeoff to the user (diagram legibility vs. uniformity) before touching it; they confirmed they wanted it uniform regardless.
+
+Extended the same CSS-variable block + sky background to `.map-shell`/`.tour-shell` without touching the diagram's actual contrast: React Flow's `colorMode="dark"` still owns the canvas pane regardless of these variables, and the hardcoded per-layer border colors (`LAYER_COLOR`) are untouched - only the node card fill/text (already using `var(--surface-raised)`/`var(--text)`, not hardcoded colors) and the surrounding chrome (toolbar, drawer, tour caption panel) pick up the glass look, plus a matching backdrop-filter blur so the chrome reads as frosted glass rather than flat translucent color. Verified live across Architecture view, a running Guided tour, and the Ask panel over the map - all read as one consistent product now, no new console errors, 214/214 tests pass (CSS only). **Flagged in the PR as worth Diane's eyes before merging**, since it overrides a scoping choice she made on purpose in her own PR, even though the result looks cohesive rather than broken.
+
+**Not done / open for next session:**
+1. The user should actually talk into the mic once and confirm VoiceStudio's transcription quality - not yet human-verified.
+2. Fix the two known Explorer bugs (crash on tiny repos; walk rewind on re-render), live on `main` unfixed since the big merge.
+3. Merge [PR #30](https://github.com/D-Stukes/specsdoctor/pull/30) once Diane's seen it.
+4. Idea 5 (the public résumé share link) is the only brainstormed idea not yet built or started.
+
+---
+
 ## 2026-11-08 — Explorer, data-in-motion, voice (VoiceStudio) and the run dashboard; whole stack merged to main
 
 **Why:** picking up the "wow factor" brainstorm from the earlier 2026-11-08 handoff entry below. The user chose to build ideas 1, 3 and 4, in that order, then asked for voice specifically to use a self-hosted VoiceStudio instead of the browser's built-in speech.
