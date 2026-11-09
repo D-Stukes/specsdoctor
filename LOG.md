@@ -4,6 +4,18 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-09 (later) — Fixed overlapping edge labels and un-blurred Ask panel on PR #30
+
+User feedback on a screenshot of the newly-uniform map view: edge labels "overlap, looks bad and can't be read," and the Ask panel should be blurred "as it is in nav bar." Root cause of the label overlap wasn't the labels themselves - it was `--surface-raised` at the shared 40% opacity, which only reads as glass in front of the blurred sky photo; on the map/tour canvas it also sits in front of other diagram content (edges, edge labels, other nodes), so at 40% those showed through node cards and tangled with the node's own label. Fixed with a near-opaque (94%) `--surface-raised` override scoped to `.map-shell`/`.tour-shell` only - the card screens keep the lighter shared value. Separately, `.ask` had no `backdrop-filter` at all (toolbar/drawer/tour-panel did), and while checking that I found `.flow-card` (Follow the data step cards, which sit directly on the canvas rather than inside React Flow) had the same gap - both added to the existing blur rule. Verified live: Architecture view edge labels now read cleanly even where several converge on one node, Ask panel is frosted like the toolbar, Follow the data cards no longer show sharp photo bleed-through. 214/214 tests pass (CSS only). Pushed to [PR #30](https://github.com/D-Stukes/specsdoctor/pull/30).
+
+**Not done / open for next session:**
+1. The user should actually talk into the mic once and confirm VoiceStudio's transcription quality - not yet human-verified.
+2. Fix the two known Explorer bugs (crash on tiny repos; walk rewind on re-render), live on `main` unfixed since the big merge.
+3. Merge [PR #30](https://github.com/D-Stukes/specsdoctor/pull/30) once Diane's seen it.
+4. Idea 5 (the public résumé share link) is the only brainstormed idea not yet built or started.
+
+---
+
 ## 2026-11-09 — PR #28 and #29 merged to main; extended the glass theme to the map and tour screens
 
 **Final merge of yesterday's stack:** [PR #28](https://github.com/D-Stukes/specsdoctor/pull/28) (run dashboard, bugs fixed) merged into `main`, then [PR #29](https://github.com/D-Stukes/specsdoctor/pull/29) (Diane's `develop` reconciliation) retargeted and merged right after - both clean, no conflicts at merge time. Zero PRs open afterward; local `main` fast-forwarded with everything (Explorer, data-in-motion, VoiceStudio voice, the run dashboard, and Diane's glass theme + Markdown doc pages all together); 214/214 tests pass.
