@@ -365,6 +365,25 @@ button:disabled {
   border-color: var(--mint);
 }
 
+.page-link-inline { color: var(--text-secondary); text-decoration: underline; font-size: 13px; }
+.page-link-inline:hover { color: var(--mint); }
+
+/* Run dashboard: leads with the shape of the codebase, not the pipeline that built it */
+.dashboard { background: var(--surface-raised); border: 1px solid var(--hairline); border-radius: 14px; padding: 1.1rem 1.25rem; margin-bottom: 1.5rem; }
+.dashboard h2 { margin: 0 0 0.9rem; font-size: 16px; }
+.dash-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 0.75rem; margin-bottom: 0.9rem; }
+.dash-stat { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0.7rem 0.4rem; background: var(--canvas); border: 1px solid var(--hairline); border-radius: 10px; }
+.dash-stat strong { font-size: 22px; color: var(--mint); font-family: var(--font-mono); }
+.dash-stat span { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.15rem; }
+.dash-areas { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+.dash-area-chip { font-size: 12px; padding: 0.2rem 0.65rem; border-radius: 9999px; border: 1px solid var(--hairline-hover); color: var(--text-secondary); }
+.dash-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+
+.build-details { margin-bottom: 1.5rem; }
+.build-details summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.8rem; }
+.build-details[open] summary { margin-bottom: 0.8rem; }
+.build-details .stage-list { margin-top: 0.6rem; }
+
 /* Repo map (Task 10) */
 .map-shell { height: 100vh; display: flex; flex-direction: column; }
 .map-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--hairline); background: var(--surface); }
