@@ -1,6 +1,6 @@
 import MapView from "./MapView.jsx";
 import FindingsList from "./Findings.jsx";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import "./theme.css";
@@ -170,15 +170,24 @@ function formatDuration(ms) {
   return s < 60 ? `${s.toFixed(1)}s` : `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`;
 }
 
+// Mirrors server/src/chat/tools.js's isScreen predicate - keep both definitions of "screen" in
+// sync if this ever changes (the two can't share a module: one runs in the browser, one in Node).
+const isScreen = (n) => n.layer === "frontend" && n.kind !== "module";
+
+/** A fetched graph is only trustworthy once it has the shape every consumer (this, MapView) assumes. */
+function isValidGraph(g) {
+  return Boolean(g) && Array.isArray(g.nodes) && Array.isArray(g.groups);
+}
+
 /** The shape of the codebase, straight from the graph's own facts - what the landing dashboard leads with. */
 function graphStats(graph) {
   const count = (f) => graph.nodes.filter(f).length;
   return {
     actions: count((n) => n.kind === "endpoint"),
     tables: count((n) => n.kind === "table"),
-    screens: count((n) => n.layer === "frontend" && n.kind !== "module"),
+    screens: count(isScreen),
     files: count((n) => n.kind === "module"),
-    areas: graph.groups ?? [],
+    areas: graph.groups,
   };
 }
 
@@ -361,15 +370,74 @@ function PageViewer({ runId, slug, onBack }) {
   );
 }
 
+/** The pipeline's stage list plus cost/duration - shared so the "running" and "finished" (collapsed-into-details) views can never drift apart. */
+function BuildStatus({ run }) {
+  return (
+    <>
+      <div className="stage-list">
+        {run.stages.map((s) => (
+          <div className="stage-row" key={s.stage}>
+            <span className={`dot dot-${s.status}`} />
+            <span className="stage-name">{s.stage}</span>
+            <span className="stage-status">{STATUS_LABEL[s.status] ?? s.status}</span>
+            <span className="stage-count">
+              {s.items_done}
+              {s.items_total != null ? `/${s.items_total}` : ""}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="cost-row">
+        <span>Cost</span>
+        <span>
+          ${run.cost_usd.toFixed(2)} / ${run.budget_cap_usd.toFixed(2)} budget
+        </span>
+      </div>
+      {run.duration_ms != null && (
+        <div className="cost-row">
+          <span>Time</span>
+          <span>{formatDuration(run.duration_ms)}</span>
+        </div>
+      )}
+    </>
+  );
+}
+
 function RunProgress({ runId, onBackToList }) {
   const [run, setRun] = useState(null);
   const [pages, setPages] = useState([]);
   const [error, setError] = useState(null);
   const [openSlug, setOpenSlug] = useState(null);
   const [graph, setGraph] = useState(null);
+  const [graphError, setGraphError] = useState(null);
   const [tours, setTours] = useState([]);
   const [showMap, setShowMap] = useState(false);
   const timerRef = useRef(null);
+  const graphPromiseRef = useRef(null); // de-dupes a fetch already in flight, whoever started it
+  const stats = useMemo(() => (graph ? graphStats(graph) : null), [graph]);
+
+  // Shared by the background prefetch and openMap(), so the two never race each other into firing
+  // duplicate requests, and a malformed response is never mistaken for a usable graph (it used to
+  // be: "truthy" and "valid" were treated as the same thing, so a bad payload could get stuck in
+  // state forever with no way to retry).
+  function loadGraph() {
+    if (!graphPromiseRef.current) {
+      graphPromiseRef.current = api(`/runs/${runId}/graph`)
+        .then((g) => {
+          if (!isValidGraph(g)) throw new Error("The map data for this run came back incomplete.");
+          return g;
+        })
+        .finally(() => {
+          graphPromiseRef.current = null;
+        });
+    }
+    return graphPromiseRef.current;
+  }
+
+  function retryGraph() {
+    setGraphError(null);
+    loadGraph().then(setGraph).catch((err) => setGraphError(err.message));
+  }
 
   useEffect(() => {
     async function poll() {
@@ -380,7 +448,7 @@ function RunProgress({ runId, onBackToList }) {
           const pageData = await api(`/runs/${runId}/pages`);
           setPages(pageData.pages);
           if (data.status === "complete" || data.status === "complete_with_errors") {
-            api(`/runs/${runId}/graph`).then(setGraph).catch(() => {}); // the dashboard's stats; failure just leaves them unshown
+            loadGraph().then(setGraph).catch((err) => setGraphError(err.message)); // the dashboard's stats
           }
         } else {
           timerRef.current = setTimeout(poll, 2000);
@@ -409,7 +477,9 @@ function RunProgress({ runId, onBackToList }) {
   async function openMap() {
     setError(null);
     try {
-      if (!graph) setGraph(await api(`/runs/${runId}/graph`));
+      const g = graph ?? (await loadGraph());
+      if (!graph) setGraph(g);
+      setGraphError(null);
       setTours((await api(`/runs/${runId}/tours`).catch(() => ({ tours: [] }))).tours);
       setShowMap(true);
     } catch (err) {
@@ -423,7 +493,6 @@ function RunProgress({ runId, onBackToList }) {
   }
 
   const isDone = run && (run.status === "complete" || run.status === "complete_with_errors");
-  const stats = graph ? graphStats(graph) : null;
   const overviewPage = pages.find((p) => p.slug === "overview");
 
   return (
@@ -457,7 +526,16 @@ function RunProgress({ runId, onBackToList }) {
               <div className="dashboard">
                 <h2>The codebase, at a glance</h2>
                 {!stats ? (
-                  <p className="lede">Putting the overview together…</p>
+                  graphError ? (
+                    <p className="lede">
+                      {graphError}{" "}
+                      <a href="#" onClick={(e) => { e.preventDefault(); retryGraph(); }}>
+                        Retry
+                      </a>
+                    </p>
+                  ) : (
+                    <p className="lede">Putting the overview together…</p>
+                  )
                 ) : (
                   <>
                     <div className="dash-stats">
@@ -505,60 +583,10 @@ function RunProgress({ runId, onBackToList }) {
             {isDone ? (
               <details className="build-details">
                 <summary>Build details</summary>
-                <div className="stage-list">
-                  {run.stages.map((s) => (
-                    <div className="stage-row" key={s.stage}>
-                      <span className={`dot dot-${s.status}`} />
-                      <span className="stage-name">{s.stage}</span>
-                      <span className="stage-status">{STATUS_LABEL[s.status] ?? s.status}</span>
-                      <span className="stage-count">
-                        {s.items_done}
-                        {s.items_total != null ? `/${s.items_total}` : ""}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="cost-row">
-                  <span>Cost</span>
-                  <span>
-                    ${run.cost_usd.toFixed(2)} / ${run.budget_cap_usd.toFixed(2)} budget
-                  </span>
-                </div>
-                {run.duration_ms != null && (
-                  <div className="cost-row">
-                    <span>Time</span>
-                    <span>{formatDuration(run.duration_ms)}</span>
-                  </div>
-                )}
+                <BuildStatus run={run} />
               </details>
             ) : (
-              <>
-                <div className="stage-list">
-                  {run.stages.map((s) => (
-                    <div className="stage-row" key={s.stage}>
-                      <span className={`dot dot-${s.status}`} />
-                      <span className="stage-name">{s.stage}</span>
-                      <span className="stage-status">{STATUS_LABEL[s.status] ?? s.status}</span>
-                      <span className="stage-count">
-                        {s.items_done}
-                        {s.items_total != null ? `/${s.items_total}` : ""}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="cost-row">
-                  <span>Cost</span>
-                  <span>
-                    ${run.cost_usd.toFixed(2)} / ${run.budget_cap_usd.toFixed(2)} budget
-                  </span>
-                </div>
-                {run.duration_ms != null && (
-                  <div className="cost-row">
-                    <span>Time</span>
-                    <span>{formatDuration(run.duration_ms)}</span>
-                  </div>
-                )}
-              </>
+              <BuildStatus run={run} />
             )}
 
             <FindingsList runId={runId} onOpenPage={setOpenSlug} onChanged={refreshPages} refreshKey={pages.map((p) => p.open_findings).join(",")} />
