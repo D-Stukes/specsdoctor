@@ -4,6 +4,25 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-09 (latest) — Trace-diagram animation + the real voice-fallback fix, all merged
+
+**Animated the request-trace diagram ([PR #31](https://github.com/D-Stukes/specsdoctor/pull/31)):** from the brainstormed "wow factor" animation ideas, built #4 (pulse-on-call) and #3 (data traveling the real edge path) as one feature - a "Play trace" control walks the Architecture/Request-trace diagram in actual call order (BFS over the already-rendered subgraph), pulsing the live node and switching its edge to React Flow's native animated/flowing-dash style while active. Used React Flow's built-in animated-edge support rather than a custom SVG path system - same visual payoff, far less risk. Also added idea #2 (a brief "searching" sweep at the Explorer/Guided Tour's next stop while the camera travels there). All gated under `prefers-reduced-motion`. Separately fixed the Follow the data header (`.flow-head`/`.flow-summary`), which had no background at all and was unreadable against the sky photo - same bug class as the earlier Ask-panel fix, just on the header strip.
+
+**Fixed why the guide's voice "changes by itself" - two PRs:**
+- [PR #32](https://github.com/D-Stukes/specsdoctor/pull/32): `speak()`'s `onStart` now reports which engine actually played (`voicestudio` vs `browser`), so `TourPlayer` shows a visible note when VoiceStudio fails mid-session and narration silently switches to the browser's own TTS. Also stopped the narration effect from restarting an in-flight line when the Speed dropdown changes mid-playback (it was listed as a dependency, so changing it tore the line down and replayed it at the new rate from scratch).
+- [PR #33](https://github.com/D-Stukes/specsdoctor/pull/33): found the actual root cause behind "I just want it from the studio" not holding - `voiceStudioAvailable()` cached its one check **forever per page load**, so a single bad probe (VoiceStudio briefly down at that instant) locked the entire session onto the browser fallback with no way to recover even once VoiceStudio came back up seconds later. Replaced with a 10s TTL re-probe, added one retry before falling back on a transient failure, and a request queue so DocSync never sends VoiceStudio more than one `/speech` call at a time (the code already documented that overlapping requests crash it outright).
+
+All three verified live (forced-failure testing via `fetch` monkey-patches, not just happy-path), 214/214 tests pass throughout. Merged in order - #31 → main, then #32 and #33 retargeted to `main` and merged - zero PRs open now.
+
+**Not done / open for next session:**
+1. The user should actually talk into the mic once and confirm VoiceStudio's transcription quality - not yet human-verified.
+2. Fix the two known Explorer bugs (crash on tiny repos; walk rewind on re-render), live on `main` unfixed since the big merge.
+3. Idea 5 (the public résumé share link) is the only brainstormed wow-factor idea not yet built or started.
+4. Add-on backlog still open: AI claim check (Task 7), the Python helper (Task 8), the plain-language guides page (Task 12), the demo recording.
+5. Product naming decision ("specsdoctor" vs "DocSync") still unresolved.
+
+---
+
 ## 2026-11-09 (later) — Fixed overlapping edge labels and un-blurred Ask panel on PR #30
 
 User feedback on a screenshot of the newly-uniform map view: edge labels "overlap, looks bad and can't be read," and the Ask panel should be blurred "as it is in nav bar." Root cause of the label overlap wasn't the labels themselves - it was `--surface-raised` at the shared 40% opacity, which only reads as glass in front of the blurred sky photo; on the map/tour canvas it also sits in front of other diagram content (edges, edge labels, other nodes), so at 40% those showed through node cards and tangled with the node's own label. Fixed with a near-opaque (94%) `--surface-raised` override scoped to `.map-shell`/`.tour-shell` only - the card screens keep the lighter shared value. Separately, `.ask` had no `backdrop-filter` at all (toolbar/drawer/tour-panel did), and while checking that I found `.flow-card` (Follow the data step cards, which sit directly on the canvas rather than inside React Flow) had the same gap - both added to the existing blur rule. Verified live: Architecture view edge labels now read cleanly even where several converge on one node, Ask panel is frosted like the toolbar, Follow the data cards no longer show sharp photo bleed-through. 214/214 tests pass (CSS only). Pushed to [PR #30](https://github.com/D-Stukes/specsdoctor/pull/30).
