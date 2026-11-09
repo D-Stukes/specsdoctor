@@ -38,10 +38,15 @@ Plus six lower-severity ones: a double-click/two-tab race on `/explore` that can
 
 **Run dashboard redesign, same session ([PR #28](https://github.com/D-Stukes/specsdoctor/pull/28), based on fresh `main`):** feedback on the completed-run page - it opened straight onto the pipeline checklist (Analyst, Architect, Reader...) with "Open the interactive map" buried as a small link at the bottom; should instead be a dashboard for understanding the codebase. Now a finished run leads with "The codebase, at a glance" - graph-derived stats (actions/saved data/screens/files), area chips, a prominent "Open the map" button, and a link to the overview page - with the pipeline checklist and cost/time tucked into a collapsed "Build details" section (still fully shown while a run is queued/running, where it's the only useful info). The graph is now fetched proactively on completion rather than lazily on map-click. Verified live against a real run; 214/214 tests pass (no server changes).
 
+**PR #28's review bugs fixed, same session:** both real bugs from the review landed on `dikshyant-run-dashboard`:
+- The proactive graph fetch silently swallowed errors with no retry, so a failure left the dashboard stuck on "Putting the overview together…" forever. Added a `graphError` state with a real "Retry" link - verified by actually forcing the fetch to fail once (monkey-patched `window.fetch` in the live page) and confirming the error showed, then recovered cleanly on retry.
+- "Truthy" and "valid" were treated as the same thing for the cached graph, so a malformed response could get stuck in state, blocking any retry and risking a crash in `graphStats`/`MapView` (both assume `graph.nodes`/`graph.groups` are arrays). Added `isValidGraph()` and validate once at the fetch boundary (a shared `loadGraph()`), so `graph` state is now always either `null` or genuinely usable - and the fetch is de-duped via an in-flight-promise ref, fixing the related redundant-fetch race too.
+Also fixed cheaply while in there: the stage-list/cost-row JSX (duplicated verbatim across the two `isDone` branches) is now one shared `<BuildStatus run={run} />`; `graphStats`'s "screens" predicate is now named `isScreen` with a comment pointing at `server/src/chat/tools.js`'s identical definition; `graphStats` is memoized. Not fixed: the lost heading landmark for "Open the map" (judged not worth a redundant heading). 214/214 tests pass; merged forward into #29 (one trivial import-line conflict, resolved) so the reconciliation branch has the fixes too.
+
 **Not done / open for next session:**
 1. The user should actually talk into the mic once and confirm VoiceStudio's transcription quality - not yet human-verified (TTS/the composing UX *was* verified live, including the voice actually speaking).
 2. Fix the two known Explorer bugs (crash on tiny repos; walk rewind on re-render), now live on `main` unfixed.
-3. Merge [PR #28](https://github.com/D-Stukes/specsdoctor/pull/28) (the run dashboard) once reviewed.
+3. Merge order: [PR #28](https://github.com/D-Stukes/specsdoctor/pull/28) (run dashboard, bugs now fixed) → [PR #29](https://github.com/D-Stukes/specsdoctor/pull/29) (develop reconciliation) → `main`.
 4. Idea 5 (the public résumé share link) is the only brainstormed idea not yet built or started.
 
 ---
