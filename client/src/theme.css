@@ -475,6 +475,7 @@ button:disabled {
 .tour-thought { margin: 0 0 0.35rem; font-size: 13px; font-style: italic; color: var(--text-muted); }
 .tour-narration { margin: 0 0 0.5rem; font-size: 15px; line-height: 1.55; max-width: 70ch; min-height: 3.1em; }
 .tour-synth-status { display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.5rem; font-size: 13px; color: var(--text-muted); }
+.tour-fallback-note { margin: 0 0 0.5rem; font-size: 13px; color: var(--amber); }
 .tour-eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
 .tour-eq span { width: 3px; background: var(--amber); border-radius: 1px; animation: tour-eq-bounce 0.9s ease-in-out infinite; }
 .tour-eq span:nth-child(1) { height: 40%; animation-delay: 0s; }

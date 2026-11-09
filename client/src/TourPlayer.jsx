@@ -27,11 +27,20 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
   const [scanTarget, setScanTarget] = useState(null);
   const [moving, setMoving] = useState(false);
   const [synthesizing, setSynthesizing] = useState(false); // true only for the gap speak()'s onStart didn't manage to hide
+  const [usingFallback, setUsingFallback] = useState(false); // true once onStart reports the browser's own voice, not VoiceStudio
 
   const sub = useMemo(() => tourSubgraph(graph, tour), [graph, tour]);
   const walked = useMemo(() => walkedEdgeKeys(tour), [tour]);
   const stop = tour.stops[index];
   const labelOf = useMemo(() => new Map(graph.nodes.map((n) => [n.id, n.label])), [graph]);
+
+  // Changing the Speed dropdown mid-line must not restart narration already in flight - only the
+  // next speak() call should pick up the new rate, so the narration effect below reads this ref
+  // instead of depending on `speed` directly.
+  const speedRef = useRef(speed);
+  useEffect(() => {
+    speedRef.current = speed;
+  }, [speed]);
 
   // New tour: back to the first stop, paused. Get its line synthesizing now, before Play is even
   // pressed, so the first stop doesn't carry the full wait too.
@@ -41,6 +50,7 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
     setPlaying(false);
     setFinished(false);
     setDot(null);
+    setUsingFallback(false);
     cancelSpeech();
     if (voiceSupported && tour.stops[0]) prefetch(spokenTextFor(tour.stops[0]));
   }, [tour, voiceSupported]);
@@ -116,18 +126,20 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
         setPlaying(false);
         setFinished(true);
       } else {
-        setTimeout(() => !cancelled && setIndex((i) => i + 1), 350 / speed);
+        setTimeout(() => !cancelled && setIndex((i) => i + 1), 350 / speedRef.current);
       }
     };
     const spoken = spokenTextFor(stop);
     let cancelNarration;
     if (voice && voiceSupported) {
       setSynthesizing(true);
+      setUsingFallback(false);
       cancelNarration = speak(spoken, {
-        rate: speed,
-        onStart: () => {
+        rate: speedRef.current,
+        onStart: ({ source } = {}) => {
           if (cancelled) return;
           setSynthesizing(false);
+          setUsingFallback(source === "browser");
           // Only once this line is actually playing (its own synthesis is done) start the next
           // one, so the two never contend for the same local engine at once - concurrent
           // requests to it were failing outright (502s) rather than just queueing.
@@ -137,7 +149,7 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
         onEnd: advance,
       });
     } else {
-      const timer = setTimeout(advance, readingMs(spoken, speed));
+      const timer = setTimeout(advance, readingMs(spoken, speedRef.current));
       cancelNarration = () => clearTimeout(timer);
     }
     return () => {
@@ -145,7 +157,10 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
       setSynthesizing(false);
       cancelNarration?.();
     };
-  }, [playing, arrived, index, voice, speed, stop, tour, voiceSupported]);
+    // speed deliberately not a dependency: changing it mid-line must not restart narration
+    // already in flight (speedRef above carries the latest value for the *next* line instead)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, arrived, index, voice, stop, tour, voiceSupported]);
 
   useEffect(() => () => cancelSpeech(), []);
 
@@ -317,6 +332,9 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
             </span>
             Finding the words…
           </p>
+        )}
+        {usingFallback && !synthesizing && (
+          <p className="tour-fallback-note">Using your browser's voice — VoiceStudio isn't reachable right now.</p>
         )}
         {evidence && (
           <span className="tour-evidence">
