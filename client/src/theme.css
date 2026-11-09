@@ -624,6 +624,16 @@ body:has(.shell-results) {
   backdrop-filter: blur(16px) saturate(150%);
   box-shadow: 0 20px 50px rgba(5, 20, 30, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
+/* On the card screens, --surface-raised only ever sits in front of the blurred sky photo, so 40%
+   opacity reads as glass. On the map/tour canvas it also sits in front of OTHER diagram content
+   (edges, edge labels, other nodes) - at the same 40% those showed through node cards and tangled
+   with the node's own label. Node cards need to actually mask what's behind them, so they get a
+   near-solid fill here instead; the toolbar/drawer/panel (which only ever front the photo) keep
+   the lighter one from the shared block above. */
+.map-shell,
+.tour-shell {
+  --surface-raised: rgba(255, 255, 255, 0.94);
+}
 .shell input,
 .shell textarea,
 .map-shell input,
@@ -643,7 +653,9 @@ body:has(.shell-results) {
    (ReactFlow's own dark colorMode owns that area). */
 .map-toolbar,
 .map-drawer,
-.tour-panel {
+.tour-panel,
+.ask,
+.flow-card {
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   backdrop-filter: blur(16px) saturate(150%);
 }
