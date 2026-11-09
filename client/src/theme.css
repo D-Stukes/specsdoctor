@@ -442,6 +442,9 @@ button:disabled {
 @keyframes guide-twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 @keyframes guide-compose-pulse { 0%, 100% { opacity: 0.18; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.15); } }
 @keyframes guide-compose-dots { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+/* Request-trace playback: the node currently "live" in the call order pulses so the order reads
+   as motion, not just a static highlight. */
+@keyframes trace-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 @media (prefers-reduced-motion: reduce) {
   .guide *, .guide { animation: none !important; transition: none !important; }
 }
@@ -451,6 +454,10 @@ button:disabled {
 .tour-fade { animation: tour-fade-in 0.3s ease; }
 @keyframes tour-fade-in { from { opacity: 0.2; } to { opacity: 1; } }
 .tour-dot { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 14px 6px rgba(244, 194, 122, 0.65); pointer-events: none; }
+/* A brief "scanning" ping at the next stop while the camera is still travelling there, so the
+   guide reads as looking ahead rather than just teleporting between stops. */
+.tour-scan-ring { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; border: 2px solid var(--amber); pointer-events: none; animation: tour-scan-pulse 700ms ease-out infinite; }
+@keyframes tour-scan-pulse { 0% { transform: scale(0.4); opacity: 0.9; } 70%, 100% { transform: scale(2.6); opacity: 0; } }
 .tour-guide { position: absolute; pointer-events: none; z-index: 1000; }
 .tour-thought-bubble {
   position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 10px; z-index: 1000;

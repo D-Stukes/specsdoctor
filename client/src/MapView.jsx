@@ -30,8 +30,11 @@ function pageSlugFor(node) {
   return path ? path.replace(/\.[^./]+$/, "").replace(/\//g, "-") : null;
 }
 
+const prefersReducedMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
 function MapViewInner({ runId, graph, tours = [], onBack, onOpenPage }) {
   const { setCenter } = useReactFlow();
+  const reducedMotion = useMemo(prefersReducedMotion, []);
   const [view, setView] = useState(() => (graph.nodes.some((n) => n.kind === "endpoint") ? "flow" : "architecture"));
   const [plain, setPlain] = useState(true); // plain-English names by default; off shows the code names
   const [traceEndpoint, setTraceEndpoint] = useState(null);
@@ -51,6 +54,61 @@ function MapViewInner({ runId, graph, tours = [], onBack, onOpenPage }) {
   }, [endpoints, traceEndpoint, graph]);
 
   const base = useMemo(() => (view === "functions" ? functionsSubgraph(graph) : subgraphFor(graph, view, traceEndpoint)), [graph, view, traceEndpoint]);
+
+  // Idea 4 ("pulse-on-call"): the request-trace diagram can play back the actual call order -
+  // a breadth-first walk of the already-drawn subgraph starting at the traced endpoint, so every
+  // step it plays corresponds to a node/edge genuinely on screen (no reaching into data this view
+  // doesn't render).
+  const traceOrder = useMemo(() => {
+    if (view !== "trace" || !traceEndpoint) return [];
+    const byFrom = new Map();
+    base.edges.forEach((e, i) => {
+      if (!byFrom.has(e.from)) byFrom.set(e.from, []);
+      byFrom.get(e.from).push({ edgeIndex: i, to: e.to });
+    });
+    const order = [];
+    const seen = new Set([traceEndpoint]);
+    const queue = [traceEndpoint];
+    while (queue.length) {
+      const id = queue.shift();
+      for (const item of byFrom.get(id) ?? []) {
+        if (seen.has(item.to)) continue;
+        seen.add(item.to);
+        order.push(item);
+        queue.push(item.to);
+      }
+    }
+    return order;
+  }, [view, traceEndpoint, base]);
+  const edgeOrderPos = useMemo(() => new Map(traceOrder.map((item, pos) => [item.edgeIndex, pos])), [traceOrder]);
+  const nodeOrderPos = useMemo(() => {
+    const m = new Map(traceEndpoint ? [[traceEndpoint, -1]] : []);
+    for (const item of traceOrder) if (!m.has(item.to)) m.set(item.to, edgeOrderPos.get(item.edgeIndex));
+    return m;
+  }, [traceOrder, traceEndpoint, edgeOrderPos]);
+
+  const [playTrace, setPlayTrace] = useState(false);
+  const [traceStep, setTraceStep] = useState(-1);
+  useEffect(() => {
+    setTraceStep(-1);
+    setPlayTrace(false);
+  }, [view, traceEndpoint]);
+  useEffect(() => {
+    if (!playTrace) return undefined;
+    if (traceStep >= traceOrder.length - 1) {
+      setPlayTrace(false);
+      return undefined;
+    }
+    const t = setTimeout(() => setTraceStep((s) => s + 1), 900);
+    return () => clearTimeout(t);
+  }, [playTrace, traceStep, traceOrder.length]);
+  const traceFinished = traceStep >= traceOrder.length - 1 && traceStep >= 0;
+  const toggleTracePlay = useCallback(() => {
+    setPlayTrace((p) => {
+      if (!p && traceFinished) setTraceStep(-1);
+      return !p;
+    });
+  }, [traceFinished]);
   const hasAreas = graph.groups.length > 0;
   const collapsed = hasAreas && view !== "trace" && view !== "flow" && view !== "functions" && (collapseChoice ?? base.nodes.length > COLLAPSE_ABOVE);
   const sub = useMemo(() => (collapsed ? collapseByGroup(base, graph.groups, expanded) : base), [base, collapsed, graph.groups, expanded]);
@@ -74,6 +132,9 @@ function MapViewInner({ runId, graph, tours = [], onBack, onOpenPage }) {
     return sub.nodes.map((n) => {
       const textMatch = needle === "" || n.label.toLowerCase().includes(needle) || n.id.toLowerCase().includes(needle) || (n.plain_label ?? "").toLowerCase().includes(needle) || (n.plain_summary ?? "").toLowerCase().includes(needle);
       const match = textMatch && (areaFilter === "" || n.group === areaFilter);
+      const orderPos = nodeOrderPos.get(n.id);
+      const traceActive = playTrace && orderPos === traceStep;
+      const traceVisited = orderPos !== undefined && orderPos <= traceStep && !traceActive;
       return {
         id: n.id,
         position: positions.get(n.id) ?? { x: 0, y: 0 },
@@ -103,26 +164,39 @@ function MapViewInner({ runId, graph, tours = [], onBack, onOpenPage }) {
           alignItems: "center",
           justifyContent: "center",
           opacity: match ? 1 : 0.2,
-          boxShadow: n.id === selectedId ? `0 0 0 2px ${LAYER_COLOR[n.layer] ?? "var(--text)"}` : "none",
+          boxShadow: n.id === selectedId
+            ? `0 0 0 2px ${LAYER_COLOR[n.layer] ?? "var(--text)"}`
+            : traceActive
+            ? "0 0 0 3px var(--amber), 0 0 26px 6px rgba(244,194,122,0.55)"
+            : traceVisited
+            ? "0 0 0 2px rgba(244,194,122,0.45)"
+            : "none",
+          animation: traceActive && !reducedMotion ? "trace-pulse 900ms ease-in-out infinite" : "none",
         },
       };
     });
-  }, [positions, sub, needle, selectedId, areaFilter, plain]);
+  }, [positions, sub, needle, selectedId, areaFilter, plain, nodeOrderPos, playTrace, traceStep, reducedMotion]);
 
   const flowEdges = useMemo(
     () =>
-      sub.edges.map((e, i) => ({
-        id: `e${i}`,
-        source: e.from,
-        target: e.to,
-        label: edgeLabel(e, plain),
-        animated: false,
-        markerEnd: { type: MarkerType.ArrowClosed, color: "#8b96a0" },
-        style: { stroke: "#8b96a0", strokeWidth: 1.4, strokeDasharray: e.inferred ? "6 4" : undefined },
-        labelStyle: { fill: "#a3adb6", fontSize: 10 },
-        labelBgStyle: { fill: "#151a1f" },
-      })),
-    [sub, plain]
+      sub.edges.map((e, i) => {
+        const orderPos = edgeOrderPos.get(i);
+        const traceActive = playTrace && orderPos === traceStep;
+        const traceVisited = orderPos !== undefined && orderPos < traceStep;
+        const color = traceActive ? "#f4c27a" : traceVisited ? "#d7a45c" : "#8b96a0";
+        return {
+          id: `e${i}`,
+          source: e.from,
+          target: e.to,
+          label: edgeLabel(e, plain),
+          animated: traceActive && !reducedMotion,
+          markerEnd: { type: MarkerType.ArrowClosed, color },
+          style: { stroke: color, strokeWidth: traceActive ? 2.6 : traceVisited ? 1.8 : 1.4, strokeDasharray: e.inferred ? "6 4" : undefined },
+          labelStyle: { fill: "#a3adb6", fontSize: 10 },
+          labelBgStyle: { fill: "#151a1f" },
+        };
+      }),
+    [sub, plain, edgeOrderPos, playTrace, traceStep, reducedMotion]
   );
 
   const selected = sub.nodes.find((n) => n.id === selectedId) ?? graph.nodes.find((n) => n.id === selectedId) ?? null;
@@ -192,6 +266,11 @@ function MapViewInner({ runId, graph, tours = [], onBack, onOpenPage }) {
               </option>
             ))}
           </select>
+        )}
+        {view === "trace" && !reducedMotion && traceOrder.length > 0 && (
+          <button className="btn-primary" style={{ width: "auto" }} onClick={toggleTracePlay}>
+            {playTrace ? "Pause trace" : traceFinished ? "Replay trace" : "Play trace"}
+          </button>
         )}
         <label className="map-check" title="Show everyday words instead of code names">
           <input type="checkbox" checked={plain} onChange={(e) => setPlain(e.target.checked)} /> Plain English

@@ -24,6 +24,7 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
   const [voice, setVoice] = useState(voiceSupported);
   const [positions, setPositions] = useState(null);
   const [dot, setDot] = useState(null);
+  const [scanTarget, setScanTarget] = useState(null);
   const [moving, setMoving] = useState(false);
   const [synthesizing, setSynthesizing] = useState(false); // true only for the gap speak()'s onStart didn't manage to hide
 
@@ -66,6 +67,9 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
 
     const center = { x: target.x + NODE_W / 2 + 70, y: target.y + NODE_H / 2 };
     setCenter(center.x, center.y, { zoom: 1, duration: travelMs });
+    // A quick "searching" ping at the destination while the camera is still en route, so the guide
+    // reads as looking ahead rather than just snapping between stops.
+    setScanTarget(travelMs > 0 ? { x: center.x, y: center.y } : null);
 
     const prevId = index > 0 ? tour.stops[index - 1].node_id : null;
     const from = prevId ? positions.get(prevId) : null;
@@ -90,6 +94,7 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
       if (cancelled) return;
       setMoving(false);
       setArrived(index);
+      setScanTarget(null);
     }, travelMs + 60);
 
     return () => {
@@ -282,6 +287,7 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
             proOptions={{ hideAttribution: true }}
           >
             <ViewportPortal>
+              {scanTarget && <div className="tour-scan-ring" style={{ left: scanTarget.x, top: scanTarget.y }} />}
               {dot && <div className="tour-dot" style={{ left: dot.x, top: dot.y }} />}
               {pos && (
                 <div className="tour-guide" style={{ left: pos.x + NODE_W - 30, top: pos.y - 40, transition: reduced ? "none" : "left 0.6s ease, top 0.6s ease" }}>
