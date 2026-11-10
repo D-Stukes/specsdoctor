@@ -26,6 +26,7 @@ import {
 } from "../stages/architect-deterministic.js";
 import { renderPage } from "../renderer/render-page.js";
 import { verifyPage, scanRenderedPageForUnknownMentions } from "../stages/verifier.js";
+import { checkClaims } from "../stages/claim-check.js";
 import { savePageRevision } from "../db/pages.js";
 import { saveClaimChecks, saveFindings } from "../db/verification.js";
 import { initStages, startStage, finishStage, recordEvent } from "./stage-tracking.js";
@@ -190,7 +191,7 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
   let pagesWithFailedClaims = 0;
 
   for (const page of architectPages) {
-    const result = await saveAndVerifyPage({ runId, page, index, contentByPath, repo, ownerStage: page.slug === "overview" ? "architect" : "renderer" });
+    const result = await saveAndVerifyPage({ runId, page, index, contentByPath, repo, ownerStage: page.slug === "overview" ? "architect" : "renderer", budgetManager, aiStub });
     totalFindings += result.findings.length;
     if (result.hasFailedClaim) pagesWithFailedClaims += 1;
   }
@@ -200,7 +201,7 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
       const page = summary
         ? await writeReferencePage({ runId, modulePath: mod.path, items: mod.items, summary, budgetManager, stub: aiStub })
         : deterministicOnlyPage(mod);
-      const result = await saveAndVerifyPage({ runId, page, index, contentByPath, repo });
+      const result = await saveAndVerifyPage({ runId, page, index, contentByPath, repo, budgetManager, aiStub });
       totalFindings += result.findings.length;
       if (result.hasFailedClaim) pagesWithFailedClaims += 1;
       modulePagesSaved += 1;
@@ -234,12 +235,13 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
  * pipeline goes through the same render -> save -> verify sequence, so this
  * is the single definition of what "a saved page" means here (T13/T17).
  */
-async function saveAndVerifyPage({ runId, page, index, contentByPath, repo, ownerStage }) {
+async function saveAndVerifyPage({ runId, page, index, contentByPath, repo, ownerStage, budgetManager, aiStub }) {
   const { markdown, warnings } = renderPage(page, index, repo);
   const { pageId, rev } = await savePageRevision({ runId, page, markdown, ownerStage });
 
   const unknownMentions = scanRenderedPageForUnknownMentions(markdown, index);
   const { verifyResult, findings } = verifyPage({ page, rev, index, contentByPath, renderWarnings: warnings, unknownMentions });
+  verifyResult.claims = await checkClaims({ runId, page, claimChecks: verifyResult.claims, contentByPath, budgetManager, stub: aiStub });
 
   await saveClaimChecks({ pageId, rev, verifyResult });
   await saveFindings({ runId, pageId, findings });

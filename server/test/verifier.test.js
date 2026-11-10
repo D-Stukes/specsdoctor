@@ -111,7 +111,7 @@ test("claim_ids are assigned in document order, Orchestrator-side, not trusted f
   assert.deepEqual(verifyResult.claims.map((c) => c.claim_id), ["clm:multi:1", "clm:multi:2"]);
 });
 
-test("every ai.assessment is not_assessed - the AI claim check (Task 7) isn't built", () => {
+test("verifyPage() alone always sets not_assessed - the AI claim check is a separate stage (claim-check.js) layered on top, see claim-check.test.js", () => {
   const page = pageWithClaim({ text: "x", kind: "behavior", symbols: [], evidence: [{ path: "a.js", start_line: 1, end_line: 1 }] });
   const { verifyResult } = verifyPage({ page, rev: 1, index, contentByPath, renderWarnings: [] });
   assert.equal(verifyResult.claims[0].ai.assessment, "not_assessed");
