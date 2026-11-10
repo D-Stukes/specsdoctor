@@ -1,9 +1,12 @@
 import crypto from "node:crypto";
 
 // T13 Structural Verifier (Technical Design §4c "Verifier rules" 1-3).
-// Rule 4 (AI claim check) is Task 7, a gated Should add-on - not built here;
-// every claim's ai.assessment is "not_assessed". Rule 5 (repair loop) is
-// T16, also not built yet - findings are reported, nothing is retried.
+// Rule 4 (AI claim check) is Task 7 / T19 - built as a separate stage,
+// server/src/stages/claim-check.js, which overwrites the "not_assessed"
+// this module sets on every claim by default (claims never checked by it -
+// e.g. pages with no claim blocks at all - correctly keep "not_assessed").
+// Rule 5 (repair loop) is T16, not built yet - findings are reported,
+// nothing is retried.
 //
 // "Rendered signatures equal index signatures" (rule 1's third clause)
 // isn't a separate runtime check here: the renderer (render-page.js) always
@@ -50,7 +53,7 @@ function checkClaimEvidence(claim, itemsById, contentByPath) {
   return [...failures];
 }
 
-function collectClaims(page) {
+export function collectClaims(page) {
   const claims = [];
   let n = 1;
   for (const section of page.sections) {
