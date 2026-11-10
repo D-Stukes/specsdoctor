@@ -4,6 +4,23 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-10 — Merged backlog idea 5 + Tasks 7/8/9/12, fixed local sign-in, fixed voice auto-send
+
+**Merged all 5 remaining stacked PRs into `main`, in order:** [#37](https://github.com/D-Stukes/specsdoctor/pull/37) (idea 5, public share link) → [#38](https://github.com/D-Stukes/specsdoctor/pull/38) (Task 9, frontend page) → [#39](https://github.com/D-Stukes/specsdoctor/pull/39) (Task 12, user guides) → [#40](https://github.com/D-Stukes/specsdoctor/pull/40) (Task 7, AI claim check) → [#41](https://github.com/D-Stukes/specsdoctor/pull/41) (Task 8, Python support). Zero PRs open afterward. This closes out the entire backlog from PRD §5/§6 - Core Tasks 1-6 plus add-ons 7, 8, 9, 10, 11, 12, and all five brainstormed wow-factor ideas.
+
+**Found and fixed the local dev sign-in bug:** the access code appeared to ignore whatever was set in `server/.env`, no matter what. Root cause - `.claude/launch.json`'s preview config sets `ACCESS_CODE=local-test` via `env ... npm start` *before* Node loads `.env`, and Node's `--env-file` flag never overrides a variable already present in the process environment, so `.env`'s value was silently ignored every time. Fixed by setting `ACCESS_CODE` directly in `.claude/launch.json` instead (now `123123123`). Not a product bug - this only affected the local Browser-pane preview's launch config, not `.env` handling at runtime in general.
+
+**Fixed voice input auto-sending the question** ([PR #42](https://github.com/D-Stukes/specsdoctor/pull/42)): user feedback was that the mic "takes multiple times" and should instead dictate into the box so they can review before sending, or be removed if that's not feasible. Went with live dictation rather than removal. `voice-input.js` now exposes a separate `onInterim` callback with the growing transcript while the browser's own `SpeechRecognition` is still listening (`continuous`/`interimResults` both `true`); `AskPanel.jsx`'s `toggleMic()` wires both `onInterim` and `onResult` to just `setInput(text)` - it no longer calls `send()` for the user. VoiceStudio's batch record-then-transcribe path architecturally can't offer live interim results (only a final transcript once recording stops), so that asymmetry is documented in code rather than worked around. Verified the interim/final accumulation logic directly against a mocked `SpeechRecognition`, and verified live via the Browser pane that the panel renders correctly; real microphone dictation quality itself still needs a human to try it ("AI answers are off" messages users may see after a voice question are expected `AI_STUB_MODE` behavior in local dev, not a voice bug - unrelated to this fix). 250/251 tests pass (1 skipped, pre-existing, client-only change so server suite is otherwise unaffected).
+
+**Not done / open for next session:**
+1. The user should actually talk into the mic once and confirm both transcription quality and that the new dictate-then-send flow feels right.
+2. Merge [PR #42](https://github.com/D-Stukes/specsdoctor/pull/42) once reviewed.
+3. Fix the two known Explorer bugs (crash on tiny repos; walk rewind on re-render), live on `main` unfixed since the big merge.
+4. Product naming decision ("specsdoctor" vs "DocSync") still unresolved.
+5. The demo recording is the one PRD item with no code deliverable - still not started.
+
+---
+
 ## 2026-11-09 (latest) — Trace-diagram animation + the real voice-fallback fix, all merged
 
 **Animated the request-trace diagram ([PR #31](https://github.com/D-Stukes/specsdoctor/pull/31)):** from the brainstormed "wow factor" animation ideas, built #4 (pulse-on-call) and #3 (data traveling the real edge path) as one feature - a "Play trace" control walks the Architecture/Request-trace diagram in actual call order (BFS over the already-rendered subgraph), pulsing the live node and switching its edge to React Flow's native animated/flowing-dash style while active. Used React Flow's built-in animated-edge support rather than a custom SVG path system - same visual payoff, far less risk. Also added idea #2 (a brief "searching" sweep at the Explorer/Guided Tour's next stop while the camera travels there). All gated under `prefers-reduced-motion`. Separately fixed the Follow the data header (`.flow-head`/`.flow-summary`), which had no background at all and was unreadable against the sky photo - same bug class as the earlier Ask-panel fix, just on the header strip.
