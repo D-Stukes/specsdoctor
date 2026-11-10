@@ -10,10 +10,11 @@ const SPEEDS = [0.75, 1, 1.25, 1.5];
 const prefersReducedMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 const spokenTextFor = (s) => (s.thought ? `${s.thought} ${s.title}. ${s.narration}` : `${s.title}. ${s.narration}`);
 
-function Player({ graph, tour, tours, onSelectTour, onBack }) {
+function Player({ graph, tour, tours, onSelectTour, onBack, autoPlay = false }) {
   const { setCenter } = useReactFlow();
   const reduced = useMemo(prefersReducedMotion, []);
   const voiceSupported = useMemo(speechAvailable, []);
+  const autoStarted = useRef(false);
 
   const [index, setIndex] = useState(0);
   const [arrived, setArrived] = useState(-1);
@@ -63,6 +64,16 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
       cancelled = true;
     };
   }, [sub]);
+
+  // Idea 5's share link: start walking on its own once there's something to show, rather than
+  // waiting for a Play click. Once only, via the ref - positions can legitimately become ready
+  // more than once (e.g. switching tours), and this must not re-trigger each time.
+  useEffect(() => {
+    if (autoPlay && positions && !autoStarted.current) {
+      autoStarted.current = true;
+      setPlaying(true);
+    }
+  }, [autoPlay, positions]);
 
   // Move to the current stop: camera glides (or fades), a glowing dot travels the edge.
   useEffect(() => {
@@ -254,9 +265,11 @@ function Player({ graph, tour, tours, onSelectTour, onBack }) {
   return (
     <div className="tour-shell">
       <div className="map-toolbar">
-        <button className="btn-primary" style={{ width: "auto" }} onClick={onBack}>
-          ← Map
-        </button>
+        {onBack && (
+          <button className="btn-primary" style={{ width: "auto" }} onClick={onBack}>
+            ← Map
+          </button>
+        )}
         {tours.length > 1 && (
           <select className="map-input" value={tour.tour_id} onChange={(e) => onSelectTour(e.target.value)} aria-label="Choose a tour">
             {tours.map((t) => (

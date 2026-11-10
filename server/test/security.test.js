@@ -158,6 +158,8 @@ test("every saved-content route returns 401 without a cookie", async () => {
     ["GET", `/api/runs/${id}/graph`],
     ["GET", `/api/runs/${id}/tours`],
     ["POST", `/api/runs/${id}/ask`],
+    ["POST", `/api/runs/${id}/share`],
+    ["DELETE", `/api/runs/${id}/share`],
   ];
   for (const [method, path] of routes) {
     const res = await fetch(`${baseUrl}${path}`, {
@@ -167,4 +169,13 @@ test("every saved-content route returns 401 without a cookie", async () => {
     });
     assert.equal(res.status, 401, `${method} ${path}`);
   }
+});
+
+// --- idea 5: the one deliberate exception to SEC-8 ---
+
+test("GET /api/public/runs/:token needs no cookie, and an unknown token 404s rather than exposing which part was wrong", async () => {
+  const res = await fetch(`${baseUrl}/api/public/runs/not-a-real-token`);
+  assert.equal(res.status, 404);
+  const body = await res.json();
+  assert.equal(body.error.code, "not_found");
 });

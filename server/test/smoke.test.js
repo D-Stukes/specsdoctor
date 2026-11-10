@@ -290,6 +290,42 @@ test("the tours endpoint returns valid tour/1 documents and the export carries t
   assert.equal(missing.status, 404);
 });
 
+// Idea 5 (LOG.md's "wow factor" brainstorm): the public share link, end to end.
+test("POST /api/runs/:id/share creates a working public link; no cookie needed to read it; DELETE revokes it", async (t) => {
+  if (githubSkip) return t.skip(githubSkip);
+  const { validateDoc } = await import("@docsync/contracts");
+
+  const missing = await postJson(`/api/runs/00000000-0000-0000-0000-000000000000/share`, {}, sessionCookie);
+  assert.equal(missing.status, 404);
+
+  const created = await postJson(`/api/runs/${m3RunId}/share`, {}, sessionCookie);
+  if (created.status === 409) {
+    // This tiny fixture repo can legitimately produce zero saved tours (planTours needs >= 2
+    // stops per tour) - sharing correctly refuses rather than exposing an empty walk.
+    const body = await created.json();
+    return t.skip(`no tours saved for this run (${body.error.code}) - nothing to share`);
+  }
+  assert.equal(created.status, 200);
+  const { share_url } = await created.json();
+  assert.match(share_url, /\/share\/[\w-]+$/);
+  const token = share_url.split("/share/")[1];
+
+  // The public route itself: no cookie header at all, and it must carry a valid graph/1 and
+  // tour/1 set, not a stripped or malformed subset.
+  const publicRes = await fetch(`${baseUrl}/api/public/runs/${token}`);
+  assert.equal(publicRes.status, 200);
+  const shared = await publicRes.json();
+  assert.equal(shared.repo.owner, "jonschlinkert");
+  assert.equal(validateDoc(shared.graph).valid, true);
+  assert.ok(shared.tours.length > 0, "a finished run should have at least one saved tour to share");
+  for (const { status, ...tour } of shared.tours) assert.equal(validateDoc(tour).valid, true, tour.tour_id);
+
+  const revoked = await fetch(`${baseUrl}/api/runs/${m3RunId}/share`, { method: "DELETE", headers: { cookie: sessionCookie } });
+  assert.equal(revoked.status, 204);
+  const afterRevoke = await fetch(`${baseUrl}/api/public/runs/${token}`);
+  assert.equal(afterRevoke.status, 404);
+});
+
 test("POST /api/runs/:id/ask validates input, needs a finished run, and answers (closest matches in stub mode)", async (t) => {
   if (githubSkip) return t.skip(githubSkip);
   const url = `${baseUrl}/api/runs/${m3RunId}/ask`;

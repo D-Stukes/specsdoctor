@@ -8,6 +8,7 @@ import { healthRouter } from "./routes/health.js";
 import { runsRouter } from "./routes/runs.js";
 import { findingsRouter } from "./routes/findings.js";
 import { voiceRouter } from "./routes/voice.js";
+import { publicRouter } from "./routes/public.js";
 import { requireSession } from "./auth.js";
 import { recoverInterruptedRuns, tryStartNext } from "./runner/queue.js";
 import { startRetentionJob } from "./runner/retention.js";
@@ -22,6 +23,11 @@ export function createApp() {
   // No auth required: SS4d.
   app.use("/api", healthRouter);
   app.use("/api", sessionRouter);
+  // Idea 5's public share links - deliberately no session cookie, gated by its own per-run
+  // token instead (see server/src/routes/public.js). Mounted at a distinct prefix, and BEFORE
+  // the requireSession chain below, so those requests never reach it at all - registration
+  // order matters here since /api/public/... also starts with /api.
+  app.use("/api/public", publicRouter);
 
   // Every other /api route needs the session cookie (SEC-8).
   app.use("/api", requireSession, runsRouter);

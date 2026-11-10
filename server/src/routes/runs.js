@@ -369,7 +369,7 @@ runsRouter.get("/runs/:id", async (req, res) => {
   const pool = getPool();
   const { rows } = await pool.query(
     `SELECT r.id, r.status, r.resolved_sha, r.cost_usd, r.budget_cap_usd, r.failure_code, r.failure_detail,
-            r.started_at, r.finished_at, rp.owner, rp.name
+            r.started_at, r.finished_at, r.share_token, rp.owner, rp.name
      FROM runs r JOIN repos rp ON rp.id = r.repo_id
      WHERE r.id = $1`,
     [req.params.id]
@@ -407,7 +407,39 @@ runsRouter.get("/runs/:id", async (req, res) => {
     // M4 "time ... measured": wall-clock duration once the run has a start
     // and an end. null while still running/queued, or if it never started.
     duration_ms: run.started_at && run.finished_at ? new Date(run.finished_at).getTime() - new Date(run.started_at).getTime() : null,
+    share_url: run.share_token ? shareUrlFor(req, run.share_token) : null,
   });
+});
+
+function shareUrlFor(req, token) {
+  return `${req.protocol}://${req.get("host")}/share/${token}`;
+}
+
+// POST /api/runs/:id/share - idea 5: turn on a public, unauthenticated link for this run's
+// already-saved tour(s). Generates a fresh per-run token (never the shared ACCESS_CODE) so this
+// one run's link can never expose any other run; see server/src/routes/public.js for the route it
+// unlocks.
+runsRouter.post("/runs/:id/share", async (req, res) => {
+  const pool = getPool();
+  const { rows } = await pool.query(`SELECT status FROM runs WHERE id = $1`, [req.params.id]);
+  if (rows.length === 0) return res.status(404).json({ error: { code: "run_not_found", message: "No such run" } });
+  if (rows[0].status !== "complete" && rows[0].status !== "complete_with_errors") {
+    return res.status(409).json({ error: { code: "run_not_ready", message: `Run is ${rows[0].status}; sharing needs a finished run` } });
+  }
+  const tours = await loadTours(req.params.id);
+  if (tours.length === 0) {
+    return res.status(409).json({ error: { code: "no_tours", message: "This run has no saved tour yet to share." } });
+  }
+  const token = crypto.randomBytes(24).toString("base64url");
+  await pool.query(`UPDATE runs SET share_token = $2 WHERE id = $1`, [req.params.id, token]);
+  res.json({ share_url: shareUrlFor(req, token) });
+});
+
+// DELETE /api/runs/:id/share - revoke: the same URL 404s on the public route from then on.
+runsRouter.delete("/runs/:id/share", async (req, res) => {
+  const { rowCount } = await getPool().query(`UPDATE runs SET share_token = NULL WHERE id = $1`, [req.params.id]);
+  if (rowCount === 0) return res.status(404).json({ error: { code: "run_not_found", message: "No such run" } });
+  res.status(204).end();
 });
 
 // GET /api/runs?limit=20&before=<ts> - saved docs sets and recent runs.

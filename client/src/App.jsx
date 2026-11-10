@@ -1,9 +1,12 @@
 import MapView from "./MapView.jsx";
 import FindingsList from "./Findings.jsx";
+import SharedRunView from "./SharedRunView.jsx";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import "./theme.css";
+
+const SHARE_PATH = /^\/share\/([\w-]+)$/;
 
 async function api(path, options) {
   const res = await fetch(`/api${path}`, {
@@ -403,6 +406,73 @@ function BuildStatus({ run }) {
   );
 }
 
+// Idea 5 (LOG.md's "wow factor" brainstorm): turn the public share link on or off for this run.
+// `shareUrl` comes from the same GET /runs/:id poll RunProgress already does - no extra fetch.
+function ShareControl({ runId, shareUrl }) {
+  const [url, setUrl] = useState(shareUrl);
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => setUrl(shareUrl), [shareUrl]);
+
+  async function enable() {
+    setBusy(true);
+    setError(null);
+    try {
+      const { share_url } = await api(`/runs/${runId}/share`, { method: "POST" });
+      setUrl(share_url);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function disable() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/runs/${runId}/share`, { method: "DELETE" });
+      setUrl(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard access denied or unavailable - the URL is still shown as selectable text
+    }
+  }
+
+  if (!url) {
+    return (
+      <button type="button" className="btn-primary" style={{ width: "auto" }} onClick={enable} disabled={busy}>
+        {busy ? "Creating link…" : "Share this run"}
+      </button>
+    );
+  }
+  return (
+    <div className="share-control">
+      <input className="map-input" type="text" readOnly value={url} onFocus={(e) => e.target.select()} aria-label="Public share link" />
+      <button type="button" className="btn-primary" style={{ width: "auto" }} onClick={copy}>
+        {copied ? "Copied" : "Copy"}
+      </button>
+      <button type="button" className="btn-primary" style={{ width: "auto", background: "var(--surface-raised)", color: "var(--text)" }} onClick={disable} disabled={busy}>
+        Stop sharing
+      </button>
+      {error && <span className="map-note map-note-error">{error}</span>}
+    </div>
+  );
+}
+
 function RunProgress({ runId, onBackToList }) {
   const [run, setRun] = useState(null);
   const [pages, setPages] = useState([]);
@@ -577,6 +647,7 @@ function RunProgress({ runId, onBackToList }) {
                     </a>
                   )}
                 </div>
+                <ShareControl runId={run.run_id} shareUrl={run.share_url} />
               </div>
             )}
 
@@ -624,6 +695,11 @@ function RunProgress({ runId, onBackToList }) {
 }
 
 export default function App() {
+  // Idea 5's public share link bypasses sign-in entirely - checked before any of the normal
+  // access-code flow's hooks run, since a visitor here was never meant to need a session.
+  const shareMatch = typeof window !== "undefined" ? window.location.pathname.match(SHARE_PATH) : null;
+  if (shareMatch) return <SharedRunView token={shareMatch[1]} />;
+
   const [signedIn, setSignedIn] = useState(false);
   const [checking, setChecking] = useState(true);
   const [runId, setRunId] = useState(null);
