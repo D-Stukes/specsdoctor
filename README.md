@@ -1,4 +1,4 @@
-# DocSync
+# SpecsDoctor
 
 See [CLAUDE.md](CLAUDE.md) and [docs/](docs/) for what this is and why. This
 file is just how to run it.
