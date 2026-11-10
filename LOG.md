@@ -1,4 +1,4 @@
-# DocSync — Project Log
+# SpecsDoctor — Project Log
 
 Newest entries first. Add an entry after every working session: date, what was done, decisions, what's next.
 
@@ -12,12 +12,14 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 **Fixed voice input auto-sending the question** ([PR #42](https://github.com/D-Stukes/specsdoctor/pull/42)): user feedback was that the mic "takes multiple times" and should instead dictate into the box so they can review before sending, or be removed if that's not feasible. Went with live dictation rather than removal. `voice-input.js` now exposes a separate `onInterim` callback with the growing transcript while the browser's own `SpeechRecognition` is still listening (`continuous`/`interimResults` both `true`); `AskPanel.jsx`'s `toggleMic()` wires both `onInterim` and `onResult` to just `setInput(text)` - it no longer calls `send()` for the user. VoiceStudio's batch record-then-transcribe path architecturally can't offer live interim results (only a final transcript once recording stops), so that asymmetry is documented in code rather than worked around. Verified the interim/final accumulation logic directly against a mocked `SpeechRecognition`, and verified live via the Browser pane that the panel renders correctly; real microphone dictation quality itself still needs a human to try it ("AI answers are off" messages users may see after a voice question are expected `AI_STUB_MODE` behavior in local dev, not a voice bug - unrelated to this fix). 250/251 tests pass (1 skipped, pre-existing, client-only change so server suite is otherwise unaffected).
 
+**Mic confirmed working live** on a reload (the first "not working" report was a stale tab running pre-fix JS, not a code bug): [PR #42](https://github.com/D-Stukes/specsdoctor/pull/42) merged, zero PRs open.
+
+**Naming decided: SpecsDoctor.** The app, PRD and page title already said SpecsDoctor consistently - "DocSync" was only the working name during early development (see this file's own older entries) and this log's own title. Renamed this file's title accordingly; no code or doc changes needed since nothing user-facing still said DocSync.
+
+**Re-checked the two "known Explorer bugs" this log kept listing as open** (tiny-repo crash, walk rewind on re-render) - both were already fixed on `main` by commit `5b2f02d`, well before today; this file's "not done" list just kept carrying the stale line forward across sessions without anyone catching it. Confirmed by reading the current code: `server/src/chat/explorer.js`'s `requireStops()` throws a `422 explorer_no_tour` instead of ever returning a zero-stop document, and `client/src/ExplorerPlayer.jsx`'s `asTour(explorer)` is memoized on `[explorer]` so an unrelated re-render no longer rebuilds it. 250/251 tests still pass.
+
 **Not done / open for next session:**
-1. The user should actually talk into the mic once and confirm both transcription quality and that the new dictate-then-send flow feels right.
-2. Merge [PR #42](https://github.com/D-Stukes/specsdoctor/pull/42) once reviewed.
-3. Fix the two known Explorer bugs (crash on tiny repos; walk rewind on re-render), live on `main` unfixed since the big merge.
-4. Product naming decision ("specsdoctor" vs "DocSync") still unresolved.
-5. The demo recording is the one PRD item with no code deliverable - still not started.
+1. Demo recording - scheduled for 2026-11-11. The one PRD deliverable with no code, still not started.
 
 ---
 
