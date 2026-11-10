@@ -5,6 +5,7 @@ import { extractGraphFacts, sqlOperations } from "./extract-graph-facts.js";
 import { extractFlowFacts } from "./extract-flow-facts.js";
 import { extractRoutes } from "./extract-routes.js";
 import { extractReactRoutes } from "./extract-react-routes.js";
+import { extractUiStrings } from "./extract-ui-strings.js";
 import { parseSqlTables, parsePrismaTables } from "./extract-schemas.js";
 import { resolveModuleSpecifier, looksLikeNonModuleAsset, isAliasedSpecifier } from "./resolve-module.js";
 import { buildRouteGraph } from "./route-graph.js";
@@ -37,6 +38,7 @@ export function scan(snapshot, contentByPath) {
   const envExampleNames = new Set();
   const routesByFile = new Map();
   const reactRoutes = []; // Task 9 / T21: react-router routes, across every file
+  const uiStrings = []; // Task 12 / T33: headings, buttons, labels, placeholders, across every file
   const perFileItemsByName = new Map(); // path -> Map(localName -> item draft)
   const perFileRequireBindings = new Map(); // path -> Map(localName -> spec)
   const rawGraphFacts = new Map(); // path -> { sqlStrings, httpCalls }
@@ -97,6 +99,14 @@ export function scan(snapshot, contentByPath) {
         element_component: r.element_component,
         source: { path: file.path, start_line: r.start_line, end_line: r.end_line },
         via: r.via,
+      });
+    }
+    for (const u of extractUiStrings(ast)) {
+      uiStrings.push({
+        id: `ui:${file.path}:${u.start_line}`,
+        kind: u.kind,
+        text: u.text,
+        source: { path: file.path, start_line: u.start_line, end_line: u.end_line },
       });
     }
     rawGraphFacts.set(file.path, extractGraphFacts(ast));
@@ -260,7 +270,7 @@ export function scan(snapshot, contentByPath) {
     schema_version: "index/1",
     parser_version: PARSER_VERSION,
     items: allItems,
-    project: { workspaces, env_vars: envVars, tables, routes: reactRoutes },
+    project: { workspaces, env_vars: envVars, tables, routes: reactRoutes, ui_strings: uiStrings },
     imports: importsEdges,
     unresolved_imports: unresolvedImports,
     graph_facts: { queries_table: queriesTable, calls_endpoint: callsEndpoint, calls: [...callEdges.values()], inputs: inputFacts, outputs: outputFacts },

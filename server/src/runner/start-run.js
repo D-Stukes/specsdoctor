@@ -21,7 +21,7 @@ const DEFAULT_BUDGET_CAP_USD = Number(process.env.RUN_BUDGET_CAP_USD) || 1.5; //
  * Throws QueueFullError or RateLimitedError if §4a's limits are hit; the
  * caller maps those to 503 / 429 (§4d).
  */
-export async function startRun({ owner, name, ref }) {
+export async function startRun({ owner, name, ref, writeFor = "developers" }) {
   const pool = getPool();
   const { rows: repoRows } = await pool.query(
     `INSERT INTO repos (owner, name) VALUES ($1, $2)
@@ -56,10 +56,10 @@ export async function startRun({ owner, name, ref }) {
 
   const config = { stub: false, models: MODELS, prompt_version: "v1", schema_version: "index/1", parser_version: "js-0.1.0", limits };
   const { rows } = await pool.query(
-    `INSERT INTO runs (repo_id, requested_ref, status, config, budget_cap_usd)
-     VALUES ($1, $2, 'queued', $3, $4)
+    `INSERT INTO runs (repo_id, requested_ref, status, config, budget_cap_usd, write_for)
+     VALUES ($1, $2, 'queued', $3, $4, $5)
      RETURNING id`,
-    [repoId, ref, config, DEFAULT_BUDGET_CAP_USD]
+    [repoId, ref, config, DEFAULT_BUDGET_CAP_USD, writeFor]
   );
   return { runId: rows[0].id, duplicateOf: null };
 }

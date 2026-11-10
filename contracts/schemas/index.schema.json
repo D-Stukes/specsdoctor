@@ -15,7 +15,7 @@
     },
     "project": {
       "type": "object",
-      "required": ["workspaces", "env_vars", "tables", "routes"],
+      "required": ["workspaces", "env_vars", "tables", "routes", "ui_strings"],
       "additionalProperties": false,
       "properties": {
         "routes": {
@@ -30,6 +30,20 @@
               "element_component": { "type": ["string", "null"] },
               "source": { "$ref": "#/$defs/sourceRange" },
               "via": { "enum": ["createBrowserRouter", "<Route path element>"] }
+            }
+          }
+        },
+        "ui_strings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "kind", "text", "source"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "pattern": "^ui:" },
+              "kind": { "enum": ["button", "heading", "placeholder", "aria_label"] },
+              "text": { "type": "string", "minLength": 1 },
+              "source": { "$ref": "#/$defs/sourceRange" }
             }
           }
         },

@@ -77,15 +77,19 @@ function AccessCodeForm({ onSignedIn }) {
   );
 }
 
+// Task 12 (T35): plain-language user guides for the app's own end users, alongside the always-on
+// developer docs. "everyday"/"both" only cost extra when actually picked (see pipeline.js) - the
+// default stays "developers", today's only behavior, for anyone who doesn't touch this control.
 const WRITE_FOR_OPTIONS = [
-  { id: "developers", label: "Developers", enabled: true },
-  { id: "everyday", label: "Everyday users", enabled: false },
-  { id: "both", label: "Both", enabled: false },
+  { id: "developers", label: "Developers" },
+  { id: "everyday", label: "Everyday users" },
+  { id: "both", label: "Both" },
 ];
 
 function RepoForm({ onRunStarted, onOpenRun }) {
   const [repoUrl, setRepoUrl] = useState("");
   const [ref, setRef] = useState("");
+  const [writeFor, setWriteFor] = useState("developers");
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -94,7 +98,7 @@ function RepoForm({ onRunStarted, onOpenRun }) {
     setSubmitting(true);
     setError(null);
     try {
-      const result = await api("/runs", { method: "POST", body: JSON.stringify({ repo_url: repoUrl, ref: ref || null, intake: null }) });
+      const result = await api("/runs", { method: "POST", body: JSON.stringify({ repo_url: repoUrl, ref: ref || null, write_for: writeFor, intake: null }) });
       onRunStarted(result.run_id);
     } catch (err) {
       setError(err.message);
@@ -135,15 +139,8 @@ function RepoForm({ onRunStarted, onOpenRun }) {
 
           <div className="write-for" role="group" aria-label="Write for">
             {WRITE_FOR_OPTIONS.map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                aria-pressed={opt.id === "developers"}
-                disabled={!opt.enabled}
-                title={opt.enabled ? undefined : "Coming soon"}
-              >
+              <button key={opt.id} type="button" aria-pressed={opt.id === writeFor} onClick={() => setWriteFor(opt.id)}>
                 {opt.label}
-                {!opt.enabled && " · soon"}
               </button>
             ))}
           </div>

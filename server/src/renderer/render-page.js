@@ -46,6 +46,8 @@ function renderBlock(block, ctx) {
       return renderEndpointRef(block.endpoint_id, ctx);
     case "route_ref":
       return renderRouteRef(block.route_id, ctx);
+    case "evidence_link":
+      return renderEvidenceLink(block, ctx);
     case "env_ref":
       return renderEnvRef(block.env_id, ctx);
     case "table_ref":
@@ -104,6 +106,11 @@ function renderRouteRef(routeId, ctx) {
   const out = [`#### \`${route.path}\``, "", `[${route.source.path}:${route.source.start_line}](${link})`];
   out.push("", route.element_component ? `Renders: \`${route.element_component}\`` : "_Renders a computed element - not a plain JSX tag._");
   return out;
+}
+
+function renderEvidenceLink(block, ctx) {
+  const link = buildSourceLink(ctx.repo, block.path, block.start_line, block.end_line);
+  return [`[See the code for this step](${link})`];
 }
 
 function renderEnvRef(envId, ctx) {
