@@ -6,6 +6,8 @@ import { makePlainLanguage, overlayPlainLanguage } from "../stages/plain-languag
 import { applyGroups } from "../graph/groups.js";
 import { makeTours } from "../stages/tour-agent.js";
 import { saveTours } from "../db/tours.js";
+import { buildUserGuidePages } from "../stages/user-guide-deterministic.js";
+import { polishUserGuidePages } from "../stages/user-guide-writer.js";
 import { getPool } from "../db/pool.js";
 import { fetchRepo } from "../reader/fetch-repo.js";
 import { scan } from "../scanner/index.js";
@@ -46,8 +48,9 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
   const pool = getPool();
   await initStages(runId, STAGES);
 
-  const { rows } = await pool.query(`SELECT budget_cap_usd FROM runs WHERE id = $1`, [runId]);
+  const { rows } = await pool.query(`SELECT budget_cap_usd, write_for FROM runs WHERE id = $1`, [runId]);
   const budgetManager = new BudgetManager(Number(rows[0].budget_cap_usd));
+  const writeFor = rows[0].write_for;
 
   let snapshot, contentByPath, resolvedSha;
   try {
@@ -162,6 +165,19 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
     await saveTours(runId, tours, findings);
   } catch (err) {
     await recordEvent(runId, "architect", "warn", "tours_failed", { message: err.message });
+  }
+
+  // Task 12 (T33-T35): plain-language user guides, only when actually asked for - skips the
+  // extra pages and cost entirely for the "developers" default, same budget-consciousness as
+  // every other optional stage here.
+  if (writeFor === "everyday" || writeFor === "both") {
+    try {
+      const deterministicGuides = buildUserGuidePages(groupedGraph, index);
+      const guides = await polishUserGuidePages({ runId, pages: deterministicGuides, budgetManager, stub: aiStub });
+      architectPages.push(...guides);
+    } catch (err) {
+      await recordEvent(runId, "architect", "warn", "user_guides_failed", { message: err.message });
+    }
   }
 
   await startStage(runId, "writer", modules.length);

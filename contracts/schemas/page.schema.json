@@ -27,6 +27,7 @@
                 { "$ref": "#/$defs/symbolRefBlock" },
                 { "$ref": "#/$defs/endpointRefBlock" },
                 { "$ref": "#/$defs/routeRefBlock" },
+                { "$ref": "#/$defs/evidenceLinkBlock" },
                 { "$ref": "#/$defs/envRefBlock" },
                 { "$ref": "#/$defs/tableRefBlock" },
                 { "$ref": "#/$defs/codeBlock" },
@@ -103,6 +104,18 @@
       "properties": {
         "type": { "const": "route_ref" },
         "route_id": { "type": "string", "pattern": "^route:" }
+      }
+    },
+    "evidenceLinkBlock": {
+      "description": "A minimal, source-only evidence link - no signature, params or other developer-reference detail. For a page written for a non-technical audience (Task 12's user guides), where symbol_ref/endpoint_ref/table_ref's full developer rendering (param tables, 'Middleware:'/'Handler:' labels) would reintroduce exactly the jargon the page exists to avoid.",
+      "type": "object",
+      "required": ["type", "path", "start_line", "end_line"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "evidence_link" },
+        "path": { "type": "string" },
+        "start_line": { "type": "integer", "minimum": 1 },
+        "end_line": { "type": "integer", "minimum": 1 }
       }
     },
     "envRefBlock": {

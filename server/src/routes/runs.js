@@ -28,17 +28,22 @@ export const runsRouter = express.Router();
 // false with a real ANTHROPIC_API_KEY to call Claude for real. Architect's
 // narrative pages are deterministic-only beyond overview.md; the AI claim
 // check and repair loop (Task 7, T16) aren't built.
+const WRITE_FOR_VALUES = new Set(["developers", "everyday", "both"]);
+
 runsRouter.post("/runs", async (req, res) => {
-  const { repo_url, ref } = req.body ?? {};
+  const { repo_url, ref, write_for } = req.body ?? {};
   const parsed = parseRepoUrl(repo_url);
   if (!parsed) {
     return res.status(400).json({ error: { code: "invalid_url", message: "Expected https://github.com/<owner>/<repo>" } });
+  }
+  if (write_for !== undefined && !WRITE_FOR_VALUES.has(write_for)) {
+    return res.status(400).json({ error: { code: "invalid_write_for", message: "write_for must be developers, everyday or both" } });
   }
 
   const resolvedRef = ref ?? parsed.ref;
   let runId, duplicateOf;
   try {
-    ({ runId, duplicateOf } = await startRun({ owner: parsed.owner, name: parsed.name, ref: resolvedRef }));
+    ({ runId, duplicateOf } = await startRun({ owner: parsed.owner, name: parsed.name, ref: resolvedRef, writeFor: write_for }));
   } catch (err) {
     if (err instanceof RateLimitedError) {
       return res.status(429).json({ error: { code: "rate_limited", message: err.message } });

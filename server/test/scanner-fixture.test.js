@@ -108,6 +108,17 @@ test("T21: component props match the fixture's expected_props exactly", () => {
   }
 });
 
+// Task 12 / T33: UI string extraction (headings, buttons, labels, placeholders) - the fixture
+// has one real button worth asserting on (Nav.jsx's "Sign out"); placeholder/heading extraction
+// is covered by the extractor's own targeted test (extract-ui-strings doesn't have its own
+// fixture content for those kinds yet).
+test("T33: the fixture's one real button is extracted with its exact text and evidence", () => {
+  const signOut = index.project.ui_strings.find((u) => u.text === "Sign out");
+  assert.ok(signOut, "expected to find the Sign out button");
+  assert.equal(signOut.kind, "button");
+  assert.deepEqual(signOut.source, { path: "client/src/components/Nav.jsx", start_line: 11, end_line: 11 });
+});
+
 test("T21: buildFrontendPage renders a valid, source-linked frontend.md from the fixture", () => {
   const page = buildFrontendPage(index);
   assert.ok(page, "expected a frontend page - the fixture has routes and typed/untyped component props");
