@@ -9,14 +9,15 @@ const Recognition = typeof window !== "undefined" ? window.SpeechRecognition || 
 
 export const voiceInputAvailable = () => Boolean(navigator.mediaDevices?.getUserMedia) || Boolean(Recognition);
 
-function listenViaBrowser({ onResult, onEnd, onError }) {
+function listenViaBrowser({ onResult, onInterim, onEnd, onError }) {
   if (!Recognition) {
     onError?.("This browser can't listen for speech. Type your question instead.");
     return () => {};
   }
   const recognizer = new Recognition();
   recognizer.lang = "en-US";
-  recognizer.interimResults = false;
+  recognizer.continuous = true; // keep listening across pauses - push-to-talk means the user decides when to stop, not the first silence
+  recognizer.interimResults = true; // live dictation into the box while speaking, not just a result at the end
   recognizer.maxAlternatives = 1;
   let done = false;
   const finish = () => {
@@ -25,8 +26,17 @@ function listenViaBrowser({ onResult, onEnd, onError }) {
     onEnd?.();
   };
   recognizer.onresult = (e) => {
-    const text = e.results?.[0]?.[0]?.transcript ?? "";
-    if (text.trim()) onResult?.(text.trim());
+    // SpeechRecognition replays every result from the start each time, final or not - rebuild
+    // the whole transcript so far rather than just the latest chunk.
+    let finalText = "";
+    let interimText = "";
+    for (let i = 0; i < e.results.length; i += 1) {
+      const result = e.results[i];
+      if (result.isFinal) finalText += result[0].transcript;
+      else interimText += result[0].transcript;
+    }
+    if (interimText.trim()) onInterim?.((finalText + interimText).trim());
+    if (finalText.trim()) onResult?.(finalText.trim());
   };
   recognizer.onerror = (e) => {
     if (done) return; // a deliberate stop() fires onerror too; onend's `done` guard already covers it
@@ -110,13 +120,17 @@ function listenViaVoiceStudio({ onResult, onEnd, onError }) {
 }
 
 /**
- * Listens for one spoken question. Calls onResult(text) with the final transcript, onEnd() once
- * listening stops for any reason, and onError(message) if it couldn't listen at all or misheard.
- * Returns a function that stops listening early (VoiceStudio: stops recording and transcribes
- * what was said so far; browser: aborts without a result).
+ * Listens for one spoken question - dictation, not auto-submit: the caller decides what to do
+ * with the transcript (typically just filling the text box so the user can review and send it
+ * themselves). Calls onInterim(text) with the growing transcript while the browser's own speech
+ * API is still listening (VoiceStudio has no live partial transcript - it only transcribes once
+ * recording stops, so onInterim never fires on that path), onResult(text) with each finalized
+ * chunk, onEnd() once listening stops for any reason, and onError(message) if it couldn't listen
+ * at all or misheard. Returns a function that stops listening early (VoiceStudio: stops recording
+ * and transcribes what was said so far; browser: stops and finalizes whatever was heard).
  */
-export function listen({ onResult, onEnd, onError }) {
-  if (!navigator.mediaDevices?.getUserMedia) return listenViaBrowser({ onResult, onEnd, onError });
+export function listen({ onResult, onInterim, onEnd, onError }) {
+  if (!navigator.mediaDevices?.getUserMedia) return listenViaBrowser({ onResult, onInterim, onEnd, onError });
 
   let cancelled = false;
   let inner = null;
@@ -125,7 +139,7 @@ export function listen({ onResult, onEnd, onError }) {
       onEnd?.();
       return;
     }
-    inner = available ? listenViaVoiceStudio({ onResult, onEnd, onError }) : listenViaBrowser({ onResult, onEnd, onError });
+    inner = available ? listenViaVoiceStudio({ onResult, onEnd, onError }) : listenViaBrowser({ onResult, onInterim, onEnd, onError });
   });
 
   return () => {

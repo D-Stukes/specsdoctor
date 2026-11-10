@@ -112,11 +112,12 @@ export default function AskPanel({ runId, graph, plain, onClose, onSelectSource,
     setMicError(null);
     cancelSpeech();
     setListening(true);
+    // Dictation, not auto-submit: the box fills in live as the guide listens (interim results,
+    // where the browser's own speech API supports them) or once transcription finishes
+    // (VoiceStudio), and the user reviews and sends it themselves - same as typing.
     stopListenRef.current = listen({
-      onResult: (text) => {
-        setInput(text);
-        send(text);
-      },
+      onInterim: (text) => setInput(text),
+      onResult: (text) => setInput(text),
       onEnd: () => setListening(false),
       onError: (message) => {
         setMicError(message);
