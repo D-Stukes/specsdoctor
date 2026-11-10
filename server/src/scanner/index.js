@@ -9,6 +9,7 @@ import { extractUiStrings } from "./extract-ui-strings.js";
 import { parseSqlTables, parsePrismaTables } from "./extract-schemas.js";
 import { resolveModuleSpecifier, looksLikeNonModuleAsset, isAliasedSpecifier } from "./resolve-module.js";
 import { buildRouteGraph } from "./route-graph.js";
+import { extractPython } from "./python-bridge.js";
 
 const PARSER_VERSION = "js-0.1.0";
 
@@ -18,7 +19,8 @@ function dirnameOf(path) {
 }
 
 /**
- * Runs the full JS/TS Scanner (T06-T08) over a snapshot's scanned files.
+ * Runs the full JS/TS Scanner (T06-T08), plus Python (Task 8 / T20), over a snapshot's scanned
+ * files.
  * `snapshot` is a snapshot/1 document (from the Repo Reader); `contentByPath`
  * maps each scanned file's path to its text. Mutates nothing - returns a
  * fresh { index, updatedFiles } where `updatedFiles` is `snapshot.files`
@@ -77,6 +79,43 @@ export function scan(snapshot, contentByPath) {
     // runs over it, which is harmless and occasionally useful.
     if (/(^|\/)migrations\//.test(file.path)) {
       flaggedPatterns.push({ path: file.path, line: 1, pattern: "knex_migration" });
+    }
+
+    // Python (Task 8 / T20): a separate branch, not the JS/Babel path below - extract_python.py
+    // (invoked via python-bridge.js) does its own ast-based extraction, already shaped close to
+    // the codeItem contract, so there's no shared "draft" step to go through here.
+    if (file.path.endsWith(".py")) {
+      const result = extractPython(content);
+      if (!result) {
+        const idx = updatedFiles.findIndex((f) => f.path === file.path);
+        updatedFiles[idx] = { ...updatedFiles[idx], status: "failed", reason: "parse_error" };
+        continue;
+      }
+      for (const item of result.items) {
+        allItems.push({
+          id: `sym:${file.path}#${item.name}`,
+          kind: item.kind,
+          language: "python",
+          name: item.name,
+          path: file.path,
+          start_line: item.start_line,
+          end_line: item.end_line,
+          exported: item.exported,
+          export_style: item.exported ? "named" : "none",
+          documented: item.documented,
+          signature: `${item.name}(${item.params.map((p) => p.name).join(", ")})`,
+          params: item.params,
+          returns: item.returns,
+          doc: item.doc,
+          wrapped_by: null,
+        });
+      }
+      for (const ref of result.env_refs) {
+        if (!envVarRefs.has(ref.name)) envVarRefs.set(ref.name, []);
+        envVarRefs.get(ref.name).push({ path: file.path, line: ref.line });
+      }
+      flaggedPatterns.push(...result.flagged_patterns.map((f) => ({ ...f, path: file.path })));
+      continue;
     }
 
     // JS/TS/JSX/TSX source.
