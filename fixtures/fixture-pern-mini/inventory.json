@@ -2,7 +2,7 @@
   "_meta": {
     "purpose": "Hand-checked ground truth for fixture-pern-mini, used by AT-1/AT-2/AT-3 to measure Scanner recall once T06/T07/T08 are built. Not a schema_version document — richer than index/1 on purpose, so a reviewer can check reasoning, not just final numbers.",
     "independence_caveat": "Technical Design T02 calls for this inventory to be written by whoever did NOT write the Scanner. It was drafted solo by Claude Code in this session (Dikshyant's pairing session), so the independence requirement is not yet met. Diane should read it against the fixture source before Task 2 starts and flag anything she'd have called differently.",
-    "scope": "Covers the JS/TS Must matrix fully (core Scanner, T06-T08). Python and the React-specific route/props extraction are separate 'gated' sections below, since both are Should add-ons (Task 8, Task 9) not built in the core."
+    "scope": "Covers the JS/TS Must matrix fully (core Scanner, T06-T08) plus Python (Task 8 / T20, now built - its facts are in the main sections below, not a separate 'gated' copy). The React-specific route/props extraction (Task 9 / T21) is still a separate 'gated' section, since that one isn't folded into the main sections the same way - see gated.frontend_route_props."
   },
 
   "files": {
@@ -31,24 +31,23 @@
       { "path": "client/src/components/HabitBadge.tsx" },
       { "path": "client/src/pages/HabitsPage.jsx" },
       { "path": "client/src/pages/SettingsPage.jsx" },
-      { "path": "client/src/api/fetchHabits.js" }
+      { "path": "client/src/api/fetchHabits.js" },
+      { "path": "python/pkg/habits.py", "note": "Task 8 - Python ast-based extraction" },
+      { "path": "python/pkg/plugins.py", "note": "Task 8 - dynamic __all__ case, see flagged_patterns" }
     ],
     "skipped": [
       { "path": "server/types/api.d.ts", "reason": "d_ts" },
       { "path": "server/build/bundle.js", "reason": "build_output" },
       { "path": "server/vendor/minified.js", "reason": "minified" },
       { "path": "server/vendor/huge-data.js", "reason": "file_size_exceeded", "size_bytes": 1050587 },
-      { "path": "server/node_modules/fake-pkg/index.js", "reason": "node_modules" }
+      { "path": "server/node_modules/fake-pkg/index.js", "reason": "node_modules" },
+      { "path": "python/pkg/exploration.ipynb", "reason": "notebook", "note": "Task 8 - notebooks are a deliberate, permanent skip per the support matrix, not a 'not built yet' gap" }
     ],
-    "unsupported": [
-      { "path": "python/pkg/habits.py", "reason": "python_not_shipped", "note": "Core Scanner is JS/TS only until Task 8 ships; see gated.python below for what the Python helper should find." },
-      { "path": "python/pkg/plugins.py", "reason": "python_not_shipped" },
-      { "path": "python/pkg/exploration.ipynb", "reason": "extension_not_supported" }
-    ],
+    "unsupported": [],
     "failed": [
       { "path": "server/broken/parse-error.js", "reason": "parse_error" }
     ],
-    "counts": { "scanned": 25, "skipped": 5, "unsupported": 3, "failed": 1 }
+    "counts": { "scanned": 27, "skipped": 6, "unsupported": 0, "failed": 1 }
   },
 
   "workspaces": [
@@ -74,7 +73,10 @@
     { "id": "env:PORT", "refs": [{ "path": "server/index.js", "line": 31 }], "in_env_example": true },
     { "id": "env:HABITS_PLUGIN", "refs": [{ "path": "server/routes/habits.js", "line": 16 }], "in_env_example": false },
     { "id": "env:API_VERSION", "refs": [{ "path": "server/index.js", "line": 19 }], "in_env_example": false },
-    { "id": "env:NODE_ENV", "refs": [{ "path": "server/legacy/dynamic-exports.js", "line": 21 }], "in_env_example": false }
+    { "id": "env:NODE_ENV", "refs": [{ "path": "server/legacy/dynamic-exports.js", "line": 21 }], "in_env_example": false },
+    { "id": "env:DEFAULT_FREQUENCY", "refs": [{ "path": "python/pkg/habits.py", "line": 7 }], "in_env_example": false, "note": "os.environ['DEFAULT_FREQUENCY'] literal" },
+    { "id": "env:DEBUG", "refs": [{ "path": "python/pkg/habits.py", "line": 8 }], "in_env_example": false, "note": "os.getenv('DEBUG', 'false') literal" },
+    { "id": "env:ENABLE_EXTRAS", "refs": [{ "path": "python/pkg/plugins.py", "line": 5 }], "in_env_example": false, "note": "os.getenv('ENABLE_EXTRAS') literal" }
   ],
 
   "tables": [
@@ -138,7 +140,14 @@
     { "id": "sym:client/src/pages/SettingsPage.jsx#SettingsPage", "kind": "function", "exported": true, "export_style": "default", "documented": false, "start_line": 3, "end_line": 5, "note": "frontend workspace" },
     { "id": "sym:client/src/api/fetchHabits.js#fetchHabits", "kind": "function", "exported": true, "export_style": "named", "documented": false, "start_line": 3, "end_line": 6, "note": "frontend workspace" },
     { "id": "sym:client/src/App.jsx#App", "kind": "function", "exported": true, "export_style": "default", "documented": false, "start_line": 16, "end_line": 26, "note": "frontend workspace" },
-    { "id": "sym:client/src/App.jsx#router", "kind": "constant", "exported": true, "export_style": "named", "documented": false, "start_line": 11, "end_line": 14, "note": "frontend workspace; createBrowserRouter(...) call result - see gated.frontend_route_props for the structured route table the Should feature should build from this" }
+    { "id": "sym:client/src/App.jsx#router", "kind": "constant", "exported": true, "export_style": "named", "documented": false, "start_line": 11, "end_line": 14, "note": "frontend workspace; createBrowserRouter(...) call result - see gated.frontend_route_props for the structured route table the Should feature should build from this" },
+    { "id": "sym:python/pkg/habits.py#Habit", "kind": "class", "language": "python", "exported": true, "export_style": "named", "documented": true, "start_line": 11, "end_line": 20, "doc": "A single tracked habit.", "note": "in __all__" },
+    { "id": "sym:python/pkg/habits.py#Habit.__init__", "kind": "method", "language": "python", "exported": true, "export_style": "named", "documented": false, "start_line": 14, "end_line": 16, "signature": "Habit.__init__(title, frequency)", "params": [{ "name": "title", "type": "str" }, { "name": "frequency", "type": "str" }], "returns": "None" },
+    { "id": "sym:python/pkg/habits.py#Habit.describe", "kind": "method", "language": "python", "exported": true, "export_style": "named", "documented": true, "start_line": 18, "end_line": 20, "doc": "Return a one-line description of this habit.", "returns": "str" },
+    { "id": "sym:python/pkg/habits.py#format_frequency", "kind": "function", "language": "python", "exported": true, "export_style": "named", "documented": true, "start_line": 23, "end_line": 25, "doc": "Capitalize a frequency string for display.", "params": [{ "name": "frequency", "type": "str" }], "returns": "str" },
+    { "id": "sym:python/pkg/plugins.py#core_helper", "kind": "function", "language": "python", "exported": true, "export_style": "named", "documented": true, "start_line": 9, "end_line": 11, "doc": "Always available.", "returns": "str" },
+    { "id": "sym:python/pkg/plugins.py#extra_helper", "kind": "function", "language": "python", "exported": false, "export_style": "none", "documented": true, "start_line": 14, "end_line": 16, "doc": "Only listed in __all__ when ENABLE_EXTRAS is set.", "returns": "str",
+      "note": "Listed in __all__ only when ENABLE_EXTRAS is set (dynamic __all__) - exported status cannot be determined statically, so it's conservatively false; see flagged_patterns dynamic_all" }
   ],
 
   "endpoints": [
@@ -230,7 +239,8 @@
     { "path": "server/legacy/dynamic-exports.js", "line": 22, "pattern": "conditional_export", "note": "one entry per affected branch - see line 24 too" },
     { "path": "server/legacy/dynamic-exports.js", "line": 24, "pattern": "conditional_export" },
     { "path": "server/migrations/001_add_column.js", "line": 1, "pattern": "knex_migration" },
-    { "path": "server/lib/index.mjs", "line": 2, "pattern": "re_export_all", "note": "export * from './format.mjs' - not an error, just a visibility flag since re-exported names aren't individually listed as items here" }
+    { "path": "server/lib/index.mjs", "line": 2, "pattern": "re_export_all", "note": "export * from './format.mjs' - not an error, just a visibility flag since re-exported names aren't individually listed as items here" },
+    { "path": "python/pkg/plugins.py", "line": 6, "pattern": "dynamic_all", "note": "__all__ = [\"core_helper\"] + _extra - not a literal list, can't be resolved statically" }
   ],
 
   "gated": {
@@ -247,30 +257,6 @@
         { "component": "sym:client/src/components/HabitBadge.tsx#HabitBadge", "props": [{ "name": "title", "type": "string" }, { "name": "streak", "type": "number" }], "source": "TS type HabitBadgeProps" }
       ],
       "computed_route_note": "None in this fixture; add one (e.g. a route built from a map/array) if T21's tests want a flagged 'computed_routes' case."
-    },
-    "python": {
-      "needs": "Task 8 (T20) - Python helper via ast.parse, gated behind FR-4b",
-      "note": "Until T20 ships, python/pkg/*.py get page status unsupported (file status unsupported here, not scanned/failed). The items below are what AT-1's Python recall check (EV-6) should find once T20 exists.",
-      "expected_items": [
-        { "id": "py:python/pkg/habits.py#Habit", "kind": "class", "exported": true, "documented": true, "start_line": 11, "end_line": 20, "doc": "A single tracked habit." },
-        { "id": "py:python/pkg/habits.py#Habit.__init__", "kind": "method", "start_line": 14, "end_line": 16 },
-        { "id": "py:python/pkg/habits.py#Habit.describe", "kind": "method", "start_line": 18, "end_line": 20, "documented": true, "doc": "Return a one-line description of this habit.", "returns": "str" },
-        { "id": "py:python/pkg/habits.py#format_frequency", "kind": "function", "exported": true, "documented": true, "start_line": 23, "end_line": 25, "doc": "Capitalize a frequency string for display.", "params": [{ "name": "frequency", "type": "str" }], "returns": "str" },
-        { "id": "py:python/pkg/plugins.py#core_helper", "kind": "function", "exported": true, "documented": true, "start_line": 9, "end_line": 11 },
-        { "id": "py:python/pkg/plugins.py#extra_helper", "kind": "function", "exported": false, "documented": true, "start_line": 14, "end_line": 16,
-          "note": "Listed in __all__ only when ENABLE_EXTRAS is set (dynamic __all__) - exported status cannot be determined statically; see flagged below." }
-      ],
-      "expected_env_vars": [
-        { "id": "env:DEFAULT_FREQUENCY", "refs": [{ "path": "python/pkg/habits.py", "line": 7 }], "note": "os.environ['DEFAULT_FREQUENCY'] literal" },
-        { "id": "env:DEBUG", "refs": [{ "path": "python/pkg/habits.py", "line": 8 }], "note": "os.getenv('DEBUG', 'false') literal" },
-        { "id": "env:ENABLE_EXTRAS", "refs": [{ "path": "python/pkg/plugins.py", "line": 5 }], "note": "os.getenv('ENABLE_EXTRAS') literal" }
-      ],
-      "expected_flagged_patterns": [
-        { "path": "python/pkg/plugins.py", "line": 6, "pattern": "dynamic_all" }
-      ],
-      "expected_skipped": [
-        { "path": "python/pkg/exploration.ipynb", "reason": "notebook" }
-      ]
     }
   }
 }

@@ -72,11 +72,13 @@ export function classifyFile(path, size) {
     return { status: "scanned", language: "javascript" };
   }
   if (PYTHON_EXTENSIONS.includes(ext)) {
-    // Python is conditional everywhere until Task 8 ships (§2 "Contradictions resolved").
-    return { status: "unsupported", reason: "python_not_shipped" };
+    return { status: "scanned", language: "python" };
   }
   if (ext === ".ipynb") {
-    return { status: "unsupported", reason: "extension_not_supported" };
+    // A deliberate, permanent skip (§2 support matrix's Python row: "Skipped: Notebooks"),
+    // not a "not built yet" gap - now that Python itself is supported, it gets its own reason
+    // rather than the generic unsupported-extension one.
+    return { status: "skipped", reason: "notebook" };
   }
   if (path.endsWith("package.json")) {
     return { status: "scanned", language: "json" };

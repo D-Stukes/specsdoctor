@@ -26,8 +26,9 @@ test("classifyFile: .env is skipped but .env.example is scanned", () => {
   assert.equal(classifyFile("server/.env.example").status, "scanned");
 });
 
-test("classifyFile: python files are unsupported (gated behind Task 8)", () => {
-  assert.deepEqual(classifyFile("pkg/habits.py"), { status: "unsupported", reason: "python_not_shipped" });
+test("classifyFile: python files are scanned (Task 8); notebooks are a deliberate, permanent skip", () => {
+  assert.deepEqual(classifyFile("pkg/habits.py"), { status: "scanned", language: "python" });
+  assert.deepEqual(classifyFile("pkg/exploration.ipynb"), { status: "skipped", reason: "notebook" });
 });
 
 test("classifyFile: a file over 1MB is skipped", () => {
