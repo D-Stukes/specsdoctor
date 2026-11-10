@@ -34,6 +34,7 @@ const index = {
   project: {
     env_vars: [{ id: "env:DATABASE_URL", refs: [{ path: "server/db/index.js", line: 3 }], in_env_example: true }],
     tables: [{ id: "tbl:users", source: { path: "server/db/schema.sql", start_line: 1, end_line: 6 }, columns: [{ name: "email", type: "text", nullable: false }] }],
+    routes: [],
   },
 };
 
@@ -109,7 +110,7 @@ test("middleware that is an anonymous default export is shown by its file name, 
       { id: "sym:mw/authorize.js#default", kind: "function", name: "default", path: "mw/authorize.js", start_line: 1, end_line: 3, signature: "default()", language: "javascript" },
       { id: "ep:GET /x@r.js:1", kind: "endpoint", method: "GET", path: "/x", resolved: true, declaration: { path: "r.js", start_line: 1, end_line: 2 }, mounts: [], middleware: ["sym:mw/authorize.js#default"], handler: { inline: { path: "r.js", start_line: 1, end_line: 2 } } },
     ],
-    project: { workspaces: [], env_vars: [], tables: [] },
+    project: { workspaces: [], env_vars: [], tables: [], routes: [] },
   };
   const page = { schema_version: "page/1", slug: "api-endpoints", title: "API", sections: [{ heading: "Endpoints", blocks: [{ type: "endpoint_ref", endpoint_id: "ep:GET /x@r.js:1" }] }] };
   const { markdown } = renderPage(page, localIndex, repo);

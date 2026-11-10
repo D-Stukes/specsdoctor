@@ -18,6 +18,7 @@ export function renderPage(page, index, repo) {
   const itemsById = new Map(index.items.map((i) => [i.id, i]));
   const envById = new Map(index.project.env_vars.map((e) => [e.id, e]));
   const tableById = new Map(index.project.tables.map((t) => [t.id, t]));
+  const routeById = new Map(index.project.routes.map((r) => [r.id, r]));
   const warnings = [];
 
   const lines = [`# ${page.title}`, ""];
@@ -25,7 +26,7 @@ export function renderPage(page, index, repo) {
   for (const section of page.sections) {
     lines.push(`## ${section.heading}`, "");
     for (const block of section.blocks) {
-      lines.push(...renderBlock(block, { itemsById, envById, tableById, repo, warnings }));
+      lines.push(...renderBlock(block, { itemsById, envById, tableById, routeById, repo, warnings }));
       lines.push("");
     }
   }
@@ -43,6 +44,8 @@ function renderBlock(block, ctx) {
       return renderSymbolRef(block.symbol_id, ctx);
     case "endpoint_ref":
       return renderEndpointRef(block.endpoint_id, ctx);
+    case "route_ref":
+      return renderRouteRef(block.route_id, ctx);
     case "env_ref":
       return renderEnvRef(block.env_id, ctx);
     case "table_ref":
@@ -88,6 +91,18 @@ function renderEndpointRef(endpointId, ctx) {
   }
   const handlerName = item.handler.symbol_id ? ctx.itemsById.get(item.handler.symbol_id)?.name ?? item.handler.symbol_id : "(inline handler)";
   out.push("", `Handler: \`${handlerName}\``);
+  return out;
+}
+
+function renderRouteRef(routeId, ctx) {
+  const route = ctx.routeById.get(routeId);
+  if (!route) {
+    ctx.warnings.push({ reason: "unknown_symbol", detail: routeId });
+    return [`> _Unknown route: \`${routeId}\`_`];
+  }
+  const link = buildSourceLink(ctx.repo, route.source.path, route.source.start_line, route.source.end_line);
+  const out = [`#### \`${route.path}\``, "", `[${route.source.path}:${route.source.start_line}](${link})`];
+  out.push("", route.element_component ? `Renders: \`${route.element_component}\`` : "_Renders a computed element - not a plain JSX tag._");
   return out;
 }
 

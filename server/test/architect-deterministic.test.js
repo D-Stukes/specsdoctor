@@ -31,6 +31,7 @@ const index = {
       { id: "env:DEBUG", refs: [{ path: "server/index.js", line: 2 }], in_env_example: false },
     ],
     tables: [{ id: "tbl:users", format: "sql", source: { path: "schema.sql", start_line: 1, end_line: 3 }, columns: [{ name: "id", type: "serial", nullable: false }] }],
+    routes: [],
   },
 };
 

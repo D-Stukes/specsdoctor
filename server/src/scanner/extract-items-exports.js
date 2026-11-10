@@ -38,12 +38,45 @@ function buildSignature(name, fnNode) {
   return `${name}(${paramsOf(fnNode).join(", ")})`;
 }
 
-function buildParams(fnNode, jsDoc) {
-  return fnNode.params.map((p) => {
+// Top-level `interface X { ... }` / `type X = { ... }` declarations in this file, name -> (field
+// name -> type string), used only to type a destructured parameter's props (e.g.
+// `({ title, streak }: HabitBadgeProps)`) - not exposed as index items themselves, since the
+// support matrix keeps TS interfaces/types to "name only" everywhere else.
+function collectLocalInterfaces(ast) {
+  const byName = new Map();
+  const fieldsOf = (members) => {
+    const fields = new Map();
+    for (const member of members) {
+      if (member.type === "TSPropertySignature" && member.key?.name) {
+        fields.set(member.key.name, tsTypeToString(member.typeAnnotation));
+      }
+    }
+    return fields;
+  };
+  for (const node of ast.program.body) {
+    if (node.type === "TSInterfaceDeclaration") {
+      byName.set(node.id.name, fieldsOf(node.body.body));
+    } else if (node.type === "TSTypeAliasDeclaration" && node.typeAnnotation?.type === "TSTypeLiteral") {
+      byName.set(node.id.name, fieldsOf(node.typeAnnotation.members));
+    }
+  }
+  return byName;
+}
+
+// A destructured parameter (`{ title, streak }`, with or without a TS type) becomes one params
+// entry per destructured key instead of one bogus "arg" entry - this is what makes a React
+// component's props show up as individual, typed fields (Task 9 / T21).
+function buildParams(fnNode, jsDoc, interfacesByName) {
+  return fnNode.params.flatMap((p) => {
+    if (p.type === "ObjectPattern") {
+      const typeName = tsTypeToString(p.typeAnnotation);
+      const fields = typeName ? interfacesByName?.get(typeName) : null;
+      return p.properties.map((prop) => ({ name: prop.key?.name ?? "...", type: fields?.get(prop.key?.name) ?? null, default: null }));
+    }
     const name = p.type === "AssignmentPattern" && p.left.type === "Identifier" ? p.left.name : p.type === "Identifier" ? p.name : "arg";
     const tsType = tsTypeToString(p.typeAnnotation);
     const jsDocType = jsDoc?.params?.[name] ?? null;
-    return { name, type: tsType ?? jsDocType ?? null, default: p.type === "AssignmentPattern" ? "<expr>" : null };
+    return [{ name, type: tsType ?? jsDocType ?? null, default: p.type === "AssignmentPattern" ? "<expr>" : null }];
   });
 }
 
@@ -59,6 +92,7 @@ export function extractItemsAndExports(ast, { language }) {
   const items = new Map(); // localName -> item draft
   const flaggedPatterns = [];
   const localConstInits = new Map(); // localName -> init AST node, for on-demand constant capture
+  const interfacesByName = collectLocalInterfaces(ast);
 
   function addFlag(line, pattern) {
     flaggedPatterns.push({ line, pattern });
@@ -125,7 +159,7 @@ export function extractItemsAndExports(ast, { language }) {
       start_line: fnNode.loc.start.line,
       end_line: fnNode.loc.end.line,
       signature: buildSignature(name, fnNode),
-      params: buildParams(fnNode, jsDoc),
+      params: buildParams(fnNode, jsDoc, interfacesByName),
       returns: tsTypeToString(fnNode.returnType) ?? jsDoc?.returns ?? null,
       doc: jsDoc?.doc ?? null,
       wrapped_by: wrappedBy ?? null,
@@ -161,7 +195,7 @@ export function extractItemsAndExports(ast, { language }) {
         start_line: member.loc.start.line,
         end_line: member.loc.end.line,
         signature: buildSignature(member.key.name, member),
-        params: buildParams(member, methodJsDoc),
+        params: buildParams(member, methodJsDoc, interfacesByName),
         returns: tsTypeToString(member.returnType) ?? methodJsDoc?.returns ?? null,
         doc: methodJsDoc?.doc ?? null,
         wrapped_by: null,

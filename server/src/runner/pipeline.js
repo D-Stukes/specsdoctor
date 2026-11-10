@@ -20,6 +20,7 @@ import {
   buildApiEndpointsPage,
   buildGettingStartedPage,
   buildConfigurationPage,
+  buildFrontendPage,
 } from "../stages/architect-deterministic.js";
 import { renderPage } from "../renderer/render-page.js";
 import { verifyPage, scanRenderedPageForUnknownMentions } from "../stages/verifier.js";
@@ -112,8 +113,9 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
   // AI, no fallback needed - they *are* the fallback, per §2); overview is
   // the one AI-narrative page in Task 4's scope and has no deterministic
   // substitute, so it's simply absent (not a degraded page) if it fails.
-  // 4 deterministic pages always, +1 (overview) only when there's at least
-  // one module summary to synthesize from - total isn't fixed up front.
+  // 6 deterministic pages always, +frontend (Task 9 / T21) only when the repo actually has
+  // react-router routes or components with props, +overview (AI) only when there's at least one
+  // module summary to synthesize from - total isn't fixed up front.
   await startStage(runId, "architect");
   const architectPages = [
     buildTechStackPage(index),
@@ -122,7 +124,8 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
     buildApiEndpointsPage(index),
     buildGettingStartedPage(index),
     buildConfigurationPage(index),
-  ];
+    buildFrontendPage(index),
+  ].filter(Boolean);
   let architectFailed = 0;
   try {
     const overviewInput = [...summaries.entries()].map(([modulePath, summary]) => ({ module_path: modulePath, summary }));

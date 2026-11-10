@@ -147,3 +147,26 @@ export function buildApiEndpointsPage(index) {
     ],
   };
 }
+
+// A top-level function whose single parameter is a destructured object (`{ title, streak }`,
+// typed or not) reads as a React component receiving props - buildParams() in
+// extract-items-exports.js already flattens that pattern into one params entry per prop.
+function looksLikeComponentWithProps(item) {
+  return item.kind === "function" && /^[A-Z]/.test(item.name) && item.params.length > 0 && (item.signature ?? "").includes("({ ");
+}
+
+// Task 9 / T21 ("Should, gated" - built for real here, not a stub): react-router routes and
+// top-level component props, the one page this scope boundary (C7) allows - no per-component
+// reference pages. Skipped entirely for a backend-only repo: an empty "Frontend" page would be
+// noise, not a finding.
+export function buildFrontendPage(index) {
+  const routes = index.project.routes;
+  const components = index.items.filter(looksLikeComponentWithProps);
+  if (routes.length === 0 && components.length === 0) return null;
+
+  const sections = [];
+  if (routes.length) sections.push({ heading: "Routes", blocks: routes.map((r) => ({ type: "route_ref", route_id: r.id })) });
+  if (components.length) sections.push({ heading: "Components", blocks: components.map((c) => ({ type: "symbol_ref", symbol_id: c.id })) });
+
+  return { schema_version: "page/1", slug: "frontend", title: "Frontend", sections };
+}

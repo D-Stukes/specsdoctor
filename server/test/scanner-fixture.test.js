@@ -8,6 +8,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { validateDoc } from "@docsync/contracts";
 import { scan } from "../src/scanner/index.js";
+import { buildFrontendPage } from "../src/stages/architect-deterministic.js";
+import { renderPage } from "../src/renderer/render-page.js";
 
 import { loadFixtureSnapshot, fixtureRoot } from "./helpers/fixture.js";
 
@@ -78,4 +80,49 @@ test("workspaces report frontend:true only for the client package", () => {
   const server = index.project.workspaces.find((w) => w.dir === "server");
   assert.equal(client.frontend, true);
   assert.equal(server.frontend, false);
+});
+
+// Task 9 / T21: react-router routes and top-level component props, against the hand-written
+// ground truth in inventory.json's gated.frontend_route_props - written for this exact task.
+test("T21: react-router routes match the fixture's expected_routes exactly", () => {
+  const expected = inventory.gated.frontend_route_props.expected_routes
+    .map((r) => `${r.path}|${r.element_component}|${r.source.path}:${r.source.line}|${r.via}`)
+    .sort();
+  const found = index.project.routes
+    .map((r) => `${r.path}|${r.element_component}|${r.source.path}:${r.source.start_line}|${r.via}`)
+    .sort();
+  assert.deepEqual(found, expected);
+});
+
+test("T21: component props match the fixture's expected_props exactly", () => {
+  for (const expected of inventory.gated.frontend_route_props.expected_props) {
+    const item = index.items.find((i) => i.id === expected.component);
+    assert.ok(item, `expected component item ${expected.component} to exist`);
+    const found = [...item.params].sort((a, b) => a.name.localeCompare(b.name));
+    const want = [...expected.props].sort((a, b) => a.name.localeCompare(b.name));
+    assert.deepEqual(
+      found.map((p) => [p.name, p.type]),
+      want.map((p) => [p.name, p.type]),
+      `props for ${expected.component}`
+    );
+  }
+});
+
+test("T21: buildFrontendPage renders a valid, source-linked frontend.md from the fixture", () => {
+  const page = buildFrontendPage(index);
+  assert.ok(page, "expected a frontend page - the fixture has routes and typed/untyped component props");
+  const { valid, errors } = validateDoc(page);
+  assert.equal(valid, true, JSON.stringify(errors));
+
+  const repo = { owner: "AndrewJBateman", name: "fixture-pern-mini", sha: "a".repeat(40) };
+  const { markdown, warnings } = renderPage(page, index, repo);
+  assert.deepEqual(warnings, []);
+  for (const route of inventory.gated.frontend_route_props.expected_routes) {
+    assert.ok(markdown.includes(`\`${route.path}\``), `missing route ${route.path}`);
+    assert.ok(markdown.includes(route.element_component), `missing element component ${route.element_component}`);
+  }
+  for (const prop of ["title", "streak", "userName", "onSignOut"]) {
+    assert.ok(markdown.includes(`\`${prop}\``), `missing prop ${prop}`);
+  }
+  assert.ok(markdown.includes(`blob/${repo.sha}/client/src/App.jsx`), "expected a commit-pinned source link for a route");
 });
