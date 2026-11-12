@@ -60,7 +60,7 @@ export default function AskPanel({ runId, graph, plain, onClose, onSelectSource,
   const [busy, setBusy] = useState(false);
   const voiceSupported = useMemo(speechAvailable, []);
   const micSupported = useMemo(voiceInputAvailable, []);
-  const [voiceOn, setVoiceOn] = useState(voiceSupported);
+  const [voiceOn, setVoiceOn] = useState(false); // Voice starts off (no AI audio by default); the reader can still turn it on
   const [listening, setListening] = useState(false);
   const [micError, setMicError] = useState(null);
   const endRef = useRef(null);
