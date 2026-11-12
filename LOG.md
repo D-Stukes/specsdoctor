@@ -4,6 +4,49 @@ Newest entries first. Add an entry after every working session: date, what was d
 
 ---
 
+## 2026-11-12 — Improved contrast over the photo
+
+- Strengthened the shared surface colors on form, document, map, and tour screens. Added a backing surface to the Follow the data code-details checkbox and map empty messages.
+- Client build passed. Checked the checkbox visually and confirmed it toggles; checked the tour caption surface. The live Amazon Clone run completed and displayed the new overview with an opening summary and feature and architecture lists.
+
+---
+
+## 2026-11-12 — More readable generated overviews
+
+- Updated the overview to lead with the app’s purpose, followed by short lists of user actions and major components. The renderer formats the lists and keeps evidence links. The source fallback also prioritizes likely entry points over backup files.
+- Server suite: 250 passed, one skipped. Restarted the local app and started a live Amazon Clone run to check the new output.
+
+---
+
+## 2026-11-12 — Removed the hourly run cap
+
+- Removed the app-wide hourly generation quota. The queue still controls simultaneous work, and each run retains its AI budget. Updated the queue regression test and project requirements.
+- Server suite: 250 passed, one skipped. The local server was restarted in live mode, and the Access-A-Ride retry passed the prior hourly gate.
+
+---
+
+## 2026-11-12 — Larger repositories
+
+- Removed the fixed 100-module cutoff and raised archive ceilings to 100 MiB compressed, 300 MiB expanded, and 15,000 entries. The reader avoids buffering excluded assets. Existing per-file and AI spending limits remain in effect.
+- Re-ran the previously oversized Pursuit game repository. The reader listed 444 files, the scanner extracted 488 items, and 57 pages rendered. The result was complete with errors because live AI summaries failed. The client build passed, and the server suite had 250 passes and one skip.
+
+---
+
+## 2026-11-12 — Source fallback after scanner errors
+
+- Extended live source drafting to recover from a scanner exception as well as a scan that finds no documentable code. Anthropic authentication failures now have a dedicated message when the run cannot produce usable output.
+- A successful live retry still requires a valid local Anthropic key.
+
+---
+
+## 2026-11-12 — AI source draft fallback (local branch)
+
+- On `codex/source-doc-fallback`, added a bounded source review for runs where the scanner finds no documentable subject. The existing Anthropic client and budget manager handle model calls. The renderer builds commit-pinned links after the fallback checks that line ranges were included in the prompt.
+- Fixed archive stream error propagation so a compressed download exceeding the limit fails the run without an unhandled stream error.
+- Server tests: 250 passed, 1 skipped. Client build passed. The Access-A-Ride live run reached Anthropic, which returned HTTP 401 (invalid API key). A successful live draft still needs a valid local key and a retry.
+
+---
+
 ## 2026-11-10 — Merged backlog idea 5 + Tasks 7/8/9/12, fixed local sign-in, fixed voice auto-send
 
 **Merged all 5 remaining stacked PRs into `main`, in order:** [#37](https://github.com/D-Stukes/specsdoctor/pull/37) (idea 5, public share link) → [#38](https://github.com/D-Stukes/specsdoctor/pull/38) (Task 9, frontend page) → [#39](https://github.com/D-Stukes/specsdoctor/pull/39) (Task 12, user guides) → [#40](https://github.com/D-Stukes/specsdoctor/pull/40) (Task 7, AI claim check) → [#41](https://github.com/D-Stukes/specsdoctor/pull/41) (Task 8, Python support). Zero PRs open afterward. This closes out the entire backlog from PRD §5/§6 - Core Tasks 1-6 plus add-ons 7, 8, 9, 10, 11, 12, and all five brainstormed wow-factor ideas.

@@ -1,6 +1,6 @@
 import { getPool } from "../db/pool.js";
 import { MODELS } from "../ai/models.js";
-import { getLimits, QueueFullError, RateLimitedError } from "./limits.js";
+import { getLimits, QueueFullError } from "./limits.js";
 
 const DEFAULT_BUDGET_CAP_USD = Number(process.env.RUN_BUDGET_CAP_USD) || 1.5; // §4a; env override for evaluation runs
 
@@ -18,7 +18,7 @@ const DEFAULT_BUDGET_CAP_USD = Number(process.env.RUN_BUDGET_CAP_USD) || 1.5; //
  * NULL) but should still be treated as a duplicate (§4d "Duplicate
  * Generate").
  *
- * Throws QueueFullError or RateLimitedError if §4a's limits are hit; the
+ * Throws QueueFullError if §4a's limits are hit; the
  * caller maps those to 503 / 429 (§4d).
  */
 export async function startRun({ owner, name, ref, writeFor = "developers" }) {
@@ -41,14 +41,6 @@ export async function startRun({ owner, name, ref, writeFor = "developers" }) {
   }
 
   const limits = getLimits();
-  const { rows: hourlyRows } = await pool.query(`SELECT count(*)::int AS n FROM runs WHERE created_at > now() - interval '1 hour'`);
-  if (hourlyRows[0].n >= limits.runsPerHour) {
-    throw new RateLimitedError(`Runs-per-hour limit (${limits.runsPerHour}) reached`);
-  }
-
-  // "Queued runs, app-wide: 3 (further requests get 429)" and "Active runs,
-  // app-wide: 1" are separate limits (§4a) - a full active slot doesn't by
-  // itself block new requests from queuing.
   const { rows: queuedRows } = await pool.query(`SELECT count(*)::int AS n FROM runs WHERE status = 'queued'`);
   if (queuedRows[0].n >= limits.queuedRuns) {
     throw new QueueFullError(`Queue is full (${limits.queuedRuns} already queued)`);

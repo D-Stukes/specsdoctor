@@ -1,10 +1,11 @@
+import { pipeline, Transform } from "node:stream";
 import zlib from "node:zlib";
 import * as tarStream from "tar-stream";
-import { classifyFile, isMinified } from "./classify-file.js";
+import { classifyFile, isMinified, MAX_FILE_BYTES } from "./classify-file.js";
 
 // §4a limits.
-export const MAX_EXPANDED_BYTES = 100 * 1024 * 1024; // 100 MB
-export const MAX_ENTRIES = 5000;
+export const MAX_EXPANDED_BYTES = 300 * 1024 * 1024; // 300 MiB
+export const MAX_ENTRIES = 15_000;
 
 /**
  * Streams a gzip'd tarball (as returned by GitHub's codeload) and extracts
@@ -16,12 +17,24 @@ export const MAX_ENTRIES = 5000;
 export async function extractTarball(tarballStream) {
   const extract = tarStream.extract();
   const files = [];
-  const contentByPath = {};
+  const contentByPath = Object.create(null);
+  const fallbackByPath = Object.create(null);
+  let fallbackBytes = 0;
   const limitsHit = new Set();
   let expandedBytes = 0;
   let entryCount = 0;
 
   const gunzip = zlib.createGunzip();
+  const bounded = new Transform({
+    transform(chunk, encoding, callback) {
+      expandedBytes += chunk.length;
+      if (expandedBytes > MAX_EXPANDED_BYTES) {
+        callback(new Error(`Expanded archive exceeds ${MAX_EXPANDED_BYTES / 1024 / 1024} MiB`));
+        return;
+      }
+      callback(null, chunk);
+    },
+  });
 
   return new Promise((resolve, reject) => {
     extract.on("entry", (header, stream, next) => {
@@ -57,26 +70,33 @@ export async function extractTarball(tarballStream) {
         return next();
       }
 
+      const initial = classifyFile(path, header.size);
+      const fallbackCandidate = initial.status === "unsupported" &&
+        /\.(html?|vue|svelte|astro|rb|php|go|rs|java|kt|cs|swift|cpp|c|h|hpp|scala|lua|exs?|clj|dart|sh)$/i.test(path);
+      const retain = initial.status === "scanned" || fallbackCandidate;
       const chunks = [];
       let entryBytes = 0;
       stream.on("data", (chunk) => {
         entryBytes += chunk.length;
-        expandedBytes += chunk.length;
-        if (expandedBytes > MAX_EXPANDED_BYTES) {
-          limitsHit.add("archive_size");
-          stream.resume(); // drain and drop the rest; we already know the limit is hit
-          return;
-        }
-        chunks.push(chunk);
+        if (retain && entryBytes <= MAX_FILE_BYTES) chunks.push(chunk);
       });
       stream.on("end", () => {
-        if (expandedBytes > MAX_EXPANDED_BYTES) {
-          return next();
-        }
-
         const classification = classifyFile(path, entryBytes);
         if (classification.status !== "scanned") {
           files.push({ path, size: entryBytes, status: classification.status, reason: classification.reason });
+          if (classification.status === "unsupported" && fallbackCandidate &&
+              fallbackBytes + entryBytes <= 2 * 1024 * 1024) {
+            const bytes = Buffer.concat(chunks);
+            try {
+              const source = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+              if (!source.includes("\0")) {
+                fallbackByPath[path] = source;
+                fallbackBytes += entryBytes;
+              }
+            } catch {
+              // Ignore files that are not valid UTF-8.
+            }
+          }
           return next();
         }
 
@@ -93,10 +113,9 @@ export async function extractTarball(tarballStream) {
       stream.on("error", next);
     });
 
-    extract.on("finish", () => resolve({ files, contentByPath, limitsHit: [...limitsHit] }));
-    extract.on("error", reject);
-    gunzip.on("error", reject);
-
-    tarballStream.pipe(gunzip).pipe(extract);
+    pipeline(tarballStream, gunzip, bounded, extract, (error) => {
+      if (error) reject(error);
+      else resolve({ files, contentByPath, fallbackByPath, limitsHit: [...limitsHit] });
+    });
   });
 }

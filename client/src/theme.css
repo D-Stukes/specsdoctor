@@ -619,9 +619,9 @@ body:has(.shell-results) {
 .shell,
 .map-shell,
 .tour-shell {
-  --canvas: rgba(255, 255, 255, 0.55);
-  --surface: rgba(255, 255, 255, 0.42);
-  --surface-raised: rgba(255, 255, 255, 0.4);
+  --canvas: #f6fafc;
+  --surface: rgba(255, 255, 255, 0.94);
+  --surface-raised: #f3f8fb;
   --hairline: rgba(255, 255, 255, 0.55);
   --hairline-hover: rgba(255, 255, 255, 0.8);
   --text: #0b2230;
@@ -643,21 +643,11 @@ body:has(.shell-results) {
   backdrop-filter: blur(16px) saturate(150%);
   box-shadow: 0 20px 50px rgba(5, 20, 30, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
-/* On the card screens, --surface-raised only ever sits in front of the blurred sky photo, so 40%
-   opacity reads as glass. On the map/tour canvas it also sits in front of OTHER diagram content
-   (edges, edge labels, other nodes) - at the same 40% those showed through node cards and tangled
-   with the node's own label. Node cards need to actually mask what's behind them, so they get a
-   near-solid fill here instead; the toolbar/drawer/panel (which only ever front the photo) keep
-   the lighter one from the shared block above. */
-.map-shell,
-.tour-shell {
-  --surface-raised: rgba(255, 255, 255, 0.94);
-}
 .shell input,
 .shell textarea,
 .map-shell input,
 .tour-shell input {
-  background: rgba(255, 255, 255, 0.6) !important;
+  background: #fff !important;
   color: var(--text) !important;
 }
 .shell input::placeholder,
@@ -667,16 +657,30 @@ body:has(.shell-results) {
 .map-shell .dot-running,
 .tour-shell .dot-running { box-shadow: 0 0 0 3px rgba(30, 106, 134, 0.22); }
 
-/* The map/tour toolbar, drawer and caption panel get the same frosted-glass
-   treatment .shell .card gets - the diagram canvas itself is left alone
-   (ReactFlow's own dark colorMode owns that area). */
+/* Give controls and status text that sit directly on the photo a readable surface. */
+.flow-code-toggle,
+.map-empty {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  padding: 0.65rem 0.85rem;
+}
+.flow-code-toggle {
+  margin-top: 0.75rem;
+  max-width: 100%;
+}
+
+/* Keep the same finish across the reading surfaces. */
 .map-toolbar,
 .map-drawer,
 .tour-panel,
 .ask,
 .flow-card,
 .flow-head,
-.flow-summary {
+.flow-summary,
+.flow-code-toggle,
+.map-empty {
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   backdrop-filter: blur(16px) saturate(150%);
 }

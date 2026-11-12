@@ -1,8 +1,8 @@
-import { Readable, Transform } from "node:stream";
+import { Readable } from "node:stream";
 import { resolveRef, RepoReaderError } from "./github-api.js";
-import { extractTarball } from "./extract-tarball.js";
+import { extractTarball, MAX_ENTRIES } from "./extract-tarball.js";
 
-const MAX_TARBALL_BYTES = 25 * 1024 * 1024; // §4a
+const MAX_TARBALL_BYTES = 100 * 1024 * 1024; // §4a
 
 /**
  * Full Repo Reader pipeline: resolves { owner, name, ref } to a SHA,
@@ -27,7 +27,11 @@ export async function fetchRepo({ owner, name, ref }) {
   const nodeStream = Readable.fromWeb(res.body);
   const bounded = boundStream(nodeStream, MAX_TARBALL_BYTES);
 
-  const { files, contentByPath, limitsHit } = await extractTarball(bounded);
+  const { files, contentByPath, fallbackByPath, limitsHit } = await extractTarball(bounded);
+
+  if (limitsHit.includes("archive_entries")) {
+    throw new RepoReaderError("too_many_archive_entries", `Archive exceeds ${MAX_ENTRIES} entries`);
+  }
 
   const snapshot = {
     schema_version: "snapshot/1",
@@ -38,22 +42,19 @@ export async function fetchRepo({ owner, name, ref }) {
     limits_hit: limitsHit,
   };
 
-  return { snapshot, contentByPath };
+  return { snapshot, contentByPath, fallbackByPath };
 }
 
 /** Aborts the stream once more than `maxBytes` have come through, even without a Content-Length. */
 function boundStream(source, maxBytes) {
-  let total = 0;
-  const bound = new Transform({
-    transform(chunk, encoding, callback) {
+  return Readable.from((async function* () {
+    let total = 0;
+    for await (const chunk of source) {
       total += chunk.length;
       if (total > maxBytes) {
-        return callback(new RepoReaderError("tarball_too_large", `Tarball exceeded ${maxBytes} bytes`));
+        throw new RepoReaderError("tarball_too_large", `Tarball exceeded ${maxBytes} bytes`);
       }
-      callback(null, chunk);
-    },
-  });
-  source.pipe(bound);
-  source.on("error", (err) => bound.destroy(err));
-  return bound;
+      yield chunk;
+    }
+  })());
 }
