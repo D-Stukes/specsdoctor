@@ -154,7 +154,7 @@ export default function FollowTheData({ graph, plain, endpointId, onEndpoint, se
         )}
       </div>
       {plain && (
-        <label className="map-check" style={{ marginTop: "0.75rem" }}>
+        <label className="map-check flow-code-toggle">
           <input type="checkbox" checked={showTechnical} onChange={(e) => setShowTechnical(e.target.checked)} /> Show the code names and file lines
         </label>
       )}

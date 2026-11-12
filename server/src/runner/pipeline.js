@@ -1,3 +1,4 @@
+import { draftFromSource } from "../stages/source-fallback.js";
 import { forEachConcurrent, AI_CONCURRENCY } from "./concurrency.js";
 import { buildGraph } from "../graph/build-graph.js";
 import { makeGraphGroups } from "../stages/grouper.js";
@@ -32,7 +33,6 @@ import { saveClaimChecks, saveFindings } from "../db/verification.js";
 import { initStages, startStage, finishStage, recordEvent } from "./stage-tracking.js";
 
 const STAGES = ["reader", "scanner", "analyst", "architect", "writer", "verifier", "render"];
-const MODULE_LIMIT = 100; // §4a
 
 /**
  * Task 3's real pipeline: Repo Reader -> Scanner -> (Code Analyst -> Writer
@@ -53,10 +53,10 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
   const budgetManager = new BudgetManager(Number(rows[0].budget_cap_usd));
   const writeFor = rows[0].write_for;
 
-  let snapshot, contentByPath, resolvedSha;
+  let snapshot, contentByPath, fallbackByPath, resolvedSha;
   try {
     await startStage(runId, "reader");
-    ({ snapshot, contentByPath } = await fetchRepo({ owner, name, ref }));
+    ({ snapshot, contentByPath, fallbackByPath } = await fetchRepo({ owner, name, ref }));
     resolvedSha = snapshot.resolved_sha;
     await pool.query(`UPDATE runs SET resolved_sha = $2 WHERE id = $1`, [runId, resolvedSha]);
     await saveFiles(runId, snapshot.files);
@@ -68,21 +68,27 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
     return;
   }
 
-  let index;
+  await startStage(runId, "scanner");
+  let scanned;
+  let scannerFailed = false;
   try {
-    await startStage(runId, "scanner");
-    const scanned = scan(snapshot, contentByPath);
-    index = scanned.index;
-    await saveIndex(runId, index);
-    await finishStage(runId, "scanner", "done", { itemsDone: index.items.length });
+    scanned = scan(snapshot, contentByPath);
   } catch (err) {
+    scannerFailed = true;
     await finishStage(runId, "scanner", "failed", { message: err.message });
     await recordEvent(runId, "scanner", "error", "scanner_failed", { message: err.message });
-    await failRun(runId, "scanner_failed", err.message);
-    return;
+    if (aiStub) {
+      await failRun(runId, "scanner_failed", err.message);
+      return;
+    }
+    // Preserve the fetched inventory but build an empty index for source review.
+    scanned = scan({ ...snapshot, files: [] }, {});
   }
+  const { index } = scanned;
+  await saveIndex(runId, index);
+  if (!scannerFailed) await finishStage(runId, "scanner", "done", { itemsDone: index.items.length });
 
-  const modules = groupItemsByModule(index.items).slice(0, MODULE_LIMIT);
+  const modules = groupItemsByModule(index.items);
   const repo = { owner, name, sha: resolvedSha };
 
   await startStage(runId, "analyst", modules.length);
@@ -130,14 +136,29 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
     buildConfigurationPage(index),
     buildFrontendPage(index),
   ].filter(Boolean);
+  const hasDocumentedSubject = index.items.some((item) => item.kind === "endpoint" || item.documented);
+  let fallbackPage = null;
+  let aiAuthenticationFailed = false;
   let architectFailed = 0;
   try {
     const overviewInput = [...summaries.entries()].map(([modulePath, summary]) => ({ module_path: modulePath, summary }));
-    const overview = await writeOverviewPage({ runId, index, summaries: overviewInput, budgetManager, stub: aiStub });
-    if (overview) architectPages.push(overview);
-    else architectFailed += 1;
+    if (!hasDocumentedSubject && !aiStub) {
+      const sources = { ...fallbackByPath, ...contentByPath };
+      for (const path of Object.keys(sources)) {
+        if (!/\.(html?|vue|svelte|astro|rb|php|go|rs|java|kt|cs|swift|cpp|c|h|hpp|scala|lua|exs?|clj|dart|sh|[cm]?js|jsx|tsx?|py)$/i.test(path)) delete sources[path];
+      }
+      fallbackPage = await draftFromSource({ runId, sources, budgetManager });
+      if (fallbackPage) {
+        architectPages.push(fallbackPage);
+        Object.assign(contentByPath, sources);
+      }
+    }
+    const overview = fallbackPage ?? await writeOverviewPage({ runId, index, summaries: overviewInput, budgetManager, stub: aiStub });
+    if (overview && !fallbackPage) architectPages.push(overview);
+    else if (!overview) architectFailed += 1;
   } catch (err) {
     architectFailed += 1;
+    aiAuthenticationFailed = err.status === 401;
     await recordEvent(runId, "architect", "error", "page_generation_failed", { slug: "overview", message: err.message });
   }
   await finishStage(runId, "architect", architectFailed === 0 ? "done" : "partial", { itemsDone: architectPages.length, itemsFailed: architectFailed });
@@ -216,17 +237,20 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
   await finishStage(runId, "render", "done", { itemsDone: pagesSaved });
   await finishStage(runId, "verifier", pagesWithFailedClaims === 0 ? "done" : "partial", { itemsDone: pagesSaved, itemsFailed: pagesWithFailedClaims, message: `${totalFindings} finding(s)` });
 
-  const hasDocumentedSubject = index.items.some((i) => i.kind === "endpoint" || i.documented);
-  const usable = hasDocumentedSubject && pagesSaved > 0;
+  const usable = (hasDocumentedSubject || fallbackPage !== null) && pagesSaved > 0;
   const status = !usable
     ? "failed"
-    : writerFailed > 0 || analystFailed > 0 || architectFailed > 0 || pagesWithFailedClaims > 0
+    : scannerFailed || writerFailed > 0 || analystFailed > 0 || architectFailed > 0 || pagesWithFailedClaims > 0
       ? "complete_with_errors"
       : "complete";
 
   await pool.query(`UPDATE runs SET status = $2, cost_usd = $3, finished_at = now() WHERE id = $1`, [runId, status, budgetManager.spentUsd]);
   if (!usable) {
-    await pool.query(`UPDATE runs SET failure_code = 'no_usable_output' WHERE id = $1`, [runId]);
+    await pool.query(`UPDATE runs SET failure_code = $2, failure_detail = $3 WHERE id = $1`, [
+      runId,
+      aiAuthenticationFailed ? "ai_authentication_failed" : "no_usable_output",
+      aiAuthenticationFailed ? "Anthropic rejected the configured API key. Update the key and retry." : null,
+    ]);
   }
 }
 

@@ -44,7 +44,7 @@ The AI's own confidence never counts as a check. Setup steps copied from `packag
 
 - **No publishing or merging.** SpecsDoctor shows and exports drafts; people decide what goes live.
 - **No running code.** SpecsDoctor never installs, builds or runs the repository or its examples.
-- **Public repositories only,** one repository per run, up to 100 code files.
+- **Public repositories only,** one repository per run, subject to archive limits and an AI spending cap.
 - **Languages:** JavaScript/TypeScript with Express in the core; Python as an add-on. Other languages are shown as "Not supported in this version."
 - **No screenshots or walkthroughs of a running app.** User guides (add-on) are written from the code only.
 - No automatic syncing after code changes, no pull requests, no private repositories, no video export of tours (all future work).
@@ -124,7 +124,7 @@ Every AI call goes through a budget manager that reserves cost before it runs, s
 | FR-12 | Findings can be marked corrected, dismissed or accepted as uncertain, each with a note and time; pages can be marked reviewed per revision. | Must | 5 |
 | FR-13 | Saved runs are listed and can be reopened. | Must | 4 |
 | FR-14 | Export a ZIP of Markdown pages, `mkdocs.yml` and a provenance page; unresolved warnings stay inline; the exported site builds. | Must | 6 |
-| FR-15 | Each run has a spending cap enforced before calls are made; runs per hour and queue size are limited. | Must | 3 |
+| FR-15 | Each run has a spending cap enforced before calls are made; queue size is limited. | Must | 3 |
 | FR-16 | One failing file, page or check does not stop the run; a run is saved only if it produced usable documentation. | Must | 4 |
 
 ### Add-ons (Tasks 7–12)

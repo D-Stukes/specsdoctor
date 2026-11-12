@@ -3,7 +3,6 @@
 // limits set here (before any other import) only apply to this file.
 process.env.QUEUED_RUNS_LIMIT = "1";
 process.env.ACTIVE_RUNS_LIMIT = "1";
-process.env.RUNS_PER_HOUR_LIMIT = "2";
 process.env.SESSION_SECRET ??= "test-secret";
 process.env.ACCESS_CODE ??= "test-code";
 process.env.DATABASE_URL ??= "postgres://localhost:5432/docsync_test";
@@ -14,7 +13,7 @@ import { migrate } from "../src/db/migrate.js";
 import { getPool, closePool } from "../src/db/pool.js";
 import { startRun } from "../src/runner/start-run.js";
 import { tryStartNext, recoverInterruptedRuns, _resetQueueLockForTests } from "../src/runner/queue.js";
-import { QueueFullError, RateLimitedError } from "../src/runner/limits.js";
+import { QueueFullError } from "../src/runner/limits.js";
 
 before(async () => {
   await migrate();
@@ -61,17 +60,16 @@ test("a new run is refused with QueueFullError once the queued-runs limit is hit
   await assert.rejects(() => startRun({ owner: "limit-test", name: "repo-b", ref: null }), QueueFullError);
 });
 
-test("rate_limited once runs-per-hour is hit, independent of current queue depth", async () => {
+test("finished runs in the past hour do not prevent a new run", async () => {
   const repoId = await insertRepo("rate-test", "repo-a");
   await insertRun(repoId, "complete", {});
   await insertRun(repoId, "failed", {});
-  // RATE limit is 2/hour; both above count toward it even though neither is active/queued.
-  await assert.rejects(() => startRun({ owner: "rate-test", name: "repo-b", ref: null }), RateLimitedError);
+  const { runId } = await startRun({ owner: "rate-test", name: "repo-b", ref: null });
+  assert.equal((await statusOf(runId)).status, "queued");
 });
 
 test("duplicate Generate for the same repo+ref returns the existing run, not a new one", async () => {
   process.env.QUEUED_RUNS_LIMIT = "5";
-  process.env.RUNS_PER_HOUR_LIMIT = "50";
   const first = await startRun({ owner: "dup-test", name: "repo", ref: "main" });
   assert.equal(first.duplicateOf, null);
   const second = await startRun({ owner: "dup-test", name: "repo", ref: "main" });

@@ -3,7 +3,7 @@ import { getPool } from "../db/pool.js";
 import { parseRepoUrl } from "../repo-url.js";
 import { startRun } from "../runner/start-run.js";
 import { tryStartNext } from "../runner/queue.js";
-import { QueueFullError, RateLimitedError } from "../runner/limits.js";
+import { QueueFullError } from "../runner/limits.js";
 import { loadIndexForRun } from "../db/load-index.js";
 import { scanRenderedPageForUnknownMentions } from "../stages/verifier.js";
 import { buildMkdocsYml, buildExportReadme } from "../export/mkdocs-config.js";
@@ -45,9 +45,6 @@ runsRouter.post("/runs", async (req, res) => {
   try {
     ({ runId, duplicateOf } = await startRun({ owner: parsed.owner, name: parsed.name, ref: resolvedRef, writeFor: write_for }));
   } catch (err) {
-    if (err instanceof RateLimitedError) {
-      return res.status(429).json({ error: { code: "rate_limited", message: err.message } });
-    }
     if (err instanceof QueueFullError) {
       return res.status(503).json({ error: { code: "queue_full", message: err.message } });
     }

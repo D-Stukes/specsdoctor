@@ -25,8 +25,12 @@ export function renderPage(page, index, repo) {
 
   for (const section of page.sections) {
     lines.push(`## ${section.heading}`, "");
+    const list = page.slug === "overview" && ["What users can do", "How it fits together"].includes(section.heading);
     for (const block of section.blocks) {
-      lines.push(...renderBlock(block, { itemsById, envById, tableById, routeById, repo, warnings }));
+      const ctx = { itemsById, envById, tableById, routeById, repo, warnings };
+      if (list && block.type === "prose") lines.push(`- ${block.text.replace(/\s+/g, " ").trim()}`);
+      else if (list && block.type === "claim") lines.push(...renderClaim(block.claim, ctx, true));
+      else lines.push(...renderBlock(block, ctx));
       lines.push("");
     }
   }
@@ -137,14 +141,15 @@ function renderTableRef(tableId, ctx) {
   return out;
 }
 
-function renderClaim(claim, ctx) {
-  const out = [`> ${claim.text}`];
+function renderClaim(claim, ctx, list = false) {
+  const out = [list ? `- ${claim.text.replace(/\s+/g, " ").trim()}` : `> ${claim.text}`];
   if (claim.evidence?.length) {
     const links = claim.evidence.map((e) => {
       const link = buildSourceLink(ctx.repo, e.path, e.start_line, e.end_line);
       return `[${e.path}:${e.start_line}](${link})`;
     });
-    out.push(">", `> Evidence: ${links.join(", ")}`);
+    if (list) out.push(`  Evidence: ${links.join(", ")}`);
+    else out.push(">", `> Evidence: ${links.join(", ")}`);
   }
   return out;
 }

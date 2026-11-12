@@ -74,7 +74,7 @@ function AccessCodeForm({ onSignedIn }) {
           </button>
           {error && <p className="error-text">{error}</p>}
         </form>
-        <p className="footnote">Public repositories only · Up to 100 code files · Drafts for human review.</p>
+        <p className="footnote">Public repositories only · Drafts for human review.</p>
       </div>
     </div>
   );

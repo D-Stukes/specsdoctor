@@ -79,7 +79,7 @@ UI and export wording: "Source-checked" (structural pass), "AI-assessed: support
 
 ### Definitions
 
-- **Module:** one documentable source file (`.js .jsx .mjs .cjs .ts .tsx`, or `.py` if Python ships) after filters. The 100-module cap counts these.
+- **Module:** one documentable source file (`.js .jsx .mjs .cjs .ts .tsx`, or `.py` if Python ships) after filters. All detected documentable modules enter the pipeline. The per-run AI budget controls how many receive model-written explanations.
 - **Code item:** a function, class, method, or exported constant recorded in the index. **Documented code item:** an exported (JS/TS) or public (Python) code item outside the frontend exclusion. "Exported" is a documentation convention, not a promise of a stable API.
 - **Endpoint:** an Express route registration. Endpoints are documented whether or not their handler is exported.
 - **Technical claim:** a statement about a specific symbol, endpoint, env var, command, or table. Each has an ID and one or more evidence references. Narrative overview text is not a technical claim.
@@ -156,6 +156,10 @@ flowchart TD
 
 The Verifier reads source excerpts from the stored `files.content` of the pinned snapshot, not from GitHub, so saved runs can be rechecked offline. Repairs go back to whichever stage owns the page (Writer or Architect).
 
+### AI source draft fallback
+
+When the Scanner fails or finds no documentable symbols or endpoints, live mode can draft an overview from selected excerpts of supported text source files, including HTML and several languages without dedicated parsers. The reader retains these files separately from the scanner input. Existing archive and sensitive-file limits apply, and the prompt has its own size cap. The model returns structured observations with line ranges. The fallback checks ranges against the supplied excerpts before the renderer creates commit-pinned links. The draft identifies its limited coverage and requires human review. Repository code is never executed. Stub mode skips this fallback.
+
 ## 4a. Run lifecycle, budget enforcement and limits
 
 **Execution model (Default):** one Render instance runs an in-process runner that reads work from Postgres. No external queue. Limitation, stated openly: a restart interrupts the active run, and the app cannot scale past one instance without changes.
@@ -198,16 +202,15 @@ Stage states: `pending`, `running`, `done`, `partial` (some items failed), `skip
 | --- | --- |
 | Active runs, app-wide | 1 |
 | Queued runs, app-wide | 3 (further requests get 429) |
-| Runs per hour, app-wide | 10 |
 | Concurrent model calls per run | 4 |
 | Per-run hard budget | $1.50 estimated cost |
 | Reserved for Writer + Verifier | 35% of the run budget |
 | Max output tokens per call | Analyst 2,000 · Architect 6,000 · Writer 4,000 · claim check 1,500 |
 | Extended thinking | Off or lowest effort on every call (thinking tokens bill as output) |
-| Tarball download | 25 MB |
-| Expanded archive | 100 MB, 5,000 entries |
+| Tarball download | 100 MiB |
+| Expanded archive | 300 MiB, 15,000 entries |
 | Single file | 1 MB (larger files skipped and listed) |
-| Modules | 100 |
+| Modules | All detected modules within archive limits. AI analysis is budget-limited. |
 | Stage timeouts | Reader 60 s · Scanner 60 s · model call 120 s · whole run 10 min |
 
 ### Budget enforcement (not just reporting)
@@ -530,7 +533,7 @@ All routes live under `/api`, return JSON, and require the access session cookie
 | Method & path | Purpose | Request | Success response | Notable errors |
 | --- | --- | --- | --- | --- |
 | `POST /api/session` | Exchange access code for a signed, HTTP-only cookie (8 h) | `{"code": "..."}` | `204` | `401 bad_code`, `429` after 5 failures / 15 min |
-| `POST /api/runs` | Start a run | `{"repo_url": "https://github.com/o/r", "ref": "main" \| null, "intake": {...} \| null}` | `202 {"run_id", "status": "queued", "duplicate_of": null}`; existing active run → `200` with `duplicate_of` | `400 invalid_url`, `404 repo_not_found`, `404 ref_not_found`, `429 rate_limited`, `503 queue_full` |
+| `POST /api/runs` | Start a run | `{"repo_url": "https://github.com/o/r", "ref": "main" \| null, "intake": {...} \| null}` | `202 {"run_id", "status": "queued", "duplicate_of": null}`; existing active run → `200` with `duplicate_of` | `400 invalid_url`, `404 repo_not_found`, `404 ref_not_found`, `503 queue_full` |
 | `GET /api/runs?limit=20&before=<ts>` | List saved docs sets and recent runs | — | `{"runs": [{"run_id", "repo", "resolved_sha", "status", "created_at", "cost_usd", "open_findings"}]}` | — |
 | `GET /api/runs/:id` | Progress (polled every 2 s) and summary | — | `{"run_id", "status", "repo", "resolved_sha", "stages": [{"stage", "status", "items_total", "items_done", "items_failed", "message"}], "cost_usd", "budget_cap_usd", "coverage", "failure": null}` | `404` |
 | `GET /api/runs/:id/pages` | Sidebar | — | `{"pages": [{"slug", "title", "status", "current_rev", "checks_fresh", "reviewed", "open_findings"}]}` | `409 run_not_ready` |
@@ -558,7 +561,7 @@ Requirements are sized for a shared-code classroom demo. Each one is testable (s
 | SEC-6 | **Secrets out of logs and prompts.** API keys, GitHub token and access code live in env vars; logs print request IDs, never headers or prompt bodies; model-call logs store token counts only. |
 | SEC-7 | **Safe rendering.** The React viewer uses `react-markdown` with raw HTML disabled; links allow only `http(s)` and in-app anchors; Mermaid runs with `securityLevel: 'strict'`. The export keeps Markdown as Markdown and adds no custom JavaScript. |
 | SEC-8 | **Access control everywhere.** The session cookie is required for every route that reads or changes saved content (runs, pages, findings, export), not only Generate. Cookie: signed, HTTP-only, `SameSite=Lax`, `Secure` in production. |
-| SEC-9 | **Abuse limits.** Runs-per-hour, queue size and per-run budget from §4a; login attempts rate-limited. |
+| SEC-9 | **Abuse limits.** Queue size and per-run budget from §4a; login attempts rate-limited. |
 
 ## 4f. Add-on features (built after the core ships)
 
