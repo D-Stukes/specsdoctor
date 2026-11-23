@@ -4,8 +4,6 @@ Technical writers on engineering teams spend much of their time digging through 
 
 **SpecsDoctor reads a public GitHub repo and turns it into documentation drafts you can review, edit, and trust, with every claim linked back to the exact line of code it came from.** Anything it isn't sure about is flagged for a human to review.
 
-![SpecsDoctor results page showing source-linked claims and review flags](assets/specsdoctor-results.png)
-
 ## Key features
 
 - **Source-linked drafts:** Get a first draft of a project's documentation in about a minute, with each statement linked to the code it describes, so you can check it instead of taking it on faith.
