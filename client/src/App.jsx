@@ -568,7 +568,7 @@ function RunProgress({ runId, onBackToList }) {
         <div className="card-header">
           <Brand />
           <button className="btn-primary" style={{ width: "auto" }} onClick={onBackToList}>
-            ← All runs
+            ← Analyze repo
           </button>
         </div>
         {error && <p className="error-text">{error}</p>}
