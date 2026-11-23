@@ -4,6 +4,7 @@ Maps each piece of work to the commit that contains it. Newest first.
 
 | Date | Commit | Change |
 |---|---|---|
+| 2026-11-23 | e7d4188 | UX polish from self-testing: generated pages grouped by folder in collapsible, scrollable lists; always-visible scroll bars and "scroll for more" hints; whole-row list heights; slim build details with one-line cost/time; plain-language "what SpecsDoctor scanned" summary; one-line action bar; report stays open on refresh; clearer home labels and tighter home layout with Recent runs visible; added IDEAS.md |
 | 2026-11-23 | 89c23f9 | Added "View →" to each generated page row (turns mint on hover) so it's clear pages open right in the app |
 | 2026-11-23 | 91d6516 | Refined the back-button label to "← Analyze another repo" (says exactly what it does) |
 | 2026-11-23 | 7bc5114 | Renamed the run page's "← All runs" button to "← Analyze repo", since that's what people use it for |
