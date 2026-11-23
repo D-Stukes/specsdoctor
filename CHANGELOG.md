@@ -4,6 +4,7 @@ Maps each piece of work to the commit that contains it. Newest first.
 
 | Date | Commit | Change |
 |---|---|---|
+| 2026-11-23 | 91d6516 | Refined the back-button label to "← Analyze another repo" (says exactly what it does) |
 | 2026-11-23 | 7bc5114 | Renamed the run page's "← All runs" button to "← Analyze repo", since that's what people use it for |
 | 2026-11-23 | 471c828 | Fixed Scanner crash on rest parameters (`...args`); found by running SpecsDoctor on its own repo, which had shown all-zero counts. Scanner now indexes 529 items there |
 | 2026-11-23 | cf16298 | Removed README screenshot placeholder until a real results screenshot is added |
