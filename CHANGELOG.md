@@ -4,6 +4,7 @@ Maps each piece of work to the commit that contains it. Newest first.
 
 | Date | Commit | Change |
 |---|---|---|
+| 2026-11-23 | 471c828 | Fixed Scanner crash on rest parameters (`...args`); found by running SpecsDoctor on its own repo, which had shown all-zero counts. Scanner now indexes 529 items there |
 | 2026-11-23 | cf16298 | Removed README screenshot placeholder until a real results screenshot is added |
 | 2026-11-23 | 9239902 | Added DEPLOY.md: deployment checklist (Supabase + Node host) with a check for each environment variable |
 | 2026-11-23 | b37376b | Rewrote README: problem, solution, key features, how it stays accurate, tech stack, hosting |
