@@ -4,6 +4,10 @@ Maps each piece of work to the commit that contains it. Newest first.
 
 | Date | Commit | Change |
 |---|---|---|
+| 2026-11-23 | cf16298 | Removed README screenshot placeholder until a real results screenshot is added |
+| 2026-11-23 | 9239902 | Added DEPLOY.md: deployment checklist (Supabase + Node host) with a check for each environment variable |
+| 2026-11-23 | b37376b | Rewrote README: problem, solution, key features, how it stays accurate, tech stack, hosting |
+| 2026-11-23 | e71cf1e | Tidied repo root: moved PRD drafts, sketches, and Stitch design export into docs/planning and docs/design |
 | 2026-11-08 | 84ae29d | Lady D's glass & sky theme on the card screens (access code, repo form, run list, progress, page viewer); background photos in client/public/assets. Branch LadyD-ui, PR #26 into develop |
 | 2026-11-08 | (branch setup) | Created the develop branch from main (1139418); team workflow is now feature branch -> develop -> main |
 | 2026-11-08 | fe21680 | Added landing and results background images (assets/) and updated change log |
