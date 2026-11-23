@@ -7,7 +7,7 @@ SpecsDoctor (formerly "DocSync" during development - see LOG.md) is a web app th
 - `docs/DocSync-Final-PRD.md` — what we're building and why (requirements FR-1 to FR-22, metrics, open decisions).
 - `docs/DocSync-Technical-Design.md` — how: architecture, JSON contracts (§4c), database schema (§4b), API (§4d), security rules (§4e), add-on specs (§4f), backlog T01–T36 (§5, §6), the 12 tasks (§6), acceptance tests (§7).
 - `docs/Design-Notes.md` — design system summary, Stitch review and fixes, missing screens.
-- `stitch_docsync_ui_design_system/` — Stitch screens (HTML + PNG) and `DESIGN.md` tokens.
+- `docs/design/stitch_docsync_ui_design_system/` — Stitch screens (HTML + PNG) and `DESIGN.md` tokens.
 - `LOG.md` — what has happened so far and what's next.
 
 ## Rules that must not be broken

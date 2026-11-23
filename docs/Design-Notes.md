@@ -7,9 +7,9 @@ Last updated: 2026-11-05
 | Source | What it has |
 | --- | --- |
 | Design canvas (Claude): https://claude.ai/artifact/CCX2UFbXQA5KstvKhoJb7D | Home (new documentation) and Repo map + guided tour (interactive: press Play) |
-| `stitch_docsync_ui_design_system/` (this folder) | Stitch output: Access gate, Home, Guided tour playing, plus `DESIGN.md` ("Precision Instrument Developer System") |
+| `design/stitch_docsync_ui_design_system/` (this folder) | Stitch output: Access gate, Home, Guided tour playing, plus `DESIGN.md` ("Precision Instrument Developer System") |
 
-**Source of truth for tokens:** `stitch_docsync_ui_design_system/precision_instrument_developer_system/DESIGN.md`, with the fixes below.
+**Source of truth for tokens:** `design/stitch_docsync_ui_design_system/precision_instrument_developer_system/DESIGN.md`, with the fixes below.
 
 ## Design system summary
 
