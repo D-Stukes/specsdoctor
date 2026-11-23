@@ -274,7 +274,7 @@ button:disabled {
   border-radius: var(--radius-pill);
   background: var(--surface-raised);
   color: var(--text-secondary);
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.6rem;
 }
 
 .dot {
@@ -292,15 +292,15 @@ button:disabled {
 .stage-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  gap: 0.2rem;
+  margin-bottom: 0.5rem;
 }
 
 .stage-row {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.65rem 0.85rem;
+  padding: 0.28rem 0.75rem;
   background: var(--surface-raised);
   border: 1px solid var(--hairline);
   border-radius: 10px;
@@ -331,12 +331,13 @@ button:disabled {
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-secondary);
-  padding-top: 1rem;
+  padding-top: 0.5rem;
   border-top: 1px solid var(--hairline);
+  gap: 1rem;
 }
 
 .page-list {
-  margin-top: 1.5rem;
+  margin-top: 0.75rem;
 }
 
 .page-list h2 {
@@ -345,19 +346,19 @@ button:disabled {
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.35rem;
 }
 
 .page-link {
   display: block;
-  padding: 0.6rem 0.85rem;
+  padding: 0.28rem 0.75rem;
   border: 1px solid var(--hairline);
-  border-radius: 10px;
+  border-radius: 8px;
   color: var(--text);
   text-decoration: none;
   font-family: var(--font-mono);
   font-size: 12px;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.2rem;
   background: var(--surface-raised);
 }
 
@@ -371,21 +372,28 @@ button:disabled {
 .page-link-inline:hover { color: var(--mint); }
 
 /* Run dashboard: leads with the shape of the codebase, not the pipeline that built it */
-.dashboard { background: var(--surface-raised); border: 1px solid var(--hairline); border-radius: 14px; padding: 1.1rem 1.25rem; margin-bottom: 1.5rem; }
-.dashboard h2 { margin: 0 0 0.9rem; font-size: 16px; }
-.dash-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 0.75rem; margin-bottom: 0.9rem; }
-.dash-stat { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0.7rem 0.4rem; background: var(--canvas); border: 1px solid var(--hairline); border-radius: 10px; }
+.dashboard { background: var(--surface-raised); border: 1px solid var(--hairline); border-radius: 14px; padding: 0.6rem 1rem; margin-bottom: 0.5rem; }
+.dashboard h2 { margin: 0 0 0.4rem; font-size: 15px; }
+.dash-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 0.6rem; margin-bottom: 0.6rem; }
+.dash-stat { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0.45rem 0.4rem; background: var(--canvas); border: 1px solid var(--hairline); border-radius: 10px; }
 .dash-stat strong { font-size: 22px; color: var(--mint); font-family: var(--font-mono); }
 .dash-stat span { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.15rem; }
-.dash-areas { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+.dash-areas { max-height: 11rem; overflow-y: auto; margin-bottom: 1rem; border: 1px solid var(--hairline); border-radius: 10px; padding: 0.35rem 0.6rem; }
+.dash-area-group summary { cursor: pointer; font-family: var(--font-mono); font-size: 12px; padding: 0.3rem 0; color: var(--text); }
+.dash-area-count { color: var(--text-muted); margin-left: 0.35rem; }
+.dash-area-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.3rem 0 0.5rem 1rem; }
 .dash-area-chip { font-size: 12px; padding: 0.2rem 0.65rem; border-radius: 9999px; border: 1px solid var(--hairline-hover); color: var(--text-secondary); }
-.dash-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.dash-actions { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; padding: 0.3rem 0.9rem; border-radius: 9999px; background: var(--canvas); border: 1px solid var(--hairline); width: fit-content; max-width: 100%; }
+.action-link { background: none; border: none; padding: 0; font: inherit; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-decoration: none; cursor: pointer; }
+.action-link:hover { color: var(--mint); text-decoration: underline; }
+.action-link:disabled { opacity: 0.6; cursor: default; }
 .share-control { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
 .share-control input { min-width: 260px; font-family: var(--font-mono); font-size: 12px; }
 
-.build-details { margin-bottom: 1.5rem; }
-.build-details summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.8rem; }
-.build-details[open] summary { margin-bottom: 0.8rem; }
+.build-details { margin-bottom: 0.5rem; }
+.build-details summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.25rem; }
+.build-details[open] summary { margin-bottom: 0.35rem; }
+.build-details .stage-list { max-height: 7.5rem; overflow-y: auto; }
 .build-details .stage-list { margin-top: 0.6rem; }
 
 /* Repo map (Task 10) */
@@ -714,3 +722,50 @@ body:has(.shell-results) {
 .doc-page a.source-link:hover { background: var(--mint-hover); }
 .doc-page a.source-link:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 .source-link-arrow { font-family: var(--font-sans); }
+
+/* Compact, collapsible lists on the run page and home page */
+.scroll-list { max-height: 10.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0; padding: 0.35rem 0.1rem; }
+.page-group, .dash-mapped { margin-bottom: 0.25rem; }
+.page-group > summary, .dash-mapped > summary { cursor: pointer; font-family: var(--font-mono); font-size: 13px; padding: 0.2rem 0; color: var(--text); }
+.recent-runs > summary { cursor: pointer; list-style-position: inside; }
+.recent-runs > summary h2 { display: inline; }
+.dash-mapped .dash-areas { margin-top: 0.35rem; }
+
+/* Compact codebase summary: one line of plain-language counts */
+.dash-summary { display: flex; flex-wrap: wrap; gap: 0.25rem 1.1rem; margin: 0 0 0.35rem; font-size: 13px; color: var(--text-secondary); }
+.dash-summary span { cursor: help; }
+.dash-summary strong { color: var(--mint); font-family: var(--font-mono); font-size: 14px; margin-right: 0.2rem; }
+
+/* Make scrollable lists obviously scrollable */
+.scroll-hint { margin-left: 0.6rem; font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); font-style: italic; }
+.scroll-list::-webkit-scrollbar, .build-details .stage-list::-webkit-scrollbar, .dash-areas::-webkit-scrollbar { width: 8px; -webkit-appearance: none; }
+.scroll-list::-webkit-scrollbar-thumb, .build-details .stage-list::-webkit-scrollbar-thumb, .dash-areas::-webkit-scrollbar-thumb { background: var(--hairline-hover); border-radius: 8px; }
+.scroll-list::-webkit-scrollbar-track, .build-details .stage-list::-webkit-scrollbar-track, .dash-areas::-webkit-scrollbar-track { background: transparent; }
+.build-details .stage-list, .scroll-list { border: 1px solid var(--hairline); border-radius: 10px; padding: 0.3rem 0.4rem; background: var(--canvas); }
+.scroll-list::-webkit-scrollbar-thumb, .build-details .stage-list::-webkit-scrollbar-thumb { background: var(--text-muted); }
+.scroll-list, .build-details .stage-list { overflow-y: auto; }
+
+/* Always-visible scroll bars (Mac hides them until you scroll unless they are custom-styled) */
+.scroll-list::-webkit-scrollbar, .build-details .stage-list::-webkit-scrollbar, .dash-areas::-webkit-scrollbar { width: 9px; background: var(--hairline); border-radius: 9px; }
+.scroll-list::-webkit-scrollbar-thumb, .build-details .stage-list::-webkit-scrollbar-thumb, .dash-areas::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 9px; min-height: 24px; }
+
+/* Fixed row heights so a list shows only whole rows: 3 build steps, 5 pages, 4 recent runs */
+.build-details .stage-list { box-sizing: content-box; max-height: 6.1rem; gap: 0.2rem; }
+.build-details .stage-row { height: 1.9rem; flex: none; padding-top: 0; padding-bottom: 0; }
+.scroll-list { box-sizing: content-box; max-height: 10.8rem; }
+.scroll-list .page-link { height: 2rem; display: flex; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-top: 0; padding-bottom: 0; flex: none; }
+.scroll-list .page-view { float: none; margin-left: auto; padding-left: 0.75rem; }
+.recent-runs .scroll-list { max-height: 8.6rem; }
+
+/* Home page: same content, less empty space so Recent runs is visible */
+.home-card { padding: 1.4rem 1.75rem; }
+.home-card .card-header { margin-bottom: 0.9rem; }
+.home-card h1 { font-size: 28px; margin-bottom: 0.4rem; }
+.home-card .lede { margin-bottom: 1rem; font-size: 14px; line-height: 1.5; }
+.home-card .field { margin-bottom: 0.75rem; }
+.home-card label { margin-bottom: 0.3rem; }
+.home-card input[type="text"] { padding: 0.5rem 0.85rem; }
+.home-card .write-for { margin: 0.6rem 0 0.8rem; }
+.home-card .btn-primary { padding: 0.55rem 1.25rem; }
+.home-card .trust-row { margin-top: 0.75rem; gap: 0.4rem 1.1rem; }
+.home-card .recent-runs { margin-top: 0.9rem; }

@@ -112,7 +112,7 @@ function RepoForm({ onRunStarted, onOpenRun }) {
 
   return (
     <div className="shell">
-      <div className="card">
+      <div className="card home-card">
         <div className="card-header">
           <Brand />
         </div>
@@ -124,11 +124,11 @@ function RepoForm({ onRunStarted, onOpenRun }) {
         </p>
         <form onSubmit={handleSubmit}>
           <div className="field">
-            <label htmlFor="repo_url">GitHub repository</label>
+            <label htmlFor="repo_url">Enter a GitHub repository</label>
             <input
               id="repo_url"
               type="text"
-              placeholder="https://github.com/owner/repo"
+              placeholder="e.g. https://github.com/owner/repo"
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
               autoFocus
@@ -136,7 +136,7 @@ function RepoForm({ onRunStarted, onOpenRun }) {
             />
           </div>
           <div className="field">
-            <label htmlFor="ref">Branch, tag, or commit (optional)</label>
+            <label htmlFor="ref">Branch (optional)</label>
             <input id="ref" type="text" placeholder="main" value={ref} onChange={(e) => setRef(e.target.value)} autoComplete="off" />
           </div>
 
@@ -204,8 +204,12 @@ function RunList({ onOpenRun }) {
   if (runs.length === 0) return null;
 
   return (
-    <div className="page-list">
-      <h2>Recent runs</h2>
+    <details className="page-list recent-runs" open>
+      <summary>
+        <h2>Recent runs <span className="dash-area-count">{runs.length}</span></h2>
+        {runs.length > 4 && <span className="scroll-hint">scroll for more</span>}
+      </summary>
+      <div className="scroll-list">
       {runs.map((r) => (
         <a
           key={r.run_id}
@@ -221,7 +225,8 @@ function RunList({ onOpenRun }) {
           {r.duration_ms != null && ` — ${formatDuration(r.duration_ms)}`}
         </a>
       ))}
-    </div>
+      </div>
+    </details>
   );
 }
 
@@ -388,23 +393,53 @@ function BuildStatus({ run }) {
         ))}
       </div>
       <div className="cost-row">
-        <span>Cost</span>
         <span>
-          ${run.cost_usd.toFixed(2)} / ${run.budget_cap_usd.toFixed(2)} budget
+          Cost ${run.cost_usd.toFixed(2)} / ${run.budget_cap_usd.toFixed(2)} budget
         </span>
+        {run.duration_ms != null && <span>Time {formatDuration(run.duration_ms)}</span>}
       </div>
-      {run.duration_ms != null && (
-        <div className="cost-row">
-          <span>Time</span>
-          <span>{formatDuration(run.duration_ms)}</span>
-        </div>
-      )}
     </>
   );
 }
 
 // Idea 5 (LOG.md's "wow factor" brainstorm): turn the public share link on or off for this run.
 // `shareUrl` comes from the same GET /runs/:id poll RunProgress already does - no extra fetch.
+// Groups generated pages for the report: project-wide pages (Overview, API endpoints...)
+// first, then one collapsed group per project area (the first two folders of the path,
+// e.g. server/src or fixtures/fixture-pern-mini). Inside a group, pages show the rest of the path.
+function pageGroupKey(title) {
+  if (!title.includes("/")) return "Project overview";
+  const parts = title.split("/");
+  return parts.length > 2 ? parts.slice(0, 2).join("/") : parts[0];
+}
+function pageLabelInGroup(title, key) {
+  return key === "Project overview" ? title : title.slice(key.length + 1);
+}
+function groupPagesByFolder(pages) {
+  const groups = new Map();
+  for (const p of pages) {
+    const key = pageGroupKey(p.title);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(p);
+  }
+  const overview = groups.get("Project overview");
+  groups.delete("Project overview");
+  const rest = [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  return overview ? [["Project overview", overview], ...rest] : rest;
+}
+
+// Groups mapped areas by their top-level folder (client, server, fixtures...) so the
+// dashboard shows a short, expandable list instead of one long wall of chips.
+function groupAreasByFolder(areas) {
+  const groups = new Map();
+  for (const a of areas) {
+    const top = (a.name || "").split("/")[0] || "other";
+    if (!groups.has(top)) groups.set(top, []);
+    groups.get(top).push(a);
+  }
+  return [...groups.entries()].sort((x, y) => x[0].localeCompare(y[0]));
+}
+
 function ShareControl({ runId, shareUrl }) {
   const [url, setUrl] = useState(shareUrl);
   const [busy, setBusy] = useState(false);
@@ -451,7 +486,7 @@ function ShareControl({ runId, shareUrl }) {
 
   if (!url) {
     return (
-      <button type="button" className="btn-primary" style={{ width: "auto" }} onClick={enable} disabled={busy}>
+      <button type="button" className="action-link" onClick={enable} disabled={busy}>
         {busy ? "Creating link…" : "Share this run"}
       </button>
     );
@@ -591,7 +626,7 @@ function RunProgress({ runId, onBackToList }) {
 
             {isDone && (
               <div className="dashboard">
-                <h2>The codebase, at a glance</h2>
+                <h2>At a glance: what SpecsDoctor scanned</h2>
                 {!stats ? (
                   graphError ? (
                     <p className="lede">
@@ -605,52 +640,52 @@ function RunProgress({ runId, onBackToList }) {
                   )
                 ) : (
                   <>
-                    <div className="dash-stats">
-                      <div className="dash-stat">
-                        <strong>{stats.actions}</strong>
-                        <span>actions</span>
-                      </div>
-                      <div className="dash-stat">
-                        <strong>{stats.tables}</strong>
-                        <span>saved data</span>
-                      </div>
-                      <div className="dash-stat">
-                        <strong>{stats.screens}</strong>
-                        <span>screens</span>
-                      </div>
-                      <div className="dash-stat">
-                        <strong>{stats.files}</strong>
-                        <span>files mapped</span>
-                      </div>
-                    </div>
+                    <p className="dash-summary">
+                      <span title="Web addresses the app's server answers, like GET /api/habits"><strong>{stats.actions}</strong> API endpoints</span>
+                      <span title="Tables where the app stores its data"><strong>{stats.tables}</strong> database tables</span>
+                      <span title="Pages and components people see in the app"><strong>{stats.screens}</strong> screens</span>
+                      <span title="Code files SpecsDoctor read and connected"><strong>{stats.files}</strong> code files</span>
+                    </p>
                     {stats.areas.length > 0 && (
+                      <details className="dash-mapped">
+                      <summary>Mapped folders <span className="dash-area-count">{stats.areas.length}</span></summary>
                       <div className="dash-areas">
-                        {stats.areas.map((a) => (
-                          <span key={a.id} className="dash-area-chip" title={a.summary}>
-                            {a.name}
-                          </span>
+                        {groupAreasByFolder(stats.areas).map(([folder, areas]) => (
+                          <details key={folder} className="dash-area-group">
+                            <summary>
+                              {folder} <span className="dash-area-count">{areas.length}</span>
+                            </summary>
+                            <div className="dash-area-chips">
+                              {areas.map((a) => (
+                                <span key={a.id} className="dash-area-chip" title={a.summary}>
+                                  {a.name}
+                                </span>
+                              ))}
+                            </div>
+                          </details>
                         ))}
                       </div>
+                      </details>
                     )}
                   </>
                 )}
                 <div className="dash-actions">
-                  <button type="button" className="btn-primary" style={{ width: "auto" }} onClick={openMap}>
+                  <button type="button" className="action-link" onClick={openMap}>
                     Open the map →
                   </button>
                   {overviewPage && (
-                    <a className="page-link-inline" href="#" onClick={(e) => { e.preventDefault(); setOpenSlug(overviewPage.slug); }}>
+                    <a className="action-link" href="#" onClick={(e) => { e.preventDefault(); setOpenSlug(overviewPage.slug); }}>
                       Read the full overview
                     </a>
                   )}
+                  <ShareControl runId={run.run_id} shareUrl={run.share_url} />
                 </div>
-                <ShareControl runId={run.run_id} shareUrl={run.share_url} />
               </div>
             )}
 
             {isDone ? (
               <details className="build-details">
-                <summary>Build details</summary>
+                <summary>Build details {run.stages.length > 3 && <span className="scroll-hint">scroll for more</span>}</summary>
                 <BuildStatus run={run} />
               </details>
             ) : (
@@ -662,14 +697,24 @@ function RunProgress({ runId, onBackToList }) {
             {pages.length > 0 && (
               <div className="page-list">
                 <h2>Generated pages</h2>
-                {pages.map((p) => (
-                  <a key={p.slug} className="page-link" href="#" onClick={(e) => { e.preventDefault(); setOpenSlug(p.slug); }}>
-                    <span className={`dot ${PAGE_STATUS_DOT[p.status] ?? "dot-pending"}`} style={{ marginRight: "0.5rem" }} />
-                    {p.title}
-                    <span className="stage-status" style={{ marginLeft: "0.5rem" }}>{p.status.replace(/_/g, " ")}</span>
-                    {p.open_findings > 0 && <span className="finding-badge">{p.open_findings} to review</span>}
-                    <span className="page-view">View →</span>
-                  </a>
+                {groupPagesByFolder(pages).map(([folder, group]) => (
+                  <details key={folder} className="page-group" open={folder === "Project overview"}>
+                    <summary>
+                      {folder} <span className="dash-area-count">{group.length}</span>
+                      {group.length > 5 && <span className="scroll-hint">scroll for more</span>}
+                    </summary>
+                    <div className="scroll-list">
+                      {group.map((p) => (
+                        <a key={p.slug} className="page-link" href="#" onClick={(e) => { e.preventDefault(); setOpenSlug(p.slug); }}>
+                          <span className={`dot ${PAGE_STATUS_DOT[p.status] ?? "dot-pending"}`} style={{ marginRight: "0.5rem" }} />
+                          {pageLabelInGroup(p.title, folder)}
+                          <span className="stage-status" style={{ marginLeft: "0.5rem" }}>{p.status.replace(/_/g, " ")}</span>
+                          {p.open_findings > 0 && <span className="finding-badge">{p.open_findings} to review</span>}
+                          <span className="page-view">View →</span>
+                        </a>
+                      ))}
+                    </div>
+                  </details>
                 ))}
               </div>
             )}
@@ -700,7 +745,16 @@ export default function App() {
 
   const [signedIn, setSignedIn] = useState(false);
   const [checking, setChecking] = useState(true);
-  const [runId, setRunId] = useState(null);
+  // The open report lives in the URL (#run=<id>) so a refresh keeps you on what you just ran.
+  const [runId, setRunIdState] = useState(() => {
+    const m = typeof window !== "undefined" ? window.location.hash.match(/^#run=([\w-]+)$/) : null;
+    return m ? m[1] : null;
+  });
+  const setRunId = (id) => {
+    setRunIdState(id);
+    const url = id ? `#run=${id}` : window.location.pathname + window.location.search;
+    window.history.replaceState(null, "", url);
+  };
 
   useEffect(() => {
     // A reload keeps the session cookie; ask the server instead of assuming we're signed out.
