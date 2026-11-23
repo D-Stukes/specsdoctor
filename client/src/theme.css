@@ -77,7 +77,8 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-weight: 500;
+  font-size: 24px;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 
@@ -252,8 +253,9 @@ button:disabled {
 }
 
 .run-header h1 {
-  font-size: 24px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
 }
 
 .sha {
@@ -769,3 +771,59 @@ body:has(.shell-results) {
 .home-card .btn-primary { padding: 0.55rem 1.25rem; }
 .home-card .trust-row { margin-top: 0.75rem; gap: 0.4rem 1.1rem; }
 .home-card .recent-runs { margin-top: 0.9rem; }
+
+/* Nested page folders */
+.page-group-body { padding-left: 0.9rem; }
+.page-group-body > .scroll-list { margin-bottom: 0.25rem; }
+
+/* Export sits right under the summary so it's never lost at the bottom */
+.export-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.2rem; margin: 0 0 0.6rem; padding: 0.35rem 0.9rem; border: 1px solid var(--hairline); border-radius: 10px; background: var(--surface-raised); }
+.export-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+.repo-label { font-size: 0.85em; font-weight: 500; color: var(--text-secondary); margin-right: 0.3rem; vertical-align: middle; }
+
+/* Header: title sits near the top; the back button is quiet, not a call to action */
+.card { padding-top: 1.1rem; }
+.card-header { margin-bottom: 0.8rem; }
+.btn-header { background: var(--surface-raised); color: var(--text-secondary); border: 1px solid var(--hairline-hover); border-radius: 9999px; padding: 0.3rem 0.85rem; font-size: 13px; font-weight: 500; }
+.btn-header:hover { color: var(--mint); border-color: var(--mint); }
+
+/* Softer back button tint, and export links that clearly look downloadable */
+.btn-header { background: #e6eff5; border-color: #c9dbe6; color: #3d5a6c; }
+.export-link { font-size: 13px; font-weight: 600; color: var(--mint); text-decoration: none; padding: 0.2rem 0.6rem; border-radius: 9999px; border: 1px solid transparent; }
+.export-link:hover { background: #e6eff5; border-color: #c9dbe6; text-decoration: underline; }
+.export-label { text-transform: none; letter-spacing: 0; font-size: 13px; }
+
+/* Export results: faint yellow so it's easy to spot; each download is its own small button */
+.export-bar { background: #fdf8e3; border-color: #efe2a9; }
+.export-link { background: #ffffff; border: 1px solid #d9cf9f; color: #3d5a6c; text-decoration: none; padding: 0.22rem 0.75rem; }
+.export-link:hover { background: #e6eff5; border-color: #9fbfd2; color: var(--mint); text-decoration: none; }
+
+/* At-a-glance box: soft blue border so it stands out as its own section */
+.dashboard { border: 1px solid #9fbfd2; }
+
+/* Follow the data: one solid panel with a compact, clickable flow chart (no photo between cards) */
+.flow { background: var(--surface); border: 1px solid var(--hairline); border-radius: 16px; margin: 0.75rem; height: auto; max-height: calc(100% - 1.5rem); padding: 0.9rem 1.1rem 1.1rem; }
+.flow-head, .flow-summary, .flow-card, .flow-code-toggle { background: transparent; border: none; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
+.flow-head { padding: 0 0 0.5rem; border-bottom: 1px solid var(--hairline); border-radius: 0; }
+.flow-summary { padding: 0.5rem 0; margin: 0 0 0.6rem; font-size: 14px; }
+.flow-step { display: flex; flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 0.6rem; padding-bottom: 0; }
+.flow-step:not(:last-child)::before { display: none; }
+.flow-num { flex: 0 0 26px; height: 26px; font-size: 12px; }
+.flow-card { flex: 1; min-width: 0; padding: 0.25rem 0.6rem; border: 1px solid var(--hairline); border-radius: 10px; background: var(--surface-raised); cursor: pointer; }
+.flow-card:hover, .flow-selected .flow-card { border-color: #9fbfd2; }
+.flow-line { display: flex; align-items: baseline; gap: 0.45rem; flex-wrap: wrap; }
+.flow-kind { font-size: 11px; letter-spacing: 0.04em; text-transform: none; color: var(--text-muted); font-weight: 600; }
+.flow-title { font-size: 14px; font-weight: 600; margin: 0; }
+.flow-toggle { margin-left: auto; font-size: 12px; color: #3d5a6c; }
+.flow-details { padding: 0.3rem 0 0.2rem; }
+.flow-text { font-size: 13px; }
+.flow-arrow { flex-basis: 100%; padding-left: 7px; line-height: 1.1; color: var(--text-muted); font-size: 14px; }
+.flow-code-toggle { padding: 0.5rem 0 0; margin-top: 0.4rem; border-top: 1px solid var(--hairline); border-radius: 0; }
+.flow-kind { font-size: 13px; color: var(--text-secondary); }
+.flow-title { font-size: 15px; }
+.flow-text { font-size: 14px; }
+.flow-code { font-family: var(--font-mono); font-size: 12px; color: #3d5a6c; background: #e6eff5; border-radius: 6px; padding: 0 0.4rem; }
+.flow-info { font-size: 12px; color: #6f8fa3; cursor: help; }
+.flow-title { cursor: help; }
+.flow-active .flow-card { border-color: var(--mint); box-shadow: 0 0 0 2px rgba(30,106,134,0.25); background: #eef6f9; }
+.flow-carry { display: inline-block; margin-bottom: 0.3rem; font-size: 12px; font-weight: 600; color: #3d5a6c; background: #fdf8e3; border: 1px solid #efe2a9; border-radius: 9999px; padding: 0.05rem 0.6rem; }

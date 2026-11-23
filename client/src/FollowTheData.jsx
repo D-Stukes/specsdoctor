@@ -3,8 +3,42 @@ import { traceSteps, endpointChoices, nodeTitle } from "./map-model.js";
 import { fieldsFromEntry, parseWriteChip, firstIndexOfKind } from "./data-motion.js";
 
 const CHIP_CLASS = { in: "chip-in", read: "chip-read", write: "chip-write", out: "chip-out", bad: "chip-bad" };
-const KIND_TITLE = { caller: "A screen asks", entry: "The request arrives", check: "A check first", work: "The work", read: "Looking things up", write: "Saving", reply: "The answer" };
+const KIND_TITLE = { caller: "Sent by", entry: "Server receives it", check: "Check first", work: "Server does the work", read: "Looks up data", write: "Saves data", reply: "Answer goes back" };
+// The first "caller" step is the screen where the action starts (e.g. the App page);
+// a caller right after it is the code that actually sends the request (e.g. saveHabit).
+function stepLabel(steps, idx) {
+  const s = steps[idx];
+  if (s.kind === "caller") return steps[idx - 1]?.kind === "caller" ? "Sent by" : "Starts on screen";
+  return KIND_TITLE[s.kind];
+}
+
+// Code name + file line for the "Show the code names and file lines" option, skipping the
+// code name when it's identical to the plain title (so it never just repeats the title).
+function codeRef(s) {
+  const parts = [];
+  if (s.technical && s.technical !== s.title) parts.push(s.technical);
+  if (s.evidence) parts.push(s.evidence);
+  return parts.join(" · ");
+}
+
+// Hover text for a step's name: what kind of thing it is and where it lives in the code.
+const KIND_HELP = {
+  caller: "a screen or piece of front-end code",
+  entry: "a web address (API endpoint) on the app's server",
+  check: "a check that runs before the work, like confirming who is signed in",
+  work: "a function on the server that does the work",
+  read: "a database table the app reads from",
+  write: "a database table the app saves to",
+  reply: "the server's response",
+};
+function tooltipFor(s, label) {
+  const where = s.evidence ? ` Found in ${s.evidence.replace(/:(\d+)$/, " (line $1)")}.` : "";
+  const code = s.technical && s.technical !== s.title ? ` Code name: ${s.technical}.` : "";
+  return `${label}: "${s.title}" is ${KIND_HELP[s.kind] ?? "part of this flow"}.${code}${where}`;
+}
+
 const prefersReducedMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+const STEP_MS = prefersReducedMotion() ? 0 : 1800;
 const TRAVEL_MS = prefersReducedMotion() ? 0 : 900;
 const LAND_PAUSE_MS = prefersReducedMotion() ? 0 : 500;
 const REPLY_REVEAL_MS = prefersReducedMotion() ? 0 : 500;
@@ -23,6 +57,8 @@ function DataRow({ info }) {
 /** The story of one action, in numbered plain-English steps: who asks, what comes in, what happens, what is saved, what goes back. */
 export default function FollowTheData({ graph, plain, endpointId, onEndpoint, selectedId, onSelect }) {
   const [showTechnical, setShowTechnical] = useState(false);
+  const [expanded, setExpanded] = useState(() => new Set());
+  const toggleStep = (n) => setExpanded((prev) => { const next = new Set(prev); next.has(n) ? next.delete(n) : next.add(n); return next; });
   const [motion, setMotion] = useState(IDLE);
   const trackRef = useRef(null);
   const stepRefs = useRef(new Map());
@@ -46,42 +82,33 @@ export default function FollowTheData({ graph, plain, endpointId, onEndpoint, se
   const writeIdx = firstIndexOfKind(steps, "write");
   const replyIdx = firstIndexOfKind(steps, "reply");
   const fields = entryIdx !== -1 ? fieldsFromEntry(steps[entryIdx]) : [];
-  const canPlay = entryIdx !== -1 && fields.length > 0 && (writeIdx !== -1 || replyIdx !== -1) && (motion.phase === "idle" || motion.phase === "done");
+  const canPlay = steps.length > 1 && (motion.phase === "idle" || motion.phase === "done");
 
+  // Walk the steps one at a time: each step lights up, opens, and scrolls into view,
+  // so you can actually follow the data instead of watching it fly past.
   const play = useCallback(() => {
     clearTimers();
-    const targetIdx = writeIdx !== -1 ? writeIdx : replyIdx;
-    const containerEl = trackRef.current;
-    const startEl = stepRefs.current.get(steps[entryIdx]?.n);
-    const endEl = stepRefs.current.get(steps[targetIdx]?.n);
-    if (!containerEl || !startEl || !endEl) return;
-    const cRect = containerEl.getBoundingClientRect();
-    const sRect = startEl.getBoundingClientRect();
-    const eRect = endEl.getBoundingClientRect();
-
-    const startTags = fields.map((name, i) => ({ id: `${name}-${i}`, name, x: sRect.left - cRect.left + 48 + i * 6, y: sRect.top - cRect.top + 44 }));
-    setMotion({ phase: "entering", tags: startTags, entryIdx, targetIdx, writeIdx, replyIdx });
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setMotion((m) =>
-          m.phase !== "entering"
-            ? m
-            : { ...m, phase: "traveling", tags: m.tags.map((t, i) => ({ ...t, x: eRect.left - cRect.left + 14 + (i % 3) * 18, y: eRect.top - cRect.top + 42 + Math.floor(i / 3) * 16 })) }
-        );
-      });
+    setExpanded(new Set());
+    steps.forEach((_, idx) => {
+      timers.current.push(setTimeout(() => setMotion({ phase: "walking", current: idx }), idx * STEP_MS));
     });
+    timers.current.push(setTimeout(() => setMotion({ phase: "done", current: steps.length - 1 }), steps.length * STEP_MS));
+  }, [steps, clearTimers]);
 
-    timers.current.push(setTimeout(() => setMotion((m) => (m.phase === "traveling" ? { ...m, phase: "landed", tags: [] } : m)), TRAVEL_MS + 120));
-    timers.current.push(setTimeout(() => setMotion((m) => (m.phase === "landed" ? { ...m, phase: "replying" } : m)), TRAVEL_MS + 120 + LAND_PAUSE_MS));
-    timers.current.push(setTimeout(() => setMotion((m) => (m.phase === "replying" ? { ...m, phase: "done" } : m)), TRAVEL_MS + 120 + LAND_PAUSE_MS + REPLY_REVEAL_MS));
-  }, [steps, entryIdx, writeIdx, replyIdx, fields, clearTimers]);
+  useEffect(() => {
+    if (motion.phase !== "walking") return;
+    const el = stepRefs.current.get(steps[motion.current]?.n);
+    el?.scrollIntoView({ block: "center", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+  }, [motion, steps]);
 
   if (choices.length === 0) return <p className="lede map-empty">No API endpoints were found in this code, so there is no request to follow. Try the Architecture or Functions view.</p>;
 
-  const onPath = (idx) => motion.phase !== "idle" && idx >= motion.entryIdx && idx <= motion.targetIdx;
-  const showRow = (idx) => idx === motion.writeIdx && ["landed", "replying", "done"].includes(motion.phase);
-  const showReply = (idx) => idx === motion.replyIdx && ["replying", "done"].includes(motion.phase);
+  const walking = motion.phase !== "idle";
+  const onPath = (idx) => walking && idx <= motion.current;
+  const isActive = (idx) => motion.phase === "walking" && idx === motion.current;
+  const showRow = (idx) => walking && idx === writeIdx && motion.current >= writeIdx;
+  const showReply = (idx) => walking && idx === replyIdx && motion.current >= replyIdx;
+  const carrying = (idx) => isActive(idx) && entryIdx !== -1 && idx >= entryIdx && fields.length > 0 && (writeIdx === -1 || idx < writeIdx);
 
   return (
     <div className="flow">
@@ -97,9 +124,6 @@ export default function FollowTheData({ graph, plain, endpointId, onEndpoint, se
           </select>
         </label>
         {plain && current && <span className="flow-tech">{current.label}</span>}
-        <button type="button" className="btn-primary" style={{ width: "auto" }} onClick={play} disabled={!canPlay} title={fields.length === 0 ? "This action takes no input to animate" : "Watch the real fields travel this path"}>
-          {motion.phase === "idle" || motion.phase === "done" ? "▶ Watch the data move" : "Watching…"}
-        </button>
       </div>
       {current?.plain_summary && <p className="flow-summary">{current.plain_summary}</p>}
 
@@ -111,12 +135,28 @@ export default function FollowTheData({ graph, plain, endpointId, onEndpoint, se
               ref={(el) => {
                 if (el) stepRefs.current.set(s.n, el);
               }}
-              className={`flow-step flow-${s.kind} ${s.nodeId && s.nodeId === selectedId ? "flow-selected" : ""} ${onPath(idx) ? "flow-onpath" : ""}`}
+              className={`flow-step flow-${s.kind} ${s.nodeId && s.nodeId === selectedId ? "flow-selected" : ""} ${onPath(idx) ? "flow-onpath" : ""} ${isActive(idx) ? "flow-active" : ""}`}
             >
               <span className="flow-num">{s.n}</span>
-              <div className="flow-card" onClick={() => s.nodeId && onSelect(s.nodeId)} role={s.nodeId ? "button" : undefined} tabIndex={s.nodeId ? 0 : undefined} onKeyDown={(e) => e.key === "Enter" && s.nodeId && onSelect(s.nodeId)}>
-                <div className="flow-kind">{KIND_TITLE[s.kind]}</div>
-                <div className="flow-title">{s.title}</div>
+              <div
+                className="flow-card"
+                onClick={() => { toggleStep(s.n); if (s.nodeId) onSelect(s.nodeId); }}
+                role="button"
+                tabIndex={0}
+                aria-expanded={expanded.has(s.n)}
+                onKeyDown={(e) => { if (e.key === "Enter") { toggleStep(s.n); if (s.nodeId) onSelect(s.nodeId); } }}
+              >
+                <div className="flow-line">
+                  <span className="flow-kind">{stepLabel(steps, idx)}:</span>
+                  <span className="flow-title" title={tooltipFor(s, stepLabel(steps, idx))}>
+                    {s.title} <span className="flow-info" aria-hidden="true">ⓘ</span>
+                  </span>
+                  {(showTechnical || !plain) && codeRef(s) && <span className="flow-code">{codeRef(s)}</span>}
+                  <span className="flow-toggle">{expanded.has(s.n) ? "▾ less" : "▸ details"}</span>
+                </div>
+                {(expanded.has(s.n) || isActive(idx) || (motion.phase === "done" && onPath(idx))) && (
+                <div className="flow-details">
+                {carrying(idx) && <div className="flow-carry">Carrying: {fields.join(", ")}</div>}
                 <p className="flow-text">{s.text}</p>
                 {s.chips.length > 0 && (
                   <div className="flow-chips">
@@ -132,26 +172,13 @@ export default function FollowTheData({ graph, plain, endpointId, onEndpoint, se
                   </div>
                 )}
                 {showRow(idx) && <DataRow info={parseWriteChip(s)} />}
-                {(showTechnical || !plain) && (s.technical || s.evidence) && (
-                  <div className="flow-where map-case">
-                    {s.technical}
-                    {s.technical && s.evidence ? " · " : ""}
-                    {s.evidence}
-                  </div>
+                </div>
                 )}
               </div>
+              {idx < steps.length - 1 && <div className="flow-arrow" aria-hidden="true">↓</div>}
             </li>
           ))}
         </ol>
-        {motion.tags?.length > 0 && (
-          <div className="flow-tags" aria-hidden="true">
-            {motion.tags.map((t) => (
-              <span key={t.id} className="data-tag" style={{ left: t.x, top: t.y }}>
-                {t.name}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
       {plain && (
         <label className="map-check flow-code-toggle">

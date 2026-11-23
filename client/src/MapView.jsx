@@ -249,7 +249,7 @@ function MapViewInner({ runId, graph, tours = [], onBack, onOpenPage }) {
     <div className="map-shell">
       <div className="map-toolbar">
         <button className="btn-primary" style={{ width: "auto" }} onClick={onBack}>
-          ← Run
+          ← Back to report
         </button>
         <div className="map-tabs" role="tablist">
           {VIEWS.map((v) => (

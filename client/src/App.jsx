@@ -27,7 +27,6 @@ async function api(path, options) {
 function Brand() {
   return (
     <div className="brand">
-      <span className="brand-mark">[ ]</span>
       <span>SpecsDoctor</span>
     </div>
   );
@@ -323,7 +322,7 @@ function PageViewer({ runId, slug, onBack }) {
       <div className="card card-reading">
         <div className="card-header">
           <Brand />
-          <button className="btn-primary" style={{ width: "auto" }} onClick={onBack}>
+          <button className="btn-header" onClick={onBack}>
             ← Back
           </button>
         </div>
@@ -404,28 +403,59 @@ function BuildStatus({ run }) {
 
 // Idea 5 (LOG.md's "wow factor" brainstorm): turn the public share link on or off for this run.
 // `shareUrl` comes from the same GET /runs/:id poll RunProgress already does - no extra fetch.
-// Groups generated pages for the report: project-wide pages (Overview, API endpoints...)
-// first, then one collapsed group per project area (the first two folders of the path,
-// e.g. server/src or fixtures/fixture-pern-mini). Inside a group, pages show the rest of the path.
-function pageGroupKey(title) {
-  if (!title.includes("/")) return "Project overview";
-  const parts = title.split("/");
-  return parts.length > 2 ? parts.slice(0, 2).join("/") : parts[0];
-}
-function pageLabelInGroup(title, key) {
-  return key === "Project overview" ? title : title.slice(key.length + 1);
-}
-function groupPagesByFolder(pages) {
-  const groups = new Map();
+// Builds a two-level tree for Generated pages: project-wide pages first, then each top
+// folder (client, server, fixtures...). Inside a top folder: its own pages, then one
+// collapsible subfolder per second-level folder (src, scripts, test...), so roots aren't repeated.
+function buildPageTree(pages) {
+  const overview = { name: "Project overview", pages: [], children: [] };
+  const tops = new Map();
   for (const p of pages) {
-    const key = pageGroupKey(p.title);
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(p);
+    const parts = p.title.split("/");
+    if (parts.length === 1) { overview.pages.push({ ...p, label: p.title }); continue; }
+    const top = parts[0];
+    if (!tops.has(top)) tops.set(top, { name: top, pages: [], childMap: new Map() });
+    const node = tops.get(top);
+    if (parts.length === 2) { node.pages.push({ ...p, label: parts[1] }); continue; }
+    const sub = parts[1];
+    if (!node.childMap.has(sub)) node.childMap.set(sub, { name: sub, pages: [], children: [] });
+    node.childMap.get(sub).pages.push({ ...p, label: parts.slice(2).join("/") });
   }
-  const overview = groups.get("Project overview");
-  groups.delete("Project overview");
-  const rest = [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  return overview ? [["Project overview", overview], ...rest] : rest;
+  const rest = [...tops.values()]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((n) => ({ name: n.name, pages: n.pages, children: [...n.childMap.values()].sort((a, b) => a.name.localeCompare(b.name)) }));
+  return overview.pages.length ? [overview, ...rest] : rest;
+}
+
+function countPages(node) {
+  return node.pages.length + node.children.reduce((sum, c) => sum + countPages(c), 0);
+}
+
+function PageFolder({ node, open = false, onOpen }) {
+  return (
+    <details className="page-group" open={open}>
+      <summary>
+        {node.name} <span className="dash-area-count">{countPages(node)}</span>
+      </summary>
+      <div className="page-group-body">
+        {node.pages.length > 0 && (
+          <div className="scroll-list">
+            {node.pages.map((p) => (
+              <a key={p.slug} className="page-link" href="#" onClick={(e) => { e.preventDefault(); onOpen(p.slug); }}>
+                <span className={`dot ${PAGE_STATUS_DOT[p.status] ?? "dot-pending"}`} style={{ marginRight: "0.5rem" }} />
+                {p.label}
+                <span className="stage-status" style={{ marginLeft: "0.5rem" }}>{p.status.replace(/_/g, " ")}</span>
+                {p.open_findings > 0 && <span className="finding-badge">{p.open_findings} to review</span>}
+                <span className="page-view">View →</span>
+              </a>
+            ))}
+          </div>
+        )}
+        {node.children.map((c) => (
+          <PageFolder key={c.name} node={c} onOpen={onOpen} />
+        ))}
+      </div>
+    </details>
+  );
 }
 
 // Groups mapped areas by their top-level folder (client, server, fixtures...) so the
@@ -602,7 +632,7 @@ function RunProgress({ runId, onBackToList }) {
       <div className="card">
         <div className="card-header">
           <Brand />
-          <button className="btn-primary" style={{ width: "auto" }} onClick={onBackToList}>
+          <button className="btn-header" onClick={onBackToList}>
             ← Analyze another repo
           </button>
         </div>
@@ -612,21 +642,33 @@ function RunProgress({ runId, onBackToList }) {
         ) : (
           <>
             <div className="run-header">
-              <h1>
-                {run.repo.owner}/{run.repo.name}
+              <h1 title={run.resolved_sha ? `Docs pinned to commit ${run.resolved_sha.slice(0, 7)}` : undefined}>
+                <span className="repo-label">GitHub repo analyzed:</span> {run.repo.owner}/{run.repo.name}
               </h1>
-              {run.resolved_sha && <span className="sha">{run.resolved_sha.slice(0, 7)}</span>}
             </div>
+            {isDone && pages.length > 0 && (
+              <div className="export-bar">
+                <span className="export-label">Export results:</span>
+                <a className="export-link" href={`/api/runs/${runId}/export.zip`} download>
+                  ↓ Docs (.zip)
+                </a>
+                <a className="export-link" href={`/api/runs/${runId}/export.zip?include_review=true`} download>
+                  ↓ Docs + review notes (.zip)
+                </a>
+              </div>
+            )}
+            {!isDone && (
             <div className="status-pill">
               <span className={`dot ${run.status === "running" || run.status === "queued" ? "dot-running" : run.status === "failed" ? "dot-failed" : "dot-done"}`} />
               {run.status.replace(/_/g, " ")}
             </div>
+            )}
 
             {run.failure && <p className="error-text">{run.failure.code}: {run.failure.detail}</p>}
 
             {isDone && (
               <div className="dashboard">
-                <h2>At a glance: what SpecsDoctor scanned</h2>
+                <h2>At a glance: What SpecsDoctor scanned</h2>
                 {!stats ? (
                   graphError ? (
                     <p className="lede">
@@ -683,9 +725,15 @@ function RunProgress({ runId, onBackToList }) {
               </div>
             )}
 
+
             {isDone ? (
               <details className="build-details">
-                <summary>Build details {run.stages.length > 3 && <span className="scroll-hint">scroll for more</span>}</summary>
+                <summary>
+                  Build details
+                  {run.status === "complete_with_errors" && (
+                    <span className="scroll-hint">some steps finished partly; see below</span>
+                  )}
+                </summary>
                 <BuildStatus run={run} />
               </details>
             ) : (
@@ -697,39 +745,12 @@ function RunProgress({ runId, onBackToList }) {
             {pages.length > 0 && (
               <div className="page-list">
                 <h2>Generated pages</h2>
-                {groupPagesByFolder(pages).map(([folder, group]) => (
-                  <details key={folder} className="page-group" open={folder === "Project overview"}>
-                    <summary>
-                      {folder} <span className="dash-area-count">{group.length}</span>
-                      {group.length > 5 && <span className="scroll-hint">scroll for more</span>}
-                    </summary>
-                    <div className="scroll-list">
-                      {group.map((p) => (
-                        <a key={p.slug} className="page-link" href="#" onClick={(e) => { e.preventDefault(); setOpenSlug(p.slug); }}>
-                          <span className={`dot ${PAGE_STATUS_DOT[p.status] ?? "dot-pending"}`} style={{ marginRight: "0.5rem" }} />
-                          {pageLabelInGroup(p.title, folder)}
-                          <span className="stage-status" style={{ marginLeft: "0.5rem" }}>{p.status.replace(/_/g, " ")}</span>
-                          {p.open_findings > 0 && <span className="finding-badge">{p.open_findings} to review</span>}
-                          <span className="page-view">View →</span>
-                        </a>
-                      ))}
-                    </div>
-                  </details>
+                {buildPageTree(pages).map((node) => (
+                  <PageFolder key={node.name} node={node} onOpen={setOpenSlug} />
                 ))}
               </div>
             )}
 
-            {isDone && pages.length > 0 && (
-              <div className="page-list">
-                <h2>Export</h2>
-                <a className="page-link" href={`/api/runs/${runId}/export.zip`} download>
-                  Download docs (.zip)
-                </a>
-                <a className="page-link" href={`/api/runs/${runId}/export.zip?include_review=true`} download>
-                  Download docs + review.md (.zip)
-                </a>
-              </div>
-            )}
           </>
         )}
       </div>
