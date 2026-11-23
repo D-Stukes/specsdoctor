@@ -1,17 +1,49 @@
 # SpecsDoctor
 
-See [CLAUDE.md](CLAUDE.md) and [docs/](docs/) for what this is and why. This
-file is just how to run it.
+Technical writers on engineering teams spend much of their time digging through unfamiliar code just to figure out what a project does and what's undocumented. When docs fall behind the code, new engineers and users lose time and trust.
 
-## Layout
+**SpecsDoctor reads a public GitHub repo and turns it into documentation drafts you can review, edit, and trust, with every claim linked back to the exact line of code it came from.** Anything it isn't sure about is flagged for a human to review.
 
-- `contracts/` - JSON schemas, Ajv validators, TS types, shared constants (T01).
+![SpecsDoctor results page showing source-linked claims and review flags](assets/specsdoctor-results.png)
+
+## Key features
+
+- **Source-linked drafts:** Get a first draft of a project's documentation in about a minute, with each statement linked to the code it describes, so you can check it instead of taking it on faith.
+- **Review flags:** Anything SpecsDoctor isn't sure about is marked for human review, so you know exactly where to spend your attention.
+- **Interactive repo map:** See how the project fits together and follow a request through the app step by step, with a Plain English toggle for non-developers.
+- **Guided tours:** Watch a narrated, animated walkthrough of the codebase, so a newcomer can get oriented without reading every file.
+- **Ask this repo:** Ask questions about the project in plain language and get answers with sources attached.
+
+## How it stays accurate
+
+The code supplies the facts and the AI only explains them. Parsers read the repo directly, and every AI response must match a fixed JSON shape before it's used. SpecsDoctor never runs the code it analyzes, and it never labels its output "verified"; it shows what was checked against source and what still needs a human.
+
+## Tech stack
+
+- **Frontend:** React + Vite, React Flow (`@xyflow/react`) with ELK.js for the repo map, react-markdown + remark-gfm for rendering docs
+- **Backend:** Node.js + Express, PostgreSQL (`pg`)
+- **AI:** Claude via the Anthropic SDK (`@anthropic-ai/sdk`), with structured JSON outputs validated by Ajv
+- **Code analysis:** `@babel/parser` and `@babel/traverse` for JavaScript/TypeScript, `pgsql-ast-parser` for SQL schemas
+- **Export:** `archiver` to bundle docs into a downloadable ZIP
+- **Hosting:** Supabase (Postgres) + a Node web host; currently runs locally. Live link and tester access code coming with the first deploy (see DEPLOY.md)
+
+## Built by
+
+Diane "Lady D" Stukes and Dikshyant Giri, Pursuit AI Builder Fellowship (L2), November 2026. The project was called DocSync during development, so you'll still see that name in some file and database names.
+
+---
+
+## Run it locally
+
+### Layout
+
+- `contracts/` - JSON schemas, Ajv validators, TS types, shared constants .
 - `server/` - Express API + Postgres migrations. `server/db/migrations/` is
   the authoritative SQL schema (Technical Design §4b).
 - `client/` - Vite + React frontend.
 - `fixtures/` - test fixtures for the Scanner, starting with `fixture-pern-mini`.
 
-## Local setup
+### Local setup
 
 Requires Node 18+ and a Postgres database.
 
@@ -50,7 +82,7 @@ npm run build -w client
 npm run dev:server            # now also serves client/dist/
 ```
 
-## Tests
+### Tests
 
 ```bash
 npm test                      # every workspace
@@ -58,15 +90,12 @@ npm run test:contracts        # just the schema validation tests
 npm run test -w server        # smoke tests (needs DATABASE_URL etc., see above)
 ```
 
-## Current state (T01-T03 of Task 1 - Foundations)
 
-- Contracts, fixtures and the scaffold described above all exist and are
-  tested locally. See `LOG.md` for the session-by-session history.
-- **Stub mode only.** `POST /api/runs` fakes a resolved SHA and marches
-  `run_stages` through a timer (`server/src/stub/runner.js`) - there's no
-  Repo Reader, Scanner, or model call yet. Those start in Task 2.
-- **Not deployed yet.** M1 ("the *deployed* app ... shows a stub run
-  progressing") is verified locally (`npm run dev:server` + the client) but
-  not on Render - that needs a Render account and a Postgres connection
-  string (Neon, per the technical design), which this session doesn't have
-  access to.
+`ACCESS_CODE` is a simple shared code that keeps the app from being open to the public, since every run uses paid AI calls. Set any value and enter it on the first screen.
+
+### Project docs
+
+- `docs/DocSync-Final-PRD.md` - what we built and why
+- `docs/DocSync-Technical-Design.md` - architecture, data contracts, and API
+- `LOG.md` - session-by-session build history
+- `CHANGELOG.md` - work mapped to commits
