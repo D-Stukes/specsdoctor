@@ -8,7 +8,7 @@ function paramsOf(fnNode) {
     if (p.type === "Identifier") return p.name;
     if (p.type === "AssignmentPattern" && p.left.type === "Identifier") return p.left.name;
     if (p.type === "ObjectPattern") return "{ " + p.properties.map((prop) => prop.key?.name ?? "...").join(", ") + " }";
-    if (p.type === "RestElement" && p.left.type === "Identifier") return `...${p.left.name}`;
+    if (p.type === "RestElement" && p.argument?.type === "Identifier") return `...${p.argument.name}`;
     return "arg";
   });
 }
