@@ -133,10 +133,20 @@ function RepoForm({ onRunStarted, onOpenRun }) {
               autoFocus
               autoComplete="off"
             />
+            <p className="size-note">
+              Please note: this application is designed for normal-size repos (size limit: up to 100 code files). Extra-large repos may time out before the analysis is complete.{" "}
+              <span
+                className="size-help"
+                tabIndex={0}
+                title={"Not sure of your repo's size? Just try it. SpecsDoctor counts the code files (.js, .jsx, .ts, .tsx, .py) in a few seconds, before any analysis starts. If there are more than 100, it stops right away and tells you the exact count."}
+              >
+                ⓘ How to check
+              </span>
+            </p>
           </div>
           <div className="field">
-            <label htmlFor="ref">Branch (optional)</label>
-            <input id="ref" type="text" placeholder="main" value={ref} onChange={(e) => setRef(e.target.value)} autoComplete="off" />
+            <label htmlFor="ref">Branch <span className="label-hint">(please type in the name of a different branch if desired)</span></label>
+            <input id="ref" type="text" placeholder="main (used if left blank)" value={ref} onChange={(e) => setRef(e.target.value)} autoComplete="off" />
           </div>
 
           <div className="write-for" role="group" aria-label="Write for">
@@ -664,7 +674,15 @@ function RunProgress({ runId, onBackToList }) {
             </div>
             )}
 
-            {run.failure && <p className="error-text">{run.failure.code}: {run.failure.detail}</p>}
+            {run.failure && (
+              <p className="error-text">
+                {run.failure.code === "interrupted"
+                  ? "This run was stopped before it finished. This usually happens with extra-large repos, which can take longer than the time limit. Please try a smaller repo."
+                  : run.failure.code === "repo_too_large"
+                    ? run.failure.detail
+                    : `${run.failure.code}: ${run.failure.detail}`}
+              </p>
+            )}
 
             {isDone && (
               <div className="dashboard">

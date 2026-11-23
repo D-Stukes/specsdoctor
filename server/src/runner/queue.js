@@ -19,6 +19,15 @@ export async function tryStartNext() {
   if (running) return;
   const pool = getPool();
 
+  // On a serverless host a run can be cut off without warning (e.g. Vercel's 5-minute limit),
+  // leaving it 'running' forever and blocking the queue. Free any run stuck that long.
+  const staleMinutes = Number(process.env.STALE_RUN_MINUTES) || 10;
+  await pool.query(
+    `UPDATE runs SET status = 'failed', failure_code = 'interrupted', finished_at = now()
+     WHERE status = 'running' AND started_at < now() - ($1 || ' minutes')::interval`,
+    [String(staleMinutes)]
+  );
+
   const { rows: activeRows } = await pool.query(`SELECT count(*)::int AS n FROM runs WHERE status = 'running'`);
   if (activeRows[0].n >= getLimits().activeRuns) return;
 
@@ -40,11 +49,11 @@ export async function tryStartNext() {
   await pool.query(`UPDATE runs SET status = 'running', started_at = now() WHERE id = $1`, [run.id]);
 
   const aiStub = process.env.AI_STUB_MODE !== "false";
-  runPipeline(run.id, { owner: run.owner, name: run.name, ref: run.requested_ref }, { aiStub })
+  return runPipeline(run.id, { owner: run.owner, name: run.name, ref: run.requested_ref }, { aiStub })
     .catch((err) => console.error(`run ${run.id} pipeline crashed:`, err))
     .finally(() => {
       running = false;
-      tryStartNext();
+      return tryStartNext();
     });
 }
 

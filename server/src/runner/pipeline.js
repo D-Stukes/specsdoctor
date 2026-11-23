@@ -68,6 +68,20 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
     return;
   }
 
+  // Size check before any AI spending: on a host with a time limit (Vercel's free plan stops a
+  // run at 5 minutes), a repo over the code-file limit can't finish, so stop now with a clear
+  // message and the real count. MAX_CODE_FILES overrides; 0 means no limit (default locally).
+  const maxCodeFiles = Number(process.env.MAX_CODE_FILES ?? (process.env.VERCEL ? 100 : 0));
+  const codeFileCount = snapshot.files.filter((f) => f.status === "scanned" && /\.(jsx?|tsx?|mjs|cjs|py)$/i.test(f.path)).length;
+  if (maxCodeFiles > 0 && codeFileCount > maxCodeFiles) {
+    await failRun(
+      runId,
+      "repo_too_large",
+      `This repo has ${codeFileCount} code files, which is over SpecsDoctor's limit of ${maxCodeFiles}. Please try a smaller repo, or select a branch with fewer files within your repo.`
+    );
+    return;
+  }
+
   await startStage(runId, "scanner");
   let scanned;
   let scannerFailed = false;

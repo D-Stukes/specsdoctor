@@ -3,6 +3,13 @@ import { getPool } from "../db/pool.js";
 import { parseRepoUrl } from "../repo-url.js";
 import { startRun } from "../runner/start-run.js";
 import { tryStartNext } from "../runner/queue.js";
+import { waitUntil } from "@vercel/functions";
+
+// On Vercel, a function stops when its response is sent; waitUntil keeps it running until the
+// documentation run finishes (up to the plan's limit). Locally it does nothing.
+function keepAlive(promise) {
+  try { waitUntil(promise); } catch { /* not on Vercel */ }
+}
 import { QueueFullError } from "../runner/limits.js";
 import { loadIndexForRun } from "../db/load-index.js";
 import { scanRenderedPageForUnknownMentions } from "../stages/verifier.js";
@@ -52,7 +59,7 @@ runsRouter.post("/runs", async (req, res) => {
   }
 
   if (!duplicateOf) {
-    tryStartNext().catch((err) => console.error("tryStartNext failed:", err));
+    keepAlive(tryStartNext().catch((err) => console.error("tryStartNext failed:", err)));
   }
   res.status(202).json({ run_id: runId, status: "queued", duplicate_of: duplicateOf });
 });

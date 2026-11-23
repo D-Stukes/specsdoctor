@@ -827,3 +827,6 @@ body:has(.shell-results) {
 .flow-title { cursor: help; }
 .flow-active .flow-card { border-color: var(--mint); box-shadow: 0 0 0 2px rgba(30,106,134,0.25); background: #eef6f9; }
 .flow-carry { display: inline-block; margin-bottom: 0.3rem; font-size: 12px; font-weight: 600; color: #3d5a6c; background: #fdf8e3; border: 1px solid #efe2a9; border-radius: 9999px; padding: 0.05rem 0.6rem; }
+.size-note { margin: 0.35rem 0 0; font-size: 12.5px; line-height: 1.4; color: #8a1c2c; font-weight: 500; }
+.label-hint { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text-muted); }
+.size-help { white-space: nowrap; text-decoration: underline dotted; cursor: help; color: #3d5a6c; }
