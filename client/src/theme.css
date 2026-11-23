@@ -364,6 +364,8 @@ button:disabled {
 .page-link:hover {
   border-color: var(--mint);
 }
+.page-view { float: right; color: var(--text-secondary); font-weight: 600; }
+.page-link:hover .page-view { color: var(--mint); }
 
 .page-link-inline { color: var(--text-secondary); text-decoration: underline; font-size: 13px; }
 .page-link-inline:hover { color: var(--mint); }

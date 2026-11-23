@@ -668,6 +668,7 @@ function RunProgress({ runId, onBackToList }) {
                     {p.title}
                     <span className="stage-status" style={{ marginLeft: "0.5rem" }}>{p.status.replace(/_/g, " ")}</span>
                     {p.open_findings > 0 && <span className="finding-badge">{p.open_findings} to review</span>}
+                    <span className="page-view">View →</span>
                   </a>
                 ))}
               </div>
