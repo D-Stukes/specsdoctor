@@ -68,7 +68,7 @@ runsRouter.post("/runs", async (req, res) => {
 runsRouter.get("/runs/:id/pages", async (req, res) => {
   const { rows } = await getPool().query(
     `SELECT p.slug, p.title, p.status, p.current_rev,
-            pr.checks_fresh, pr.reviewed_at,
+            pr.checks_fresh, pr.reviewed_at, length(pr.markdown) AS chars,
             COALESCE(f.open_findings, 0)::int AS open_findings
      FROM pages p
      JOIN page_revisions pr ON pr.page_id = p.id AND pr.rev = p.current_rev
@@ -87,6 +87,8 @@ runsRouter.get("/runs/:id/pages", async (req, res) => {
       checks_fresh: p.checks_fresh,
       reviewed: p.reviewed_at != null,
       open_findings: p.open_findings,
+      // A page under ~150 characters is just its heading plus a "nothing found" line.
+      empty: Number(p.chars) < 150,
     })),
   });
 });
@@ -333,7 +335,7 @@ runsRouter.post("/runs/:id/ask", async (req, res) => {
   }
   try {
     const { toolbox, index } = await toolboxFor(req.params.id);
-    const result = await askRepo({ runId: req.params.id, question, history: history ?? [], toolbox, index, stub: process.env.AI_STUB_MODE !== "false" });
+    const result = await askRepo({ runId: req.params.id, question, history: history ?? [], toolbox, index, stub: (process.env.AI_STUB_MODE ?? "").trim().toLowerCase() !== "false" });
     res.json(result);
   } catch (err) {
     if (err instanceof ChatLimitError) {
@@ -361,7 +363,7 @@ runsRouter.post("/runs/:id/explore", async (req, res) => {
     if (cached && cached.stops?.length > 0) return res.json({ explorer: cached });
     if (cached) return res.status(422).json({ error: { code: "explorer_no_tour", message: "This repository doesn't have enough parsed structure yet for a guided walk." } });
     const { toolbox, index, graph } = await toolboxFor(req.params.id);
-    const { explorer, cost_usd } = await exploreRepo({ runId: req.params.id, graph, index, toolbox, stub: process.env.AI_STUB_MODE !== "false" });
+    const { explorer, cost_usd } = await exploreRepo({ runId: req.params.id, graph, index, toolbox, stub: (process.env.AI_STUB_MODE ?? "").trim().toLowerCase() !== "false" });
     await saveExplorer(req.params.id, explorer, cost_usd);
     res.json({ explorer });
   } catch (err) {

@@ -830,3 +830,10 @@ body:has(.shell-results) {
 .size-note { margin: 0.35rem 0 0; font-size: 12.5px; line-height: 1.4; color: #8a1c2c; font-weight: 500; }
 .label-hint { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text-muted); }
 .size-help { white-space: nowrap; text-decoration: underline dotted; cursor: help; color: #3d5a6c; }
+
+/* Same card size on every screen: wide reading width and a consistent tall height */
+.card.card-reading { max-width: 820px; min-height: min(88vh, 960px); }
+/* Pages where nothing was found: gray dot, muted row, listed last */
+.dot-empty { background: transparent; border: 1.5px solid var(--text-muted); }
+.page-link.page-empty { opacity: 0.6; }
+.page-link.page-empty .stage-status { font-style: italic; }

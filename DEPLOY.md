@@ -32,8 +32,8 @@ Goal: a live link that someone outside our pair can use cold, with no help.
 3. **Confusion:** wording or layout, starting with whatever confused them first.
 
 ## Status
-- [ ] Supabase database created
-- [ ] Host chosen and service created
-- [ ] All checks pass
-- [ ] Live link + access code added to README
+- [x] Supabase database created
+- [x] Host chosen and service created (Vercel)
+- [x] All checks pass (real run on lego-calculator)
+- [x] Live link added to README (access code shared privately, since the repo is public)
 - [ ] Other pair tested it cold; notes added to TESTING.md

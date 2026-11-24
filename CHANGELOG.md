@@ -4,6 +4,8 @@ Maps each piece of work to the commit that contains it. Newest first.
 
 | Date | Commit | Change |
 |---|---|---|
+| 2026-11-23 | 14abb51 | Fixed Vercel startup: root package marked as an ES module. Deployed live to https://specsdoctor.vercel.app (Vercel + Supabase) |
+| 2026-11-23 | (this commit) | AI_STUB_MODE now ignores extra spaces/line breaks and letter case; README shows the live link; DEPLOY.md checklist updated |
 | 2026-11-23 | 9968bff | Deploy setup for Vercel + Supabase (api/index.js, vercel.json, SSL database pool, waitUntil keeps runs alive, stuck runs auto-cleared); early 100 code-file size check with the exact count before any AI spending; burgundy size note under the repo box; clearer branch label; friendly timeout and too-large messages |
 | 2026-11-23 | c9eadea | Report polish: "Export results" bar (faint yellow, button-style downloads) under the repo line; app title emphasized, brackets removed; "GitHub repo analyzed:" label; status and commit ID hidden when done; quiet soft-blue header buttons; nested collapsible page folders; blue-bordered summary. Map: "Back to report" button; Follow the data rebuilt as one compact flow chart with plain step labels, ⓘ explanations, click-to-expand details, code-name/file-line tags; walkthrough animation removed |
 | 2026-11-23 | e7d4188 | UX polish from self-testing: generated pages grouped by folder in collapsible, scrollable lists; always-visible scroll bars and "scroll for more" hints; whole-row list heights; slim build details with one-line cost/time; plain-language "what SpecsDoctor scanned" summary; one-line action bar; report stays open on refresh; clearer home labels and tighter home layout with Recent runs visible; added IDEAS.md |

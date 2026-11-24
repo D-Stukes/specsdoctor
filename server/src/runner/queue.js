@@ -48,7 +48,7 @@ export async function tryStartNext() {
   running = true;
   await pool.query(`UPDATE runs SET status = 'running', started_at = now() WHERE id = $1`, [run.id]);
 
-  const aiStub = process.env.AI_STUB_MODE !== "false";
+  const aiStub = (process.env.AI_STUB_MODE ?? "").trim().toLowerCase() !== "false";
   return runPipeline(run.id, { owner: run.owner, name: run.name, ref: run.requested_ref }, { aiStub })
     .catch((err) => console.error(`run ${run.id} pipeline crashed:`, err))
     .finally(() => {

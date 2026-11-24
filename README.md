@@ -2,6 +2,8 @@
 
 Technical writers on engineering teams spend much of their time digging through unfamiliar code just to figure out what a project does and what's undocumented. When docs fall behind the code, new engineers and users lose time and trust.
 
+**Live app:** https://specsdoctor.vercel.app (access code available on request)
+
 **SpecsDoctor reads a public GitHub repo and turns it into documentation drafts you can review, edit, and trust, with every claim linked back to the exact line of code it came from.** Anything it isn't sure about is flagged for a human to review.
 
 ## Key features
@@ -23,7 +25,7 @@ The code supplies the facts and the AI only explains them. Parsers read the repo
 - **AI:** Claude via the Anthropic SDK (`@anthropic-ai/sdk`), with structured JSON outputs validated by Ajv
 - **Code analysis:** `@babel/parser` and `@babel/traverse` for JavaScript/TypeScript, `pgsql-ast-parser` for SQL schemas
 - **Export:** `archiver` to bundle docs into a downloadable ZIP
-- **Hosting:** Supabase (Postgres) + a Node web host; currently runs locally. Live link and tester access code coming with the first deploy (see DEPLOY.md)
+- **Hosting:** Vercel (app) + Supabase (Postgres). Live at https://specsdoctor.vercel.app
 
 ## Built by
 

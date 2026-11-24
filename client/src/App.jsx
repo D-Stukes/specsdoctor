@@ -111,7 +111,7 @@ function RepoForm({ onRunStarted, onOpenRun }) {
 
   return (
     <div className="shell">
-      <div className="card home-card">
+      <div className="card card-reading home-card">
         <div className="card-header">
           <Brand />
         </div>
@@ -449,11 +449,11 @@ function PageFolder({ node, open = false, onOpen }) {
       <div className="page-group-body">
         {node.pages.length > 0 && (
           <div className="scroll-list">
-            {node.pages.map((p) => (
-              <a key={p.slug} className="page-link" href="#" onClick={(e) => { e.preventDefault(); onOpen(p.slug); }}>
-                <span className={`dot ${PAGE_STATUS_DOT[p.status] ?? "dot-pending"}`} style={{ marginRight: "0.5rem" }} />
+            {[...node.pages].sort((x, y) => Number(x.empty) - Number(y.empty)).map((p) => (
+              <a key={p.slug} className={`page-link ${p.empty ? "page-empty" : ""}`} href="#" onClick={(e) => { e.preventDefault(); onOpen(p.slug); }} title={p.empty ? "SpecsDoctor found nothing for this topic in this repo" : undefined}>
+                <span className={`dot ${p.empty ? "dot-empty" : PAGE_STATUS_DOT[p.status] ?? "dot-pending"}`} style={{ marginRight: "0.5rem" }} />
                 {p.label}
-                <span className="stage-status" style={{ marginLeft: "0.5rem" }}>{p.status.replace(/_/g, " ")}</span>
+                <span className="stage-status" style={{ marginLeft: "0.5rem" }}>{p.empty ? "nothing found" : p.status.replace(/_/g, " ")}</span>
                 {p.open_findings > 0 && <span className="finding-badge">{p.open_findings} to review</span>}
                 <span className="page-view">View →</span>
               </a>
@@ -639,7 +639,7 @@ function RunProgress({ runId, onBackToList }) {
 
   return (
     <div className="shell">
-      <div className="card">
+      <div className="card card-reading">
         <div className="card-header">
           <Brand />
           <button className="btn-header" onClick={onBackToList}>
