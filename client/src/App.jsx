@@ -82,16 +82,26 @@ function AccessCodeForm({ onSignedIn }) {
 // Task 12 (T35): plain-language user guides for the app's own end users, alongside the always-on
 // developer docs. "everyday"/"both" only cost extra when actually picked (see pipeline.js) - the
 // default stays "developers", today's only behavior, for anyone who doesn't touch this control.
+// Developer docs are always written; the second choice adds plain-language guides on top.
+// ("everyday" and "both" did the same thing in pipeline.js, so the UI offers just these two.)
 const WRITE_FOR_OPTIONS = [
-  { id: "developers", label: "Developers" },
-  { id: "everyday", label: "Everyday users" },
-  { id: "both", label: "Both" },
+  {
+    id: "developers",
+    label: "Developers",
+    hint: "Technical docs for people who work on the code: architecture, API endpoints, data model, and a page for each code file.",
+  },
+  {
+    id: "both",
+    label: "Developers + everyday users",
+    hint: "Everything developers get, plus plain-language guides for the app's own users: what each screen is for and how to use it. Takes a little longer.",
+  },
 ];
 
 function RepoForm({ onRunStarted, onOpenRun }) {
   const [repoUrl, setRepoUrl] = useState("");
   const [ref, setRef] = useState("");
   const [writeFor, setWriteFor] = useState("developers");
+  const [showSizeHelp, setShowSizeHelp] = useState(false);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -111,16 +121,21 @@ function RepoForm({ onRunStarted, onOpenRun }) {
 
   return (
     <div className="shell">
-      <div className="card card-reading home-card">
+      <div className="report-layout has-side">
+      <div className="card card-reading report-main home-card">
         <div className="card-header">
           <Brand />
         </div>
-        <div className="eyebrow">Source-linked developer docs</div>
-        <h1>Make sense of any codebase.</h1>
+        <p className="home-intro">Source-linked developer docs that make sense of any codebase.</p>
         <p className="lede">
           Paste a public GitHub repository. SpecsDoctor reads the code and writes documentation that cites the exact lines it relies
           on.
         </p>
+        <div className="trust-row">
+          <span>✓ Pinned to one commit</span>
+          <span>✓ Every claim cites its source</span>
+          <span>⚠ Uncertainty flagged for review</span>
+        </div>
         <form onSubmit={handleSubmit}>
           <div className="field">
             <label htmlFor="repo_url">Enter a GitHub repository</label>
@@ -135,12 +150,14 @@ function RepoForm({ onRunStarted, onOpenRun }) {
             />
             <p className="size-note">
               Please note: this application is designed for normal-size repos (size limit: up to 100 code files). Extra-large repos may time out before the analysis is complete.{" "}
-              <span
-                className="size-help"
-                tabIndex={0}
-                title={"Not sure of your repo's size? Just try it. SpecsDoctor counts the code files (.js, .jsx, .ts, .tsx, .py) in a few seconds, before any analysis starts. If there are more than 100, it stops right away and tells you the exact count."}
-              >
-                ⓘ How to check
+              <span className={`size-help-wrap ${showSizeHelp ? "open" : ""}`}>
+                <button type="button" className="size-help" aria-expanded={showSizeHelp} onClick={() => setShowSizeHelp((v) => !v)}>
+                  ⓘ How to check
+                </button>
+                <span className="size-pop" role="tooltip">
+                  Not sure of your repo's size? Just try it. SpecsDoctor counts the code files (.js, .jsx, .ts, .tsx, .py) in a few
+                  seconds, before any analysis starts. If there are more than 100, it stops right away and tells you the exact count.
+                </span>
               </span>
             </p>
           </div>
@@ -149,12 +166,17 @@ function RepoForm({ onRunStarted, onOpenRun }) {
             <input id="ref" type="text" placeholder="main (used if left blank)" value={ref} onChange={(e) => setRef(e.target.value)} autoComplete="off" />
           </div>
 
-          <div className="write-for" role="group" aria-label="Write for">
-            {WRITE_FOR_OPTIONS.map((opt) => (
-              <button key={opt.id} type="button" aria-pressed={opt.id === writeFor} onClick={() => setWriteFor(opt.id)}>
-                {opt.label}
-              </button>
-            ))}
+          <div className="field write-for-field">
+            <span className="write-for-label">Write the docs for:</span>
+            <div className="write-for" role="group" aria-label="Write the docs for">
+              {WRITE_FOR_OPTIONS.map((opt) => (
+                <button key={opt.id} type="button" aria-pressed={opt.id === writeFor} onClick={() => setWriteFor(opt.id)}>
+                  {opt.id === writeFor ? "✓ " : ""}
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="write-for-hint">{WRITE_FOR_OPTIONS.find((o) => o.id === writeFor)?.hint}</p>
           </div>
 
           <button className="btn-primary" type="submit" disabled={submitting}>
@@ -162,12 +184,8 @@ function RepoForm({ onRunStarted, onOpenRun }) {
           </button>
           {error && <p className="error-text">{error}</p>}
         </form>
-        <div className="trust-row">
-          <span>✓ Pinned to one commit</span>
-          <span>✓ Every claim cites its source</span>
-          <span>⚠ Uncertainty flagged for review</span>
-        </div>
-        <RunList onOpenRun={onOpenRun} />
+      </div>
+      <RunList onOpenRun={onOpenRun} />
       </div>
     </div>
   );
@@ -200,6 +218,7 @@ function graphStats(graph) {
   };
 }
 
+// Home screen's right-hand panel: recent runs, in the same bridge + panel as the report.
 function RunList({ onOpenRun }) {
   const [runs, setRuns] = useState(null);
   const [error, setError] = useState(null);
@@ -208,34 +227,52 @@ function RunList({ onOpenRun }) {
     api("/runs").then((data) => setRuns(data.runs)).catch((err) => setError(err.message));
   }, []);
 
-  if (error) return <p className="error-text">{error}</p>;
-  if (!runs) return <p className="lede">Loading…</p>;
-  if (runs.length === 0) return null;
-
   return (
-    <details className="page-list recent-runs" open>
-      <summary>
-        <h2>Recent runs <span className="dash-area-count">{runs.length}</span></h2>
-        {runs.length > 4 && <span className="scroll-hint">scroll for more</span>}
-      </summary>
-      <div className="scroll-list">
-      {runs.map((r) => (
-        <a
-          key={r.run_id}
-          className="page-link"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            onOpenRun(r.run_id);
-          }}
-        >
-          <span className={`dot dot-${r.status === "running" || r.status === "queued" ? "running" : r.status === "failed" ? "failed" : "done"}`} style={{ marginRight: "0.5rem" }} />
-          {r.repo.owner}/{r.repo.name} — {r.status} — ${Number(r.cost_usd).toFixed(2)}
-          {r.duration_ms != null && ` — ${formatDuration(r.duration_ms)}`}
-        </a>
-      ))}
-      </div>
-    </details>
+    <>
+      <div className="report-connector" aria-hidden="true" />
+      <aside className="card report-side">
+        <h2>
+          Recent runs {runs && runs.length > 0 && <span className="dash-area-count">{runs.length}</span>}
+        </h2>
+        {error ? (
+          <p className="error-text">{error}</p>
+        ) : !runs ? (
+          <p className="report-side-note">Loading…</p>
+        ) : runs.length === 0 ? (
+          <p className="report-side-note">Repos you analyze will show up here, so you can reopen their reports any time.</p>
+        ) : (
+          <>
+            <p className="report-side-note">Click a run to open its report.</p>
+            <div className="report-side-list">
+              <div className="scroll-list">
+                {runs.map((r) => (
+                  <a
+                    key={r.run_id}
+                    className={`page-link run-row ${r.status === "failed" ? "run-failed" : ""}`}
+                    href="#"
+                    title={r.status === "failed" ? "This run did not complete. Click to see why." : undefined}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onOpenRun(r.run_id);
+                    }}
+                  >
+                    <span className={`dot dot-${r.status === "running" || r.status === "queued" ? "running" : r.status === "failed" ? "failed" : "done"}`} />
+                    <span className="run-row-text">
+                      <span className="run-row-name">{r.repo.owner}/{r.repo.name}</span>
+                      <span className="run-row-meta">
+                        {r.status.replace(/_/g, " ")} · ${Number(r.cost_usd).toFixed(2)}
+                        {r.duration_ms != null && ` · ${formatDuration(r.duration_ms)}`}
+                      </span>
+                    </span>
+                    <span className="page-view">Open →</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </aside>
+    </>
   );
 }
 
@@ -279,7 +316,7 @@ function DocPage({ markdown }) {
   );
 }
 
-function PageViewer({ runId, slug, onBack }) {
+function PageViewer({ runId, slug, pages = [], onOpen, onBack }) {
   const [page, setPage] = useState(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -293,6 +330,8 @@ function PageViewer({ runId, slug, onBack }) {
   }
 
   useEffect(() => {
+    setEditing(false);
+    setError(null);
     load();
   }, [runId, slug]);
 
@@ -329,13 +368,15 @@ function PageViewer({ runId, slug, onBack }) {
 
   return (
     <div className="shell shell-results">
-      <div className="card card-reading">
+      <div className={`report-layout ${pages.length > 0 ? "has-side" : ""}`}>
+      <div className="card card-reading report-main page-main">
         <div className="card-header">
           <Brand />
           <button className="btn-header" onClick={onBack}>
-            ← Back
+            ← Back to report
           </button>
         </div>
+        <div className="page-scroll" key={slug}>
         {!page ? (
           <p className="lede">Loading…</p>
         ) : (
@@ -379,6 +420,9 @@ function PageViewer({ runId, slug, onBack }) {
             )}
           </>
         )}
+        </div>
+      </div>
+      {pages.length > 0 && <SidePages pages={pages} currentSlug={slug} onOpen={onOpen} />}
       </div>
     </div>
   );
@@ -440,9 +484,40 @@ function countPages(node) {
   return node.pages.length + node.children.reduce((sum, c) => sum + countPages(c), 0);
 }
 
-function PageFolder({ node, open = false, onOpen }) {
+function containsSlug(node, slug) {
+  return node.pages.some((p) => p.slug === slug) || node.children.some((c) => containsSlug(c, slug));
+}
+
+// The "Generated pages" panel to the right of the main card, joined by the photo-toned bridge.
+// Shared by the report and the page viewer so both screens look and behave the same.
+function SidePages({ pages, currentSlug, onOpen, placeholder }) {
   return (
-    <details className="page-group" open={open}>
+    <>
+      <div className="report-connector" aria-hidden="true" />
+      <aside className="card report-side">
+        <h2>Generated pages</h2>
+        {pages.length > 0 ? (
+          <>
+            <p className="report-side-note">
+              {currentSlug ? "You're reading the highlighted page. Click another to switch." : "Click any page to read it. Faded pages are topics SpecsDoctor found nothing for."}
+            </p>
+            <div className="report-side-list">
+              {buildPageTree(pages).map((node, i) => (
+                <PageFolder key={node.name} node={node} open={currentSlug ? containsSlug(node, currentSlug) : i === 0} currentSlug={currentSlug} onOpen={onOpen} />
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="report-side-note">{placeholder}</p>
+        )}
+      </aside>
+    </>
+  );
+}
+
+function PageFolder({ node, open = false, currentSlug, onOpen }) {
+  return (
+    <details className="page-group" open={open || (currentSlug != null && containsSlug(node, currentSlug))}>
       <summary>
         {node.name} <span className="dash-area-count">{countPages(node)}</span>
       </summary>
@@ -450,10 +525,10 @@ function PageFolder({ node, open = false, onOpen }) {
         {node.pages.length > 0 && (
           <div className="scroll-list">
             {node.pages.map((p) => (
-              <a key={p.slug} className={`page-link ${p.empty ? "page-empty" : ""}`} href="#" onClick={(e) => { e.preventDefault(); onOpen(p.slug); }} title={p.empty ? "SpecsDoctor found nothing for this topic in this repo" : undefined}>
+              <a key={p.slug} className={`page-link ${p.empty ? "page-empty" : ""} ${p.slug === currentSlug ? "page-current" : ""}`} aria-current={p.slug === currentSlug ? "page" : undefined} href="#" onClick={(e) => { e.preventDefault(); onOpen(p.slug); }} title={p.empty ? "SpecsDoctor found nothing for this topic in this repo" : undefined}>
                 <span className={`dot ${p.empty ? "dot-empty" : PAGE_STATUS_DOT[p.status] ?? "dot-pending"}`} style={{ marginRight: "0.5rem" }} />
                 {p.label}
-                <span className="stage-status" style={{ marginLeft: "0.5rem" }}>{p.empty ? "nothing found" : p.status.replace(/_/g, " ")}</span>
+                <span className="stage-status" style={{ marginLeft: "0.5rem" }}>{p.empty ? "nothing found" : p.status ? p.status.replace(/_/g, " ") : "pending analysis"}</span>
                 {p.open_findings > 0 && <span className="finding-badge">{p.open_findings} to review</span>}
                 <span className="page-view">View →</span>
               </a>
@@ -461,7 +536,7 @@ function PageFolder({ node, open = false, onOpen }) {
           </div>
         )}
         {node.children.map((c) => (
-          <PageFolder key={c.name} node={c} onOpen={onOpen} />
+          <PageFolder key={c.name} node={c} currentSlug={currentSlug} onOpen={onOpen} />
         ))}
       </div>
     </details>
@@ -632,7 +707,7 @@ function RunProgress({ runId, onBackToList }) {
     }
   }
 
-  if (openSlug) return <PageViewer runId={runId} slug={openSlug} onBack={() => setOpenSlug(null)} />;
+  if (openSlug) return <PageViewer runId={runId} slug={openSlug} pages={pages} onOpen={setOpenSlug} onBack={() => setOpenSlug(null)} />;
   if (showMap && graph) {
     return <MapView runId={runId} graph={graph} tours={tours} onBack={() => setShowMap(false)} onOpenPage={(slug) => { setShowMap(false); setOpenSlug(slug); }} />;
   }
@@ -753,7 +828,7 @@ function RunProgress({ runId, onBackToList }) {
 
 
             {isDone ? (
-              <details className="build-details">
+              <details className="build-details" open>
                 <summary>
                   Build details
                   {run.status === "complete_with_errors" && (
@@ -772,24 +847,7 @@ function RunProgress({ runId, onBackToList }) {
         )}
       </div>
       {showSide && (
-        <>
-          <div className="report-connector" aria-hidden="true" />
-          <aside className="card report-side">
-            <h2>Generated pages</h2>
-            {pages.length > 0 ? (
-              <>
-                <p className="report-side-note">Click any page to read it. Faded pages are topics SpecsDoctor found nothing for.</p>
-                <div className="report-side-list">
-                  {buildPageTree(pages).map((node, i) => (
-                    <PageFolder key={node.name} node={node} open={i === 0} onOpen={setOpenSlug} />
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="report-side-note">{run ? "Pages will appear here when SpecsDoctor finishes." : "Loading pages…"}</p>
-            )}
-          </aside>
-        </>
+        <SidePages pages={pages} onOpen={setOpenSlug} placeholder={run ? "Pages will appear here when SpecsDoctor finishes." : "Loading pages…"} />
       )}
       </div>
     </div>

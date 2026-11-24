@@ -827,7 +827,7 @@ body:has(.shell-results) {
 .flow-title { cursor: help; }
 .flow-active .flow-card { border-color: var(--mint); box-shadow: 0 0 0 2px rgba(30,106,134,0.25); background: #eef6f9; }
 .flow-carry { display: inline-block; margin-bottom: 0.3rem; font-size: calc(12px + var(--fs-bump, 0px)); font-weight: 600; color: #3d5a6c; background: #fdf8e3; border: 1px solid #efe2a9; border-radius: 9999px; padding: 0.05rem 0.6rem; }
-.size-note { margin: 0.35rem 0 0; font-size: calc(12.5px + var(--fs-bump, 0px)); line-height: 1.4; color: #8a1c2c; font-weight: 500; }
+.size-note { margin: 0.35rem 0 0; font-size: calc(12.5px + var(--fs-bump, 0px)); line-height: 1.4; color: #5b3a9e; font-weight: 500; }
 .label-hint { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text-muted); }
 .size-help { white-space: nowrap; text-decoration: underline dotted; cursor: help; color: #3d5a6c; }
 
@@ -886,3 +886,69 @@ body:has(.shell-results) {
   .report-connector { flex: none; width: 60%; max-width: 480px; height: 44px; }
   .report-connector::before { inset: 0 3px 3px; background: linear-gradient(90deg, #3c7882, #d7d9da 33%, #c3c4ac 50%, #6290a6 72%, #2f66b6 83%, #6432aa); }
 }
+/* The main card now has room: Build details opens fully, no inner scrolling */
+.report-main .build-details .stage-list { max-height: none; overflow: visible; }
+
+/* "How to check": a real button (no underline) that opens a readable bubble on hover, focus, or click */
+.size-help-wrap { position: relative; display: inline-block; }
+.size-help {
+  background: rgba(91, 58, 158, 0.08); border: 1px solid rgba(91, 58, 158, 0.35); color: #5b3a9e;
+  border-radius: var(--radius-pill); padding: 0.05rem 0.55rem; font: inherit; font-weight: 600;
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.size-help:hover, .size-help-wrap.open .size-help { background: rgba(91, 58, 158, 0.16); }
+.size-pop {
+  display: none; position: absolute; left: 0; top: calc(100% + 6px); z-index: 20; width: min(360px, 80vw);
+  background: #ffffff; color: var(--text); border: 1px solid #b9a7dc; border-radius: 12px;
+  padding: 0.7rem 0.85rem; box-shadow: 0 10px 28px rgba(5, 20, 30, 0.25);
+  font-size: calc(14px + var(--fs-bump, 0px)); font-weight: 400; line-height: 1.45; white-space: normal;
+}
+.size-help-wrap:hover .size-pop, .size-help-wrap:focus-within .size-pop, .size-help-wrap.open .size-pop { display: block; }
+
+/* Write the docs for: label, clearer selected state, and a hint that changes with the choice */
+.write-for-field { margin: 0.6rem 0 0.9rem; }
+.write-for-label { display: block; font-weight: 600; margin-bottom: 0.35rem; }
+.home-card .write-for-field .write-for { margin: 0; flex-wrap: wrap; }
+.write-for button[aria-pressed="true"] { background: var(--mint); border-color: var(--mint); color: #ffffff; font-weight: 600; }
+.write-for-hint { margin: 0.45rem 0 0; color: var(--text-muted); line-height: 1.45; }
+
+/* Page viewer: same height as the report card; the document scrolls inside it */
+.page-main { height: min(88vh, 960px); display: flex; flex-direction: column; }
+.page-scroll { flex: 1; min-height: 0; overflow-y: auto; padding-right: 0.4rem; }
+.page-scroll::-webkit-scrollbar { width: 9px; background: var(--hairline); border-radius: 9px; -webkit-appearance: none; }
+.page-scroll::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 9px; }
+.page-link.page-current { border-color: var(--mint); background: #dcedf5; box-shadow: inset 3px 0 0 var(--mint); font-weight: 600; }
+@media (max-width: 1150px) {
+  .page-main { height: auto; }
+  .page-scroll { overflow: visible; }
+}
+
+/* Home screen: Recent runs in the side panel, two-line rows (repo name, then status/cost/time) */
+.home-card .trust-row { margin: 0 0 1.1rem; }
+.report-side h2 .dash-area-count { text-transform: none; letter-spacing: 0; font-size: 0.75em; }
+.report-side-list .scroll-list .page-link.run-row { height: auto; min-height: 3.2rem; padding: 0.45rem 0.75rem; gap: 0.6rem; white-space: normal; }
+.run-row-text { display: flex; flex-direction: column; min-width: 0; }
+.run-row-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.run-row-meta { font-size: 0.85em; color: var(--text-muted); }
+.run-row .dot { flex: none; }
+
+/* Start screen: one font and one size for everything under the SpecsDoctor title
+   (same as the side panel's notes), except the trust points and the text inside the boxes. */
+.home-card .home-intro,
+.home-card .lede,
+.home-card label,
+.home-card .label-hint,
+.home-card .size-note,
+.home-card .size-help,
+.home-card .write-for-label,
+.home-card .write-for button,
+.home-card .write-for-hint {
+  font-family: var(--font-sans);
+  font-size: calc(14px + var(--fs-bump, 0px));
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.5;
+}
+.home-card .home-intro { margin: 0 0 0.3rem; color: var(--text); font-weight: 600; }
+.home-card .lede { margin: 0 0 1rem; color: var(--text-secondary); }
+.home-card .label-hint { font-weight: 400; color: var(--text-muted); }

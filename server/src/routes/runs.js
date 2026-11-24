@@ -87,8 +87,9 @@ runsRouter.get("/runs/:id/pages", async (req, res) => {
       checks_fresh: p.checks_fresh,
       reviewed: p.reviewed_at != null,
       open_findings: p.open_findings,
-      // A page under ~150 characters is just its heading plus a "nothing found" line.
-      empty: Number(p.chars) < 150,
+      // A finished page under ~150 characters is just its heading plus a "nothing found" line.
+      // Only pages that were actually written count; anything not yet analyzed is never "empty".
+      empty: p.status === "generated" && p.chars != null && Number(p.chars) < 150,
     })),
   });
 });
