@@ -4,6 +4,7 @@ Maps each piece of work to the commit that contains it. Newest first.
 
 | Date | Commit | Change |
 |---|---|---|
+| 2026-11-24 | 78c7cfa | Two-panel layout on every screen (start: Recent runs; report and page viewer: Generated pages with the current page highlighted; documents scroll inside the card); start screen text unified to one font and size; size note purple; "How to check" is a button with a larger bubble on hover or click; "Write the docs for" is now Developers / Developers + everyday users with a changing description; failed runs get a "did not complete" tooltip; Build details open by default; "nothing found" only after analysis, otherwise "pending analysis" |
 | 2026-11-24 | 9ca4fa2 | Report no longer flashes a single card before the two-panel layout: pages load before the report draws, and the side panel shows a placeholder while loading or running |
 | 2026-11-24 | 68921dd | Report: larger Generated pages panel (about 7/8 the main card height) joined by a photo-toned trapezoid bridge with a navy outline; bigger panel heading; all text 3px larger on the home, report and page screens (one setting: --fs-bump) |
 | 2026-11-24 | 57b2e70 | Report screen: Generated pages moved to a tinted side panel (2/3 height, centered) joined by an arrow; stacks on narrow windows; pages back in alphabetical order (empty ones stay faded) |
