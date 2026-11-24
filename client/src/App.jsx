@@ -766,10 +766,7 @@ function RunProgress({ runId, onBackToList }) {
       </div>
       {pages.length > 0 && (
         <>
-          <div className="report-connector" aria-hidden="true">
-            <span className="report-connector-line" />
-            <span className="report-connector-arrow">→</span>
-          </div>
+          <div className="report-connector" aria-hidden="true" />
           <aside className="card report-side">
             <h2>Generated pages</h2>
             <p className="report-side-note">Click any page to read it. Faded pages are topics SpecsDoctor found nothing for.</p>
