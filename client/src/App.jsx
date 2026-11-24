@@ -585,14 +585,17 @@ function RunProgress({ runId, onBackToList }) {
     async function poll() {
       try {
         const data = await api(`/runs/${runId}`);
-        setRun(data);
         if (!["queued", "running"].includes(data.status)) {
+          // Fetch pages before showing the run, so the report appears in its final
+          // two-panel layout at once instead of flashing a single card first.
           const pageData = await api(`/runs/${runId}/pages`);
           setPages(pageData.pages);
+          setRun(data);
           if (data.status === "complete" || data.status === "complete_with_errors") {
             loadGraph().then(setGraph).catch((err) => setGraphError(err.message)); // the dashboard's stats
           }
         } else {
+          setRun(data);
           timerRef.current = setTimeout(poll, 2000);
         }
       } catch (err) {
@@ -636,10 +639,14 @@ function RunProgress({ runId, onBackToList }) {
 
   const isDone = run && (run.status === "complete" || run.status === "complete_with_errors");
   const overviewPage = pages.find((p) => p.slug === "overview");
+  // The side panel shows from the first moment (with a placeholder while loading or running),
+  // so the layout never jumps from one card to two.
+  const stillWorking = !run || ["queued", "running"].includes(run.status);
+  const showSide = pages.length > 0 || stillWorking;
 
   return (
     <div className="shell">
-      <div className={`report-layout ${pages.length > 0 ? "has-side" : ""}`}>
+      <div className={`report-layout ${showSide ? "has-side" : ""}`}>
       <div className="card card-reading report-main">
         <div className="card-header">
           <Brand />
@@ -764,17 +771,23 @@ function RunProgress({ runId, onBackToList }) {
           </>
         )}
       </div>
-      {pages.length > 0 && (
+      {showSide && (
         <>
           <div className="report-connector" aria-hidden="true" />
           <aside className="card report-side">
             <h2>Generated pages</h2>
-            <p className="report-side-note">Click any page to read it. Faded pages are topics SpecsDoctor found nothing for.</p>
-            <div className="report-side-list">
-              {buildPageTree(pages).map((node, i) => (
-                <PageFolder key={node.name} node={node} open={i === 0} onOpen={setOpenSlug} />
-              ))}
-            </div>
+            {pages.length > 0 ? (
+              <>
+                <p className="report-side-note">Click any page to read it. Faded pages are topics SpecsDoctor found nothing for.</p>
+                <div className="report-side-list">
+                  {buildPageTree(pages).map((node, i) => (
+                    <PageFolder key={node.name} node={node} open={i === 0} onOpen={setOpenSlug} />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="report-side-note">{run ? "Pages will appear here when SpecsDoctor finishes." : "Loading pages…"}</p>
+            )}
           </aside>
         </>
       )}
