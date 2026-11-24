@@ -449,7 +449,7 @@ function PageFolder({ node, open = false, onOpen }) {
       <div className="page-group-body">
         {node.pages.length > 0 && (
           <div className="scroll-list">
-            {[...node.pages].sort((x, y) => Number(x.empty) - Number(y.empty)).map((p) => (
+            {node.pages.map((p) => (
               <a key={p.slug} className={`page-link ${p.empty ? "page-empty" : ""}`} href="#" onClick={(e) => { e.preventDefault(); onOpen(p.slug); }} title={p.empty ? "SpecsDoctor found nothing for this topic in this repo" : undefined}>
                 <span className={`dot ${p.empty ? "dot-empty" : PAGE_STATUS_DOT[p.status] ?? "dot-pending"}`} style={{ marginRight: "0.5rem" }} />
                 {p.label}
@@ -639,7 +639,8 @@ function RunProgress({ runId, onBackToList }) {
 
   return (
     <div className="shell">
-      <div className="card card-reading">
+      <div className={`report-layout ${pages.length > 0 ? "has-side" : ""}`}>
+      <div className="card card-reading report-main">
         <div className="card-header">
           <Brand />
           <button className="btn-header" onClick={onBackToList}>
@@ -760,17 +761,26 @@ function RunProgress({ runId, onBackToList }) {
 
             <FindingsList runId={runId} onOpenPage={setOpenSlug} onChanged={refreshPages} refreshKey={pages.map((p) => p.open_findings).join(",")} />
 
-            {pages.length > 0 && (
-              <div className="page-list">
-                <h2>Generated pages</h2>
-                {buildPageTree(pages).map((node) => (
-                  <PageFolder key={node.name} node={node} onOpen={setOpenSlug} />
-                ))}
-              </div>
-            )}
-
           </>
         )}
+      </div>
+      {pages.length > 0 && (
+        <>
+          <div className="report-connector" aria-hidden="true">
+            <span className="report-connector-line" />
+            <span className="report-connector-arrow">→</span>
+          </div>
+          <aside className="card report-side">
+            <h2>Generated pages</h2>
+            <p className="report-side-note">Click any page to read it. Faded pages are topics SpecsDoctor found nothing for.</p>
+            <div className="report-side-list">
+              {buildPageTree(pages).map((node, i) => (
+                <PageFolder key={node.name} node={node} open={i === 0} onOpen={setOpenSlug} />
+              ))}
+            </div>
+          </aside>
+        </>
+      )}
       </div>
     </div>
   );
