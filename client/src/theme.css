@@ -952,3 +952,79 @@ body:has(.shell-results) {
 .home-card .home-intro { margin: 0 0 0.3rem; color: var(--text); font-weight: 600; }
 .home-card .lede { margin: 0 0 1rem; color: var(--text-secondary); }
 .home-card .label-hint { font-weight: 400; color: var(--text-muted); }
+
+/* Start screen, round 2: tagline beside the title; everything below at the trust points' size, with more air */
+.home-header { justify-content: flex-start; align-items: baseline; gap: 0.9rem; flex-wrap: wrap; }
+.home-tagline { font-family: "Playfair Display", Georgia, serif; font-style: italic; font-weight: 400; font-size: calc(14px + var(--fs-bump, 0px)); color: var(--text-secondary); }
+.home-card .lede,
+.home-card label,
+.home-card .label-hint,
+.home-card .size-note,
+.home-card .size-help,
+.home-card .write-for-label,
+.home-card .write-for button,
+.home-card .write-for-hint { font-size: calc(12px + var(--fs-bump, 0px)); }
+.home-card .card-header { margin-bottom: 1.3rem; }
+.home-card .lede { margin-bottom: 0.9rem; }
+.home-card .trust-row { margin-bottom: 1.6rem; }
+.home-card .field { margin-bottom: 1.15rem; }
+.home-card .write-for-field { margin: 0.9rem 0 1.4rem; }
+
+/* Start screen, round 3: feature bullets in two columns under the title, and ONE text size
+   for everything on the card below the title (labels, typed text, examples, notes, buttons). */
+.feature-list {
+  list-style: none; margin: 0 0 1.3rem; padding: 0;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 1.5rem;
+  color: var(--text-secondary);
+}
+.home-card .feature-list,
+.home-card .lede,
+.home-card label,
+.home-card .size-note,
+.home-card .size-help,
+.home-card .write-for-label,
+.home-card .write-for button,
+.home-card .write-for-hint,
+.home-card input[type="text"],
+.home-card input[type="text"]::placeholder {
+  font-family: var(--font-sans);
+  font-size: calc(11px + var(--fs-bump, 0px));
+  line-height: 1.5;
+}
+.home-card .size-note { font-weight: 400; }
+.home-card .size-help { font-weight: 400; padding: 0 0.5rem; }
+@media (max-width: 560px) { .feature-list { grid-template-columns: 1fr; } }
+
+/* Start screen, round 4: small square bullets; version choice on one line; slimmer, lighter buttons */
+.feature-list li { position: relative; padding-left: 1rem; }
+.feature-list li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 6px; height: 6px; background: var(--text-muted); border-radius: 1px; }
+.write-for-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; }
+.home-card .write-for-row .write-for-label { display: inline; margin: 0; }
+.home-card .write-for button { padding: 0.12rem 0.75rem; background: rgba(255, 255, 255, 0.35); border: 1px solid rgba(31, 61, 78, 0.25); color: var(--text-secondary); font-weight: 400; }
+.home-card .write-for button[aria-pressed="true"] { background: rgba(30, 106, 134, 0.12); border-color: rgba(30, 106, 134, 0.55); color: #154e64; font-weight: 600; }
+
+/* Start screen, round 5: text one notch larger; title +1; navy centered Create Docs button */
+.home-card .brand { font-size: calc(25px + var(--fs-bump, 0px)); }
+.home-card .feature-list,
+.home-card .lede,
+.home-card label,
+.home-card .size-note,
+.home-card .size-help,
+.home-card .write-for-label,
+.home-card .write-for button,
+.home-card .write-for-hint,
+.home-card input[type="text"],
+.home-card input[type="text"]::placeholder { font-size: calc(12px + var(--fs-bump, 0px)); }
+.home-card .btn-primary {
+  display: block; width: 52%; min-width: 240px; margin: 1.2rem auto 0;
+  background: #2c4d76; color: #ffffff; border: 3px solid #4273b1; border-radius: 12px;
+  padding: 0.6rem 1.25rem; font-size: calc(17px + var(--fs-bump, 0px)); font-weight: 500;
+  box-shadow: 0 6px 16px rgba(5, 20, 30, 0.22);
+}
+.home-card .btn-primary:hover:not(:disabled) { background: #23405f; }
+.home-card .btn-arrow { margin-left: 0.6rem; font-size: 1.15em; }
+
+/* Start screen: decorative logo art (star, spectacles, code bar) beside the title */
+.home-header { justify-content: flex-start; align-items: center; gap: 0.3rem; }
+.home-logo-art { height: 46px; width: auto; display: block; margin-top: -4px; }
+@media (max-width: 560px) { .home-logo-art { height: 34px; } }

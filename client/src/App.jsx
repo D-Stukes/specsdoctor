@@ -92,8 +92,8 @@ const WRITE_FOR_OPTIONS = [
   },
   {
     id: "both",
-    label: "Developers + everyday users",
-    hint: "Everything developers get, plus plain-language guides for the app's own users: what each screen is for and how to use it. Takes a little longer.",
+    label: "Everyday users",
+    hint: "Everything developers get, plus plain-language guides for everyday users that explain what each screen is for and how to use it. Takes a little longer.",
   },
 ];
 
@@ -123,19 +123,22 @@ function RepoForm({ onRunStarted, onOpenRun }) {
     <div className="shell">
       <div className="report-layout has-side">
       <div className="card card-reading report-main home-card">
-        <div className="card-header">
+        <div className="card-header home-header">
           <Brand />
+          <img className="home-logo-art" src="/assets/specsdoctor-logo-art.png" alt="" aria-hidden="true" />
         </div>
-        <p className="home-intro">Source-linked developer docs that make sense of any codebase.</p>
+        <ul className="feature-list">
+          <li>Source-linked developer docs</li>
+          <li>Make sense of any codebase</li>
+          <li>Read-only: never changes your repo</li>
+          <li>Every claim cites its source</li>
+          <li>Uncertainty flagged for review</li>
+        </ul>
         <p className="lede">
-          Paste a public GitHub repository. SpecsDoctor reads the code and writes documentation that cites the exact lines it relies
+          <strong>Instructions:</strong> Paste a public GitHub repository link into the box below. SpecsDoctor reads the code and writes documentation that cites the exact lines it relies
           on.
         </p>
-        <div className="trust-row">
-          <span>✓ Pinned to one commit</span>
-          <span>✓ Every claim cites its source</span>
-          <span>⚠ Uncertainty flagged for review</span>
-        </div>
+
         <form onSubmit={handleSubmit}>
           <div className="field">
             <label htmlFor="repo_url">Enter a GitHub repository</label>
@@ -152,7 +155,7 @@ function RepoForm({ onRunStarted, onOpenRun }) {
               Please note: this application is designed for normal-size repos (size limit: up to 100 code files). Extra-large repos may time out before the analysis is complete.{" "}
               <span className={`size-help-wrap ${showSizeHelp ? "open" : ""}`}>
                 <button type="button" className="size-help" aria-expanded={showSizeHelp} onClick={() => setShowSizeHelp((v) => !v)}>
-                  ⓘ How to check
+                  How to check ⓘ
                 </button>
                 <span className="size-pop" role="tooltip">
                   Not sure of your repo's size? Just try it. SpecsDoctor counts the code files (.js, .jsx, .ts, .tsx, .py) in a few
@@ -162,25 +165,26 @@ function RepoForm({ onRunStarted, onOpenRun }) {
             </p>
           </div>
           <div className="field">
-            <label htmlFor="ref">Branch <span className="label-hint">(please type in the name of a different branch if desired)</span></label>
-            <input id="ref" type="text" placeholder="main (used if left blank)" value={ref} onChange={(e) => setRef(e.target.value)} autoComplete="off" />
+            <label htmlFor="ref">Enter the branch you want to analyze</label>
+            <input id="ref" type="text" placeholder="Main (analyzed by default, unless you indicate a different branch)" value={ref} onChange={(e) => setRef(e.target.value)} autoComplete="off" />
           </div>
 
           <div className="field write-for-field">
-            <span className="write-for-label">Write the docs for:</span>
+            <div className="write-for-row">
+            <span className="write-for-label">Select the version you prefer:</span>
             <div className="write-for" role="group" aria-label="Write the docs for">
               {WRITE_FOR_OPTIONS.map((opt) => (
                 <button key={opt.id} type="button" aria-pressed={opt.id === writeFor} onClick={() => setWriteFor(opt.id)}>
-                  {opt.id === writeFor ? "✓ " : ""}
                   {opt.label}
                 </button>
               ))}
+            </div>
             </div>
             <p className="write-for-hint">{WRITE_FOR_OPTIONS.find((o) => o.id === writeFor)?.hint}</p>
           </div>
 
           <button className="btn-primary" type="submit" disabled={submitting}>
-            {submitting ? "Starting…" : "Create docs →"}
+            {submitting ? "Starting…" : <>Create Docs <span className="btn-arrow" aria-hidden="true">⟶</span></>}
           </button>
           {error && <p className="error-text">{error}</p>}
         </form>
@@ -217,6 +221,9 @@ function graphStats(graph) {
     areas: graph.groups,
   };
 }
+
+// Friendlier words for run statuses in the Recent runs list.
+const RUN_STATUS_TEXT = { complete_with_errors: "complete (some parts partial)" };
 
 // Home screen's right-hand panel: recent runs, in the same bridge + panel as the report.
 function RunList({ onOpenRun }) {
@@ -260,8 +267,8 @@ function RunList({ onOpenRun }) {
                     <span className="run-row-text">
                       <span className="run-row-name">{r.repo.owner}/{r.repo.name}</span>
                       <span className="run-row-meta">
-                        {r.status.replace(/_/g, " ")} · ${Number(r.cost_usd).toFixed(2)}
-                        {r.duration_ms != null && ` · ${formatDuration(r.duration_ms)}`}
+                        {RUN_STATUS_TEXT[r.status] ?? r.status.replace(/_/g, " ")} · ${Number(r.cost_usd).toFixed(2)}
+                        {r.duration_ms != null && r.status !== "failed" && ` · ${formatDuration(r.duration_ms)}`}
                       </span>
                     </span>
                     <span className="page-view">Open →</span>
