@@ -4,6 +4,7 @@ Maps each piece of work to the commit that contains it. Newest first.
 
 | Date | Commit | Change |
 |---|---|---|
+| 2026-11-24 | 68921dd | Report: larger Generated pages panel (about 7/8 the main card height) joined by a photo-toned trapezoid bridge with a navy outline; bigger panel heading; all text 3px larger on the home, report and page screens (one setting: --fs-bump) |
 | 2026-11-24 | 57b2e70 | Report screen: Generated pages moved to a tinted side panel (2/3 height, centered) joined by an arrow; stacks on narrow windows; pages back in alphabetical order (empty ones stay faded) |
 | 2026-11-24 | e2e17a1 | Pages where nothing was found now show a hollow gray dot and "nothing found", fade, and list last; home and report cards match the document viewer's wider, taller size |
 | 2026-11-24 | e2e17a1 | AI_STUB_MODE now ignores extra spaces/line breaks and letter case; README shows the live link; DEPLOY.md checklist updated |
