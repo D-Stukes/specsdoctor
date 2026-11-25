@@ -82,7 +82,7 @@ export default function FindingsList({ runId, pageSlug, onOpenPage, onChanged, r
 
   return (
     <div className="page-list findings">
-      <h2>Needs review ({findings.length})</h2>
+      <h2>Needs Review ({findings.length})</h2>
       {findings.map((f) => (
         <Finding key={f.id} finding={f} showPage={!pageSlug} onOpenPage={onOpenPage} onResolved={() => { load(); onChanged?.(); }} />
       ))}

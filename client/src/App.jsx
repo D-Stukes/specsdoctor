@@ -73,6 +73,7 @@ function AccessCodeForm({ onSignedIn }) {
           </button>
           {error && <p className="error-text">{error}</p>}
         </form>
+
         <p className="footnote">Public repositories only · Drafts for human review.</p>
       </div>
     </div>
@@ -87,13 +88,13 @@ function AccessCodeForm({ onSignedIn }) {
 const WRITE_FOR_OPTIONS = [
   {
     id: "developers",
-    label: "Developers",
-    hint: "Technical docs for people who work on the code: architecture, API endpoints, data model, and a page for each code file.",
+    label: "Technical",
+    hint: "Click Create Docs to make technical docs for people who work on the code and those who write its documentation. These include the architecture, API endpoints, data model, and an explanation page for each code file. See the samples below.",
   },
   {
     id: "both",
-    label: "Everyday users",
-    hint: "Everything developers get, plus plain-language guides for everyday users that explain what each screen is for and how to use it. Takes a little longer.",
+    label: "Plain English",
+    hint: "Click Create Docs to make everything in the technical version, plus short, plain-English steps that explain what each screen is for and how to use it. Takes a little longer. See the samples below.",
   },
 ];
 
@@ -101,7 +102,6 @@ function RepoForm({ onRunStarted, onOpenRun }) {
   const [repoUrl, setRepoUrl] = useState("");
   const [ref, setRef] = useState("");
   const [writeFor, setWriteFor] = useState("developers");
-  const [showSizeHelp, setShowSizeHelp] = useState(false);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -135,13 +135,13 @@ function RepoForm({ onRunStarted, onOpenRun }) {
           <li>Uncertainty flagged for review</li>
         </ul>
         <p className="lede">
-          <strong>Instructions:</strong> Paste a public GitHub repository link into the box below. SpecsDoctor reads the code and writes documentation that cites the exact lines it relies
-          on.
+          <strong>Instructions:</strong> Paste a public GitHub repository link into the box below. SpecsDoctor reads the code and explains what it does. Its claims about the code link to the
+          exact lines they came from, so you can check them yourself.
         </p>
 
         <form onSubmit={handleSubmit}>
           <div className="field">
-            <label htmlFor="repo_url">Enter a GitHub repository</label>
+            <label htmlFor="repo_url">Enter a GitHub repository:</label>
             <input
               id="repo_url"
               type="text"
@@ -152,21 +152,12 @@ function RepoForm({ onRunStarted, onOpenRun }) {
               autoComplete="off"
             />
             <p className="size-note">
-              Please note: this application is designed for normal-size repos (size limit: up to 100 code files). Extra-large repos may time out before the analysis is complete.{" "}
-              <span className={`size-help-wrap ${showSizeHelp ? "open" : ""}`}>
-                <button type="button" className="size-help" aria-expanded={showSizeHelp} onClick={() => setShowSizeHelp((v) => !v)}>
-                  How to check ⓘ
-                </button>
-                <span className="size-pop" role="tooltip">
-                  Not sure of your repo's size? Just try it. SpecsDoctor counts the code files (.js, .jsx, .ts, .tsx, .py) in a few
-                  seconds, before any analysis starts. If there are more than 100, it stops right away and tells you the exact count.
-                </span>
-              </span>
+              Note: Analysis works for repos with up to 100 code files. (Larger repos may time out.)
             </p>
           </div>
           <div className="field">
-            <label htmlFor="ref">Enter the branch you want to analyze</label>
-            <input id="ref" type="text" placeholder="Main (analyzed by default, unless you indicate a different branch)" value={ref} onChange={(e) => setRef(e.target.value)} autoComplete="off" />
+            <label htmlFor="ref">Enter the branch you want to analyze:</label>
+            <input id="ref" type="text" placeholder="Main branch (default unless a different branch is indicated)" value={ref} onChange={(e) => setRef(e.target.value)} autoComplete="off" />
           </div>
 
           <div className="field write-for-field">
@@ -174,7 +165,7 @@ function RepoForm({ onRunStarted, onOpenRun }) {
             <span className="write-for-label">Select the version you prefer:</span>
             <div className="write-for" role="group" aria-label="Write the docs for">
               {WRITE_FOR_OPTIONS.map((opt) => (
-                <button key={opt.id} type="button" aria-pressed={opt.id === writeFor} onClick={() => setWriteFor(opt.id)}>
+                <button key={opt.id} type="button" className={`wf-${opt.id}`} aria-pressed={opt.id === writeFor} onClick={() => setWriteFor(opt.id)}>
                   {opt.label}
                 </button>
               ))}
@@ -183,8 +174,29 @@ function RepoForm({ onRunStarted, onOpenRun }) {
             <p className="write-for-hint">{WRITE_FOR_OPTIONS.find((o) => o.id === writeFor)?.hint}</p>
           </div>
 
+          <div className="version-sample" aria-label="Example of each version">
+            <div className="version-sample-cols">
+              <div className={`version-col wf-developers ${writeFor === "developers" ? "version-col-on" : ""}`}>
+                <span className="version-col-name">Technical</span>
+                <p><code>POST /api/habits</code> creates a habit. Requires sign-in (<code>requireAuth</code>). Returns <code>201</code>, or <code>400</code> "name is required".</p>
+              </div>
+              <div className={`version-col wf-both ${writeFor === "both" ? "version-col-on" : ""}`}>
+                <span className="version-col-name">Plain English</span>
+                <p>Open the app and select "Add habit." Type a name and save it. If the name is blank, the app asks for one.</p>
+              </div>
+            </div>
+          </div>
+
           <button className="btn-primary" type="submit" disabled={submitting}>
-            {submitting ? "Starting…" : <>Create Docs <span className="btn-arrow" aria-hidden="true">⟶</span></>}
+            {submitting ? "Starting…" : (
+              <span className="btn-label">
+                Create Docs
+                <svg className="btn-arrow" viewBox="0 0 22 12" aria-hidden="true">
+                  <path d="M1 6h14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+                  <path d="M14 1.5L21 6 14 10.5Z" fill="currentColor" />
+                </svg>
+              </span>
+            )}
           </button>
           {error && <p className="error-text">{error}</p>}
         </form>
@@ -222,8 +234,29 @@ function graphStats(graph) {
   };
 }
 
-// Friendlier words for run statuses in the Recent runs list.
+// Friendlier words for run statuses. A stopped run is named by its real reason, never "failed":
+// a time-out or the size limit is the app's limit, not an error.
 const RUN_STATUS_TEXT = { complete_with_errors: "complete (some parts partial)" };
+const STOP_REASON = {
+  interrupted: { label: "timed out", tip: "Analysis timed out. Try a smaller repo or branch.", limit: true },
+  queue_timeout: { label: "timed out", tip: "Analysis timed out. Try a smaller repo or branch.", limit: true },
+  repo_too_large: { label: "too large", tip: "Over the 100-code-file limit. Click to see the exact count.", limit: true },
+  repo_not_found: { label: "repo not found", tip: "Check that the repo link is correct and the repo is public.", limit: true },
+  ref_not_found: { label: "branch not found", tip: "Check the branch name. Leave it blank to use the main branch.", limit: true },
+  tarball_too_large: { label: "too large", tip: "This repo's download is over the 100 MB limit, usually because of large images or videos. Try a smaller repo or a branch without them.", limit: true },
+  too_many_archive_entries: { label: "too large", tip: "This repo has too many files to download. Try a smaller repo or branch.", limit: true },
+  github_rate_limited: { label: "GitHub busy", tip: "GitHub's request limit is used up for now. Please try again in a few minutes.", limit: true },
+};
+const UNEXPECTED = { label: "unexpected error", tip: "Something went wrong on SpecsDoctor's side. Please try again. If it happens again, try a different repo." };
+function runLabel(status, failureCode) {
+  if (status === "failed") return (STOP_REASON[failureCode] ?? UNEXPECTED).label;
+  return RUN_STATUS_TEXT[status] ?? status.replace(/_/g, " ");
+}
+function runDot(status, failureCode) {
+  if (status === "running" || status === "queued") return "dot-running";
+  if (status === "failed") return STOP_REASON[failureCode]?.limit ? "dot-limit" : "dot-failed";
+  return "dot-done";
+}
 
 // Home screen's right-hand panel: recent runs, in the same bridge + panel as the report.
 function RunList({ onOpenRun }) {
@@ -239,7 +272,7 @@ function RunList({ onOpenRun }) {
       <div className="report-connector" aria-hidden="true" />
       <aside className="card report-side">
         <h2>
-          Recent runs {runs && runs.length > 0 && <span className="dash-area-count">{runs.length}</span>}
+          Recent Runs
         </h2>
         {error ? (
           <p className="error-text">{error}</p>
@@ -257,17 +290,17 @@ function RunList({ onOpenRun }) {
                     key={r.run_id}
                     className={`page-link run-row ${r.status === "failed" ? "run-failed" : ""}`}
                     href="#"
-                    title={r.status === "failed" ? "This run did not complete. Click to see why." : undefined}
+                    title={r.status === "failed" ? (STOP_REASON[r.failure_code] ?? UNEXPECTED).tip : undefined}
                     onClick={(e) => {
                       e.preventDefault();
                       onOpenRun(r.run_id);
                     }}
                   >
-                    <span className={`dot dot-${r.status === "running" || r.status === "queued" ? "running" : r.status === "failed" ? "failed" : "done"}`} />
+                    <span className={`dot ${runDot(r.status, r.failure_code)}`} />
                     <span className="run-row-text">
                       <span className="run-row-name">{r.repo.owner}/{r.repo.name}</span>
                       <span className="run-row-meta">
-                        {RUN_STATUS_TEXT[r.status] ?? r.status.replace(/_/g, " ")} · ${Number(r.cost_usd).toFixed(2)}
+                        {runLabel(r.status, r.failure_code)}
                         {r.duration_ms != null && r.status !== "failed" && ` · ${formatDuration(r.duration_ms)}`}
                       </span>
                     </span>
@@ -312,8 +345,27 @@ function DocLink({ href = "", children }) {
   );
 }
 
+// Code-file pages start "# client/x.js" then "## client/x.js" - show that name only once.
+function dropRepeatedTitle(md) {
+  const m = md.match(/^# (.+)\n+## (.+)\n/);
+  return m && m[1].trim() === m[2].trim() ? md.replace(/^# .+\n+/, "") : md;
+}
+
+// Section headings end with a colon ("What this app does:"), except a code file's name.
+function colonHeadings(md, skipFirst) {
+  let first = true;
+  return md.replace(/^## (.+)$/gm, (line, text) => {
+    const isFirst = first;
+    first = false;
+    if ((skipFirst && isFirst) || /[:?.!]$/.test(text.trim())) return line;
+    return `## ${text.trim()}:`;
+  });
+}
+
 function DocPage({ markdown }) {
   if (!markdown) return <p className="lede">(this page has been emptied)</p>;
+  const trimmed = dropRepeatedTitle(markdown);
+  markdown = colonHeadings(trimmed, trimmed !== markdown);
   return (
     <article className="doc-page">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ a: DocLink }}>
@@ -375,14 +427,20 @@ function PageViewer({ runId, slug, pages = [], onOpen, onBack }) {
 
   return (
     <div className="shell shell-results">
-      <div className={`report-layout ${pages.length > 0 ? "has-side" : ""}`}>
-      <div className="card card-reading report-main page-main">
+      <div className="report-layout has-side page-layout">
+      <div className="card card-reading report-main page-list-main">
         <div className="card-header">
           <Brand />
           <button className="btn-header" onClick={onBack}>
             ← Back to report
           </button>
         </div>
+        <div className="page-list-scroll">
+          <PagesList pages={pages} currentSlug={slug} onOpen={onOpen} placeholder="Loading pages…" />
+        </div>
+      </div>
+      <div className="report-connector" aria-hidden="true" />
+      <article className="card report-side page-doc-side">
         <div className="page-scroll" key={slug}>
         {!page ? (
           <p className="lede">Loading…</p>
@@ -428,8 +486,7 @@ function PageViewer({ runId, slug, pages = [], onOpen, onBack }) {
           </>
         )}
         </div>
-      </div>
-      {pages.length > 0 && <SidePages pages={pages} currentSlug={slug} onOpen={onOpen} />}
+      </article>
       </div>
     </div>
   );
@@ -453,9 +510,7 @@ function BuildStatus({ run }) {
         ))}
       </div>
       <div className="cost-row">
-        <span>
-          Cost ${run.cost_usd.toFixed(2)} / ${run.budget_cap_usd.toFixed(2)} budget
-        </span>
+        {/* Run cost is the app owner's AI cost, not the visitor's: kept in the database (runs.cost_usd), not shown here. */}
         {run.duration_ms != null && <span>Time {formatDuration(run.duration_ms)}</span>}
       </div>
     </>
@@ -467,12 +522,18 @@ function BuildStatus({ run }) {
 // Builds a two-level tree for Generated pages: project-wide pages first, then each top
 // folder (client, server, fixtures...). Inside a top folder: its own pages, then one
 // collapsible subfolder per second-level folder (src, scripts, test...), so roots aren't repeated.
+// "API endpoints" -> "API Endpoints"; small joining words stay lowercase unless first.
+const SMALL_WORDS = new Set(["a", "an", "and", "the", "of", "for", "to", "in", "on", "by"]);
+function titleCase(t) {
+  return t.replace(/[A-Za-z][\w'-]*/g, (w, i) => (i > 0 && SMALL_WORDS.has(w.toLowerCase()) ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1)));
+}
+
 function buildPageTree(pages) {
-  const overview = { name: "Project overview", pages: [], children: [] };
+  const overview = { name: "Project Overview", pages: [], children: [] };
   const tops = new Map();
   for (const p of pages) {
     const parts = p.title.split("/");
-    if (parts.length === 1) { overview.pages.push({ ...p, label: p.title }); continue; }
+    if (parts.length === 1) { overview.pages.push({ ...p, label: titleCase(p.title) }); continue; }
     const top = parts[0];
     if (!tops.has(top)) tops.set(top, { name: top, pages: [], childMap: new Map() });
     const node = tops.get(top);
@@ -486,6 +547,8 @@ function buildPageTree(pages) {
     .map((n) => ({ name: n.name, pages: n.pages, children: [...n.childMap.values()].sort((a, b) => a.name.localeCompare(b.name)) }));
   return overview.pages.length ? [overview, ...rest] : rest;
 }
+
+const capitalize = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
 
 function countPages(node) {
   return node.pages.length + node.children.reduce((sum, c) => sum + countPages(c), 0);
@@ -502,22 +565,50 @@ function SidePages({ pages, currentSlug, onOpen, placeholder }) {
     <>
       <div className="report-connector" aria-hidden="true" />
       <aside className="card report-side">
-        <h2>Generated pages</h2>
+        <PagesList pages={pages} currentSlug={currentSlug} onOpen={onOpen} placeholder={placeholder} />
+      </aside>
+    </>
+  );
+}
+
+// "Generated Pages": the overview list, then folders in columns. Used in the report's side panel
+// and, once a page is open, as the main (left) card - so you always pick on the left, read on the right.
+function PagesList({ pages, currentSlug, onOpen, placeholder }) {
+  return (
+    <>
+        <h2 className="pages-title">Generated Pages</h2>
         {pages.length > 0 ? (
           <>
             <p className="report-side-note">
               {currentSlug ? "You're reading the highlighted page. Click another to switch." : "Click any page to read it. Faded pages are topics SpecsDoctor found nothing for."}
             </p>
             <div className="report-side-list">
-              {buildPageTree(pages).map((node, i) => (
-                <PageFolder key={node.name} node={node} open={currentSlug ? containsSlug(node, currentSlug) : i === 0} currentSlug={currentSlug} onOpen={onOpen} />
-              ))}
+              {(() => {
+                const tree = buildPageTree(pages);
+                const hasOverview = tree[0]?.name === "Project Overview";
+                const overview = hasOverview ? tree[0] : null;
+                const folders = hasOverview ? tree.slice(1) : tree;
+                return (
+                  <>
+                    {overview && <PageFolder node={overview} open={!currentSlug || containsSlug(overview, currentSlug)} currentSlug={currentSlug} onOpen={onOpen} />}
+                    {folders.length > 0 && (
+                      <>
+                        <h3 className="folder-heading">More Pages by Folder <span>(click to open)</span></h3>
+                        <div className="folder-grid">
+                          {folders.map((node) => (
+                            <PageFolder key={node.name} node={node} currentSlug={currentSlug} onOpen={onOpen} />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </>
         ) : (
           <p className="report-side-note">{placeholder}</p>
         )}
-      </aside>
     </>
   );
 }
@@ -526,7 +617,7 @@ function PageFolder({ node, open = false, currentSlug, onOpen }) {
   return (
     <details className="page-group" open={open || (currentSlug != null && containsSlug(node, currentSlug))}>
       <summary>
-        {node.name} <span className="dash-area-count">{countPages(node)}</span>
+        {capitalize(node.name)} <span className="dash-area-count">{countPages(node)}</span>
       </summary>
       <div className="page-group-body">
         {node.pages.length > 0 && (
@@ -609,7 +700,7 @@ function ShareControl({ runId, shareUrl }) {
   if (!url) {
     return (
       <button type="button" className="action-link" onClick={enable} disabled={busy}>
-        {busy ? "Creating link…" : "Share this run"}
+        {busy ? "Creating link…" : "Share This Run"}
       </button>
     );
   }
@@ -748,7 +839,7 @@ function RunProgress({ runId, onBackToList }) {
             </div>
             {isDone && pages.length > 0 && (
               <div className="export-bar">
-                <span className="export-label">Export results:</span>
+                <span className="export-label">Export Results:</span>
                 <a className="export-link" href={`/api/runs/${runId}/export.zip`} download>
                   ↓ Docs (.zip)
                 </a>
@@ -759,24 +850,24 @@ function RunProgress({ runId, onBackToList }) {
             )}
             {!isDone && (
             <div className="status-pill">
-              <span className={`dot ${run.status === "running" || run.status === "queued" ? "dot-running" : run.status === "failed" ? "dot-failed" : "dot-done"}`} />
-              {run.status.replace(/_/g, " ")}
+              <span className={`dot ${runDot(run.status, run.failure?.code)}`} />
+              {run.status === "failed" ? `Analysis stopped: ${runLabel(run.status, run.failure?.code)}` : runLabel(run.status)}
             </div>
             )}
 
             {run.failure && (
-              <p className="error-text">
-                {run.failure.code === "interrupted"
-                  ? "This run was stopped before it finished. This usually happens with extra-large repos, which can take longer than the time limit. Please try a smaller repo."
+              <p className={STOP_REASON[run.failure.code]?.limit ? "limit-text" : "error-text"}>
+                {run.failure.code === "interrupted" || run.failure.code === "queue_timeout"
+                  ? "This repo is too large to finish within the time limit. Please try a smaller repo, or select a smaller branch."
                   : run.failure.code === "repo_too_large"
                     ? run.failure.detail
-                    : `${run.failure.code}: ${run.failure.detail}`}
+                    : (STOP_REASON[run.failure.code] ?? UNEXPECTED).tip}
               </p>
             )}
 
             {isDone && (
               <div className="dashboard">
-                <h2>At a glance: What SpecsDoctor scanned</h2>
+                <h2>At a Glance: What SpecsDoctor Scanned</h2>
                 {!stats ? (
                   graphError ? (
                     <p className="lede">
@@ -798,7 +889,7 @@ function RunProgress({ runId, onBackToList }) {
                     </p>
                     {stats.areas.length > 0 && (
                       <details className="dash-mapped">
-                      <summary>Mapped folders <span className="dash-area-count">{stats.areas.length}</span></summary>
+                      <summary>Mapped Folders <span className="dash-area-count">{stats.areas.length}</span></summary>
                       <div className="dash-areas">
                         {groupAreasByFolder(stats.areas).map(([folder, areas]) => (
                           <details key={folder} className="dash-area-group">
@@ -821,11 +912,11 @@ function RunProgress({ runId, onBackToList }) {
                 )}
                 <div className="dash-actions">
                   <button type="button" className="action-link" onClick={openMap}>
-                    Open the map →
+                    View the Code Flow
                   </button>
                   {overviewPage && (
                     <a className="action-link" href="#" onClick={(e) => { e.preventDefault(); setOpenSlug(overviewPage.slug); }}>
-                      Read the full overview
+                      Read the Full Overview
                     </a>
                   )}
                   <ShareControl runId={run.run_id} shareUrl={run.share_url} />
@@ -837,7 +928,7 @@ function RunProgress({ runId, onBackToList }) {
             {isDone ? (
               <details className="build-details" open>
                 <summary>
-                  Build details
+                  Build Details
                   {run.status === "complete_with_errors" && (
                     <span className="scroll-hint">some steps finished partly; see below</span>
                   )}

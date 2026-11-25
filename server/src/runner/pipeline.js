@@ -64,7 +64,9 @@ export async function runPipeline(runId, { owner, name, ref }, { aiStub = true }
   } catch (err) {
     await finishStage(runId, "reader", "failed", { message: err.message });
     await recordEvent(runId, "reader", "error", "reader_failed", { message: err.message });
-    await failRun(runId, "reader_failed", err.message);
+    // Keep the reader's specific reason (repo_not_found, tarball_too_large, github_rate_limited...)
+    // so the app can name it accurately instead of one generic label.
+    await failRun(runId, err.code ?? "reader_failed", err.message);
     return;
   }
 

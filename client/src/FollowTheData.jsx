@@ -37,6 +37,45 @@ function tooltipFor(s, label) {
   return `${label}: "${s.title}" is ${KIND_HELP[s.kind] ?? "part of this flow"}.${code}${where}`;
 }
 
+// Standard flowchart shapes, one per kind of step. The diamond is only used for real
+// "check first" steps (like confirming who is signed in) - never invented.
+const SHAPES = {
+  terminal: { name: "Start / end", path: "M8 2h28a7 7 0 0 1 0 14H8a7 7 0 0 1 0-14z" },
+  io: { name: "Data in / out", path: "M9 2h33l-7 14H2z" },
+  process: { name: "A step in the code", path: "M3 2h38v14H3z" },
+  decision: { name: "A check (yes / no)", path: "M22 0.5L42 9 22 17.5 2 9z" },
+  data: { name: "Stored data", vb: "0 0 44 24", path: "M4 5c0-2.4 8-4 18-4s18 1.6 18 4v14c0 2.4-8 4-18 4S4 21.4 4 19zM4 5c0 2.4 8 4 18 4s18-1.6 18-4" },
+};
+function shapeFor(steps, idx) {
+  const s = steps[idx];
+  if (idx === 0 || s.kind === "reply") return "terminal";
+  if (s.kind === "entry") return "io";
+  if (s.kind === "check") return "decision";
+  if (s.kind === "read" || s.kind === "write") return "data";
+  return "process";
+}
+function FlowShape({ shape, n }) {
+  return (
+    <span className={`flow-shape flow-shape-${shape}`} title={SHAPES[shape].name}>
+      <svg viewBox={SHAPES[shape].vb ?? "0 0 44 18"} preserveAspectRatio={shape === "data" ? "none" : undefined} aria-hidden="true">
+        <path d={SHAPES[shape].path} />
+      </svg>
+      {n != null && <span className="flow-shape-num">{n}</span>}
+    </span>
+  );
+}
+function ShapeLegend({ used }) {
+  return (
+    <div className="flow-legend" aria-label="What the shapes mean">
+      {Object.keys(SHAPES).filter((k) => used.has(k)).map((k) => (
+        <span key={k} className="flow-legend-item">
+          <FlowShape shape={k} /> {SHAPES[k].name}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 const prefersReducedMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 const STEP_MS = prefersReducedMotion() ? 0 : 1800;
 const TRAVEL_MS = prefersReducedMotion() ? 0 : 900;
@@ -127,6 +166,7 @@ export default function FollowTheData({ graph, plain, endpointId, onEndpoint, se
       </div>
       {current?.plain_summary && <p className="flow-summary">{current.plain_summary}</p>}
 
+      {steps.length > 0 && <ShapeLegend used={new Set(steps.map((_, i) => shapeFor(steps, i)))} />}
       <div className="flow-track" ref={trackRef}>
         <ol className="flow-steps">
           {steps.map((s, idx) => (
@@ -137,7 +177,7 @@ export default function FollowTheData({ graph, plain, endpointId, onEndpoint, se
               }}
               className={`flow-step flow-${s.kind} ${s.nodeId && s.nodeId === selectedId ? "flow-selected" : ""} ${onPath(idx) ? "flow-onpath" : ""} ${isActive(idx) ? "flow-active" : ""}`}
             >
-              <span className="flow-num">{s.n}</span>
+              <FlowShape shape={shapeFor(steps, idx)} n={s.n} />
               <div
                 className="flow-card"
                 onClick={() => { toggleStep(s.n); if (s.nodeId) onSelect(s.nodeId); }}

@@ -17,10 +17,10 @@ async function fetchExplorer(runId) {
 }
 
 const VIEWS = [
-  { id: "flow", label: "Follow the data" },
+  { id: "flow", label: "Follow the Data" },
   { id: "architecture", label: "Architecture" },
   { id: "functions", label: "Functions" },
-  { id: "trace", label: "Request trace" },
+  { id: "trace", label: "Request Trace" },
   { id: "dependencies", label: "Files" },
 ];
 
@@ -269,7 +269,7 @@ function MapViewInner({ runId, graph, tours = [], onBack, onOpenPage }) {
         )}
         {view === "trace" && !reducedMotion && traceOrder.length > 0 && (
           <button className="btn-primary" style={{ width: "auto" }} onClick={toggleTracePlay}>
-            {playTrace ? "Pause trace" : traceFinished ? "Replay trace" : "Play trace"}
+            {playTrace ? "Pause Trace" : traceFinished ? "Replay Trace" : "Play Trace"}
           </button>
         )}
         <label className="map-check" title="Show everyday words instead of code names">
@@ -280,7 +280,7 @@ function MapViewInner({ runId, graph, tours = [], onBack, onOpenPage }) {
         </button>
         {tours.length > 0 && (
           <button className="btn-primary" style={{ width: "auto", background: "var(--amber)", color: "var(--mint-ink)" }} onClick={() => setTourId(tours[0].tour_id)}>
-            Guided tour
+            Guided Tour
           </button>
         )}
         <button className="btn-primary" style={{ width: "auto" }} onClick={startExplore} disabled={explorer.status === "loading"} title="Let the guide pick its own walk through this app">

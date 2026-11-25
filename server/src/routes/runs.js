@@ -461,7 +461,7 @@ runsRouter.get("/runs", async (req, res) => {
   const before = req.query.before ? new Date(String(req.query.before)) : new Date();
 
   const { rows } = await pool.query(
-    `SELECT r.id, r.status, r.resolved_sha, r.cost_usd, r.created_at, r.started_at, r.finished_at, rp.owner, rp.name,
+    `SELECT r.id, r.status, r.failure_code, r.resolved_sha, r.cost_usd, r.created_at, r.started_at, r.finished_at, rp.owner, rp.name,
             COALESCE(f.open_findings, 0)::int AS open_findings
      FROM runs r
      JOIN repos rp ON rp.id = r.repo_id
@@ -480,6 +480,7 @@ runsRouter.get("/runs", async (req, res) => {
       repo: { owner: r.owner, name: r.name },
       resolved_sha: r.resolved_sha,
       status: r.status,
+      failure_code: r.failure_code,
       created_at: r.created_at,
       cost_usd: Number(r.cost_usd),
       open_findings: r.open_findings,

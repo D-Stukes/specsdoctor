@@ -1028,3 +1028,136 @@ body:has(.shell-results) {
 .home-header { justify-content: flex-start; align-items: center; gap: 0.3rem; }
 .home-logo-art { height: 46px; width: auto; display: block; margin-top: -4px; }
 @media (max-width: 560px) { .home-logo-art { height: 34px; } }
+
+/* Round 6: smaller note, slimmer Create Docs, calm (amber) marker for runs stopped by the app's limits */
+.home-card .size-note { font-size: calc(11px + var(--fs-bump, 0px)); }
+.home-card .btn-primary { padding: 0.38rem 1.25rem; }
+.dot-limit { background: var(--amber); }
+.limit-text { color: var(--amber); font-weight: 500; margin: 0.5rem 0; }
+
+/* Round 7 */
+/* Create Docs: the words sit in the true center; the arrow hangs just to their right */
+.home-card .btn-label { position: relative; display: inline-block; }
+.home-card .btn-arrow { position: absolute; left: calc(100% + 0.55rem); top: 50%; transform: translateY(-50%); width: 1.6em; height: 0.8em; margin: 0; }
+/* Side panel titles in title case, not all caps */
+.report-side h2 { text-transform: none; letter-spacing: 0; }
+/* Side note the same size as "GitHub repo analyzed:" */
+.report-side-note { font-size: calc(13px + var(--fs-bump, 0px)); }
+/* Slimmer page rows */
+.report-side-list .scroll-list .page-link { height: 2rem; }
+.report-side-list .scroll-list { gap: 0.15rem; }
+/* "More Pages by Folder": subtitle + folders in columns, arrows lined up with the bullets above */
+.folder-heading { margin: 0.9rem 0 0.3rem; font-size: calc(13px + var(--fs-bump, 0px)); font-weight: 600; color: #1f4f6b; }
+.folder-heading span { font-weight: 400; color: var(--text-muted); }
+.folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0 1rem; padding-left: 1.2rem; }
+.folder-grid > details[open] { grid-column: 1 / -1; }
+
+/* Consistency pass: no ALL-CAPS anywhere; headings are written in Title Case in the text itself */
+.eyebrow, label, .status-pill, .stage-status, .page-list h2, .dash-stat span, .build-details summary,
+.finding-sev, .data-block dt, .flow-kind, .export-label, .report-side h2 {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Round 8 */
+/* Create Docs arrow: gold like the logo's star, a touch shorter, nudged down slightly */
+.home-card .btn-arrow { color: #e3bf6a; width: 1.25em; height: 0.7em; top: calc(50% + 1px); }
+/* Document pages: titles below SpecsDoctor in the hierarchy, body one notch smaller, no big gaps */
+.doc-page { margin: 0.4rem 0 1.2rem; font-size: calc(14px + var(--fs-bump, 0px)); line-height: 1.6; }
+.doc-page h1 { font-size: calc(19px + var(--fs-bump, 0px)); margin: 0 0 0.5rem; }
+.doc-page h2 { font-size: calc(16px + var(--fs-bump, 0px)); margin: 1rem 0 0.4rem; padding-top: 0.7rem; }
+.doc-page > h2:first-child, .doc-page > h1 + h2 { border-top: none; padding-top: 0; margin-top: 0.3rem; }
+.doc-page h3 { font-size: calc(15px + var(--fs-bump, 0px)); }
+.doc-page a.source-link { font-size: calc(11.5px + var(--fs-bump, 0px)); }
+/* "More Pages by Folder" a bit larger so the folder names don't outweigh it */
+.folder-heading { font-size: calc(15px + var(--fs-bump, 0px)); }
+
+/* Code Flow: each step marked with its standard flowchart shape (number inside), plus a legend */
+.flow-shape { position: relative; flex: 0 0 52px; width: 52px; height: 24px; display: inline-grid; place-items: center; margin-top: 0.35rem; z-index: 1; }
+.flow-shape svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.flow-shape path { fill: #ffffff; stroke: #2c4d76; stroke-width: 1.6; stroke-linejoin: round; }
+.flow-shape-decision path { fill: #fff6e0; stroke: var(--amber); }
+.flow-shape-data path { fill: #e8f5ee; stroke: var(--status-ok); }
+.flow-shape-io path { fill: #eaf1fb; }
+.flow-shape-terminal path { fill: #2c4d76; }
+.flow-shape-terminal .flow-shape-num { color: #ffffff; }
+.flow-shape-num { position: relative; font-weight: 600; font-size: calc(12px + var(--fs-bump, 0px)); color: var(--text); }
+.flow-step:not(:last-child)::before { left: 25px; top: 30px; }
+.flow-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; margin: 0 0 0.9rem; font-size: calc(12px + var(--fs-bump, 0px)); color: var(--text-secondary); }
+.flow-legend-item { display: inline-flex; align-items: center; gap: 0.4rem; }
+.flow-legend .flow-shape { flex: none; width: 36px; height: 16px; margin: 0; }
+/* Arrows centered under the flowchart shapes (the shapes are 52px wide) */
+.flow-arrow { flex-basis: 100%; max-width: none; padding-left: 0; margin: 0.1rem 0; }
+.flow-arrow { text-indent: calc(26px - 0.31em); }
+.flow-step { row-gap: 0; }
+/* Stored-data cylinder: a little taller, number sits in the body below the top rim */
+.flow-shape-data { height: 32px; margin-top: 0.1rem; }
+.flow-shape-data .flow-shape-num { padding-top: 5px; }
+.flow-legend .flow-shape-data { height: 20px; }
+/* Report action links: a small bullet before each, no arrow (they're separate options) */
+.dash-actions .action-link::before { content: "•"; display: inline-block; margin-right: 0.4rem; color: var(--text-muted); text-decoration: none; }
+/* Document pages: section headings and paragraphs one notch smaller */
+.doc-page { font-size: calc(13px + var(--fs-bump, 0px)); }
+.doc-page h2 { font-size: calc(15px + var(--fs-bump, 0px)); }
+.doc-page h3 { font-size: calc(14px + var(--fs-bump, 0px)); }
+/* Keep the three report links on one line: tighter gaps, one point smaller */
+.dash-actions { gap: 0.8rem; padding: 0.3rem 0.75rem; flex-wrap: nowrap; white-space: nowrap; }
+.dash-actions .action-link { font-size: calc(12px + var(--fs-bump, 0px)); }
+.dash-actions .action-link::before { margin-right: 0.3rem; }
+/* Report links: a little more breathing room, in a very faint lavender pill so they stand out */
+.dash-actions { gap: 1.1rem; padding: 0.3rem 1rem; background: #f5f2fc; border-color: #e3dcf3; }
+
+/* Start screen: slimmer Create Docs moved up, and a small two-version example below it */
+.home-card .btn-primary { margin-top: 0.7rem; padding: 0.3rem 1.25rem; }
+.version-sample { margin-top: 1.1rem; }
+.version-sample-title { margin: 0 0 0.4rem; font-size: calc(11px + var(--fs-bump, 0px)); font-weight: 600; color: var(--text-secondary); }
+.version-sample-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.version-col { border: 1px solid var(--hairline-hover); border-radius: 10px; padding: 0.45rem 0.7rem; background: rgba(255, 255, 255, 0.45); }
+.version-col-on { border-color: rgba(30, 106, 134, 0.55); background: rgba(30, 106, 134, 0.07); }
+.version-col-name { display: block; font-size: calc(11px + var(--fs-bump, 0px)); font-weight: 600; color: #154e64; margin-bottom: 0.15rem; }
+.version-col p { margin: 0; font-size: calc(11px + var(--fs-bump, 0px)); line-height: 1.45; color: var(--text-secondary); }
+.version-col code { font-family: var(--font-mono); font-size: 0.9em; }
+@media (max-width: 560px) { .version-sample-cols { grid-template-columns: 1fr; } }
+.home-card .version-sample { margin: 0.2rem 0 0; }
+
+/* Version colors: Developers = powder blue, Everyday users = pale yellow (button and sample match) */
+.home-card .write-for button.wf-developers, .version-col.wf-developers { background: #eef5fb; border-color: #b9d3ea; }
+.home-card .write-for button.wf-both, .version-col.wf-both { background: #fdf9e6; border-color: #eadb9f; }
+.home-card .write-for button.wf-developers[aria-pressed="true"], .version-col.wf-developers.version-col-on { background: #dcebf8; border-color: #6f9fc9; color: #1f4f6b; }
+.home-card .write-for button.wf-both[aria-pressed="true"], .version-col.wf-both.version-col-on { background: #faf0c4; border-color: #c9ad4f; color: #5e4a10; }
+.version-col.wf-both .version-col-name { color: #6b5512; }
+/* Nudge the samples and Create Docs up, with even space around the button */
+.home-card .write-for-field { margin-bottom: 0.7rem; }
+.home-card .version-sample { margin: 0; }
+.home-card .btn-primary { margin: 0.9rem auto 0.6rem; }
+/* Version colors, take 2: Developers = very light sky blue, Everyday users = very pale green */
+.home-card .write-for button.wf-developers, .version-col.wf-developers { background: #eef8fd; border-color: #b3dcf1; }
+.home-card .write-for button.wf-both, .version-col.wf-both { background: #f0f9f1; border-color: #b9dfc0; }
+.home-card .write-for button.wf-developers[aria-pressed="true"], .version-col.wf-developers.version-col-on { background: #d9f0fb; border-color: #5fb1dc; color: #1b5674; }
+.home-card .write-for button.wf-both[aria-pressed="true"], .version-col.wf-both.version-col-on { background: #dcf1df; border-color: #6fb97c; color: #22552c; }
+.version-col.wf-developers .version-col-name { color: #1b5674; }
+.version-col.wf-both .version-col-name { color: #22552c; }
+/* Technical version: the bright light aqua-blue Lady D picked (#cff6f7) */
+.home-card .write-for button.wf-developers, .version-col.wf-developers { background: #e8fbfb; border-color: #a6e3e5; }
+.home-card .write-for button.wf-developers[aria-pressed="true"], .version-col.wf-developers.version-col-on { background: #cff6f7; border-color: #5cc4c8; color: #145a5d; }
+.version-col.wf-developers .version-col-name { color: #145a5d; }
+
+/* Page screen, flipped: pick from Generated Pages on the left, read the page on the right.
+   The document panel is only slightly smaller than the list card, so reading isn't cramped. */
+.pages-title { margin: 0 0 0.35rem; font-size: 22px; font-weight: 600; color: #1f4f6b; }
+.page-layout .page-list-main { max-width: 600px; flex: 1 1 560px; height: min(88vh, 960px); display: flex; flex-direction: column; }
+.page-list-scroll { flex: 1; min-height: 0; overflow-y: auto; padding-right: 0.3rem; }
+.page-list-scroll .scroll-list { max-height: none; background: rgba(255, 255, 255, 0.85); }
+.page-list-scroll .scroll-list .page-link { height: 2rem; }
+.page-list-scroll::-webkit-scrollbar { width: 9px; background: var(--hairline); border-radius: 9px; -webkit-appearance: none; }
+.page-list-scroll::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 9px; }
+.page-layout .page-doc-side { flex: 1 1 540px; max-width: 580px; height: calc(min(88vh, 960px) * 0.95); background: var(--surface); border-color: #9fbfd2; padding: 1rem 1.3rem 1.2rem; }
+.page-doc-side .page-scroll { flex: 1; min-height: 0; overflow-y: auto; padding-right: 0.4rem; }
+.page-layout .report-connector { height: calc(min(88vh, 960px) * 0.7); }
+@media (max-width: 1150px) {
+  .page-layout .page-list-main { height: auto; max-height: 60vh; max-width: 820px; width: 100%; flex: none; }
+  .page-layout .page-doc-side { height: auto; max-height: none; max-width: 820px; width: 100%; flex: none; }
+  .page-doc-side .page-scroll { overflow: visible; }
+}
+/* Keep Generated Pages the same slate-blue tint when it moves to the left on the page screen */
+.page-layout .page-list-main { background: rgba(234, 243, 249, 0.95); border: 1px solid #9fbfd2; }
